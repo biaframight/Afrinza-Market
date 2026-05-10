@@ -92,7 +92,7 @@ export default function Products() {
                 </div>
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="Services" id="cat-services" />
-                  <Label htmlFor="cat-services">Beauty Services</Label>
+                  <Label htmlFor="cat-services">Services</Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="Groceries" id="cat-groceries" />
@@ -105,27 +105,48 @@ export default function Products() {
           <AccordionItem value="location" className="border-b-0 mt-4">
             <AccordionTrigger className="hover:no-underline py-3">Location</AccordionTrigger>
             <AccordionContent>
-              <RadioGroup value={locFilter} onValueChange={(v) => { setLocFilter(v); setTimeout(updateUrl, 0); }} className="space-y-3 pt-2">
+              <RadioGroup value={locFilter} onValueChange={(v) => { setLocFilter(v); setTimeout(updateUrl, 0); }} className="space-y-2 pt-2 max-h-64 overflow-y-auto pr-1">
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="" id="loc-all" />
                   <Label htmlFor="loc-all">Anywhere in Malaysia</Label>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="KL" id="loc-kl" />
-                  <Label htmlFor="loc-kl">Kuala Lumpur</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="Selangor" id="loc-sel" />
-                  <Label htmlFor="loc-sel">Selangor</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="Penang" id="loc-pen" />
-                  <Label htmlFor="loc-pen">Penang</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="Johor" id="loc-joh" />
-                  <Label htmlFor="loc-joh">Johor</Label>
-                </div>
+                {[
+                  ["KL", "Kuala Lumpur"],
+                  ["Putrajaya", "Putrajaya"],
+                  ["Selangor", "Selangor"],
+                  ["Shah Alam", "Shah Alam"],
+                  ["Petaling Jaya", "Petaling Jaya"],
+                  ["Subang Jaya", "Subang Jaya"],
+                  ["Cyberjaya", "Cyberjaya"],
+                  ["Puchong", "Puchong"],
+                  ["Klang", "Klang"],
+                  ["Kajang", "Kajang"],
+                  ["Penang", "Penang"],
+                  ["Georgetown", "Georgetown"],
+                  ["Johor", "Johor"],
+                  ["Johor Bahru", "Johor Bahru"],
+                  ["Perak", "Perak"],
+                  ["Ipoh", "Ipoh"],
+                  ["Negeri Sembilan", "Negeri Sembilan"],
+                  ["Seremban", "Seremban"],
+                  ["Melaka", "Melaka"],
+                  ["Pahang", "Pahang"],
+                  ["Kuantan", "Kuantan"],
+                  ["Kedah", "Kedah"],
+                  ["Kelantan", "Kelantan"],
+                  ["Terengganu", "Terengganu"],
+                  ["Perlis", "Perlis"],
+                  ["Sabah", "Sabah"],
+                  ["Kota Kinabalu", "Kota Kinabalu"],
+                  ["Sarawak", "Sarawak"],
+                  ["Kuching", "Kuching"],
+                  ["Labuan", "Labuan"],
+                ].map(([val, lbl]) => (
+                  <div key={val} className="flex items-center space-x-2">
+                    <RadioGroupItem value={val} id={`loc-${val}`} />
+                    <Label htmlFor={`loc-${val}`}>{lbl}</Label>
+                  </div>
+                ))}
               </RadioGroup>
             </AccordionContent>
           </AccordionItem>

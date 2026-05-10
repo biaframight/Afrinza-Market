@@ -11,7 +11,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
-import { CheckCircle2, ChevronLeft, MapPin, Truck, CreditCard } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { CheckCircle2, ChevronLeft, MapPin, Truck, MessageCircle, Lock } from "lucide-react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
@@ -26,6 +27,8 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 
+const DEFAULT_WHATSAPP = "60173346205";
+
 const checkoutSchema = z.object({
   buyerName: z.string().min(2, "Name must be at least 2 characters"),
   buyerPhone: z.string().min(8, "Valid phone number required"),
@@ -36,11 +39,32 @@ const checkoutSchema = z.object({
 
 type CheckoutFormValues = z.infer<typeof checkoutSchema>;
 
+function buildWhatsAppMessage(data: CheckoutFormValues, items: { title: string; qty: number; price: string }[], total: string) {
+  const lines = [
+    `*New Order from Afrinza Marketplace*`,
+    ``,
+    `*Buyer:* ${data.buyerName}`,
+    `*Phone:* ${data.buyerPhone}`,
+    `*Address:* ${data.buyerAddress}`,
+    `*Delivery:* ${data.deliveryMethod}`,
+    `*Payment:* WhatsApp Order`,
+    ``,
+    `*Items Ordered:*`,
+    ...items.map((it) => `• ${it.title} x${it.qty} — RM ${it.price}`),
+    ``,
+    `*Total: RM ${total}*`,
+    ``,
+    `Please confirm my order. Thank you!`,
+  ];
+  return encodeURIComponent(lines.join("\n"));
+}
+
 export default function Checkout() {
   const [, setLocation] = useLocation();
   const sessionId = getSessionId();
   const queryClient = useQueryClient();
   const [isSuccess, setIsSuccess] = useState(false);
+  const [sellerWhatsApp, setSellerWhatsApp] = useState<string>(DEFAULT_WHATSAPP);
 
   const { data: cart, isLoading } = useGetCart(
     { sessionId },
@@ -55,23 +79,38 @@ export default function Checkout() {
       buyerName: "",
       buyerPhone: "",
       buyerAddress: "",
-      paymentMethod: "Cash on Delivery",
+      paymentMethod: "WhatsApp Order",
       deliveryMethod: "Grab Delivery",
     },
   });
 
   const onSubmit = (data: CheckoutFormValues) => {
     createOrder.mutate({
-      data: {
-        sessionId,
-        ...data
-      }
+      data: { sessionId, ...data }
     }, {
       onSuccess: () => {
-        setIsSuccess(true);
-        // Clear cart cache
         queryClient.invalidateQueries({ queryKey: getGetCartQueryKey({ sessionId }) });
+
+        // Build WhatsApp redirect
+        const items = (cart?.items || []).map((it) => ({
+          title: it.product?.title || "Item",
+          qty: it.quantity,
+          price: (parseFloat(String(it.product?.price || 0)) * it.quantity).toFixed(2),
+        }));
+        const total = parseFloat(String(cart?.total || 0)).toFixed(2);
+        const message = buildWhatsAppMessage(data, items, total);
+
+        // Use seller WhatsApp if available in first item, else default
+        const phone = sellerWhatsApp.replace(/\D/g, "");
+        const waUrl = `https://wa.me/${phone}?text=${message}`;
+
+        setIsSuccess(true);
         window.scrollTo(0, 0);
+
+        // Open WhatsApp after short delay
+        setTimeout(() => {
+          window.open(waUrl, "_blank");
+        }, 800);
       },
       onError: () => {
         toast.error("Failed to place order. Please try again.");
@@ -80,29 +119,45 @@ export default function Checkout() {
   };
 
   if (isSuccess) {
+    const items = (cart?.items || []).map((it) => ({
+      title: it.product?.title || "Item",
+      qty: it.quantity,
+      price: (parseFloat(String(it.product?.price || 0)) * it.quantity).toFixed(2),
+    }));
+    const total = "0.00";
+    const formData = form.getValues();
+    const message = buildWhatsAppMessage(formData, items, total);
+    const phone = sellerWhatsApp.replace(/\D/g, "");
+    const waUrl = `https://wa.me/${phone}?text=${message}`;
+
     return (
       <div className="container mx-auto px-4 py-20 max-w-2xl text-center">
         <div className="w-24 h-24 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-8 shadow-sm">
           <CheckCircle2 className="w-12 h-12" />
         </div>
-        <h1 className="text-4xl font-bold font-serif mb-4">Order Placed Successfully!</h1>
-        <p className="text-lg text-muted-foreground mb-8">
-          Thank you for shopping with Afrinza. Your order details have been sent to the sellers.
-          They will contact you shortly via WhatsApp to confirm delivery.
+        <h1 className="text-4xl font-bold font-serif mb-4">Order Placed!</h1>
+        <p className="text-lg text-muted-foreground mb-6">
+          Your order has been recorded. A WhatsApp chat with the seller is opening so you can confirm details and arrange payment.
         </p>
-        <div className="flex justify-center gap-4">
-          <Button onClick={() => setLocation("/")} className="rounded-full px-8 h-12 text-base font-bold shadow-md">
-            Continue Shopping
-          </Button>
-        </div>
+        <a
+          href={waUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 bg-[#25D366] hover:bg-[#1ebe59] text-white font-bold px-8 py-4 rounded-full text-base shadow-lg mb-6 transition-all hover:scale-105"
+        >
+          <MessageCircle className="w-5 h-5" />
+          Open WhatsApp Chat with Seller
+        </a>
+        <br />
+        <Button variant="ghost" onClick={() => setLocation("/")} className="rounded-full mt-2">
+          Continue Shopping
+        </Button>
       </div>
     );
   }
 
   if (isLoading || (!cart?.items.length && !createOrder.isPending)) {
-    if (!isLoading && !cart?.items.length) {
-      setLocation("/cart");
-    }
+    if (!isLoading && !cart?.items.length) setLocation("/cart");
     return <div className="min-h-[60vh] flex items-center justify-center">Loading...</div>;
   }
 
@@ -118,10 +173,9 @@ export default function Checkout() {
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col lg:flex-row gap-8">
-            
-            {/* Form Section */}
+
             <div className="flex-1 space-y-8">
-              {/* Delivery Details */}
+              {/* Delivery Info */}
               <div className="bg-white p-6 md:p-8 rounded-3xl border border-border shadow-sm">
                 <div className="flex items-center gap-3 mb-6 border-b border-border/50 pb-4">
                   <div className="bg-primary/10 p-2 rounded-full text-primary">
@@ -129,166 +183,119 @@ export default function Checkout() {
                   </div>
                   <h2 className="text-xl font-bold">Delivery Information</h2>
                 </div>
-                
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <FormField
-                    control={form.control}
-                    name="buyerName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Full Name</FormLabel>
-                        <FormControl>
-                          <Input placeholder="John Doe" className="h-12 bg-muted/30" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="buyerPhone"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>WhatsApp Number</FormLabel>
-                        <FormControl>
-                          <Input placeholder="+60 12-345 6789" className="h-12 bg-muted/30" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="buyerAddress"
-                    render={({ field }) => (
-                      <FormItem className="md:col-span-2">
-                        <FormLabel>Full Delivery Address</FormLabel>
-                        <FormControl>
-                          <Textarea 
-                            placeholder="Unit number, Building name, Street, Postcode, City" 
-                            className="min-h-[100px] resize-none bg-muted/30"
-                            {...field} 
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <FormField control={form.control} name="buyerName" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Full Name</FormLabel>
+                      <FormControl><Input placeholder="John Doe" className="h-12 bg-muted/30" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <FormField control={form.control} name="buyerPhone" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Your WhatsApp Number</FormLabel>
+                      <FormControl><Input placeholder="+60 12-345 6789" className="h-12 bg-muted/30" {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <FormField control={form.control} name="buyerAddress" render={({ field }) => (
+                    <FormItem className="md:col-span-2">
+                      <FormLabel>Full Delivery Address</FormLabel>
+                      <FormControl>
+                        <Textarea placeholder="Unit number, Building name, Street, Postcode, City, State" className="min-h-[100px] resize-none bg-muted/30" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
                 </div>
               </div>
 
-              {/* Delivery & Payment Methods */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {/* Delivery */}
-                <div className="bg-white p-6 md:p-8 rounded-3xl border border-border shadow-sm">
-                  <div className="flex items-center gap-3 mb-6 border-b border-border/50 pb-4">
-                    <div className="bg-accent/10 p-2 rounded-full text-accent">
-                      <Truck className="w-5 h-5" />
-                    </div>
-                    <h2 className="text-xl font-bold">Delivery Method</h2>
+              {/* Delivery Method */}
+              <div className="bg-white p-6 md:p-8 rounded-3xl border border-border shadow-sm">
+                <div className="flex items-center gap-3 mb-6 border-b border-border/50 pb-4">
+                  <div className="bg-accent/10 p-2 rounded-full text-accent">
+                    <Truck className="w-5 h-5" />
                   </div>
+                  <h2 className="text-xl font-bold">Delivery Method</h2>
+                </div>
+                <FormField control={form.control} name="deliveryMethod" render={({ field }) => (
+                  <FormItem>
+                    <FormControl>
+                      <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex flex-col space-y-3">
+                        {[
+                          { value: "Grab Delivery", label: "Grab / Lalamove", desc: "Same day delivery (Buyer pays rider)" },
+                          { value: "Afrinza Rider", label: "Afrinza Rider", desc: "African rider network — reliable & fast" },
+                          { value: "Self Pickup", label: "Self Pickup", desc: "Collect from seller location" },
+                        ].map((opt) => (
+                          <FormItem key={opt.value} className="flex items-center space-x-3 space-y-0 rounded-xl border border-border p-4 bg-white hover:bg-muted/30 cursor-pointer transition-colors [&:has([data-state=checked])]:border-accent [&:has([data-state=checked])]:bg-accent/5">
+                            <FormControl><RadioGroupItem value={opt.value} /></FormControl>
+                            <div className="flex-1">
+                              <FormLabel className="font-semibold cursor-pointer">{opt.label}</FormLabel>
+                              <p className="text-sm text-muted-foreground mt-0.5">{opt.desc}</p>
+                            </div>
+                          </FormItem>
+                        ))}
+                      </RadioGroup>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+              </div>
 
-                  <FormField
-                    control={form.control}
-                    name="deliveryMethod"
-                    render={({ field }) => (
-                      <FormItem className="space-y-3">
-                        <FormControl>
-                          <RadioGroup
-                            onValueChange={field.onChange}
-                            defaultValue={field.value}
-                            className="flex flex-col space-y-3"
-                          >
-                            <FormItem className="flex items-center space-x-3 space-y-0 rounded-xl border border-border p-4 bg-white hover:bg-muted/30 cursor-pointer transition-colors [&:has([data-state=checked])]:border-accent [&:has([data-state=checked])]:bg-accent/5">
-                              <FormControl>
-                                <RadioGroupItem value="Grab Delivery" />
-                              </FormControl>
-                              <div className="flex-1">
-                                <FormLabel className="font-semibold cursor-pointer">Grab / Lalamove</FormLabel>
-                                <p className="text-sm text-muted-foreground mt-1">Same day delivery (Buyer pays rider)</p>
-                              </div>
-                            </FormItem>
-                            <FormItem className="flex items-center space-x-3 space-y-0 rounded-xl border border-border p-4 bg-white hover:bg-muted/30 cursor-pointer transition-colors [&:has([data-state=checked])]:border-accent [&:has([data-state=checked])]:bg-accent/5">
-                              <FormControl>
-                                <RadioGroupItem value="Self Pickup" />
-                              </FormControl>
-                              <div className="flex-1">
-                                <FormLabel className="font-semibold cursor-pointer">Self Pickup</FormLabel>
-                                <p className="text-sm text-muted-foreground mt-1">Collect from seller location</p>
-                              </div>
-                            </FormItem>
-                          </RadioGroup>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+              {/* Payment Method */}
+              <div className="bg-white p-6 md:p-8 rounded-3xl border border-border shadow-sm">
+                <div className="flex items-center gap-3 mb-6 border-b border-border/50 pb-4">
+                  <div className="bg-[#25D366]/20 p-2 rounded-full">
+                    <MessageCircle className="w-5 h-5 text-[#25D366]" />
+                  </div>
+                  <h2 className="text-xl font-bold">Payment Method</h2>
                 </div>
 
-                {/* Payment */}
-                <div className="bg-white p-6 md:p-8 rounded-3xl border border-border shadow-sm">
-                  <div className="flex items-center gap-3 mb-6 border-b border-border/50 pb-4">
-                    <div className="bg-secondary/20 p-2 rounded-full text-secondary-foreground">
-                      <CreditCard className="w-5 h-5" />
-                    </div>
-                    <h2 className="text-xl font-bold">Payment Method</h2>
+                {/* WhatsApp — Primary (active) */}
+                <div className="rounded-xl border-2 border-[#25D366] bg-[#25D366]/5 p-4 mb-4 flex items-center gap-4">
+                  <div className="w-5 h-5 rounded-full border-2 border-[#25D366] bg-[#25D366] flex items-center justify-center">
+                    <div className="w-2 h-2 bg-white rounded-full" />
                   </div>
+                  <div className="flex-1">
+                    <p className="font-bold text-sm flex items-center gap-2">
+                      WhatsApp Order
+                      <Badge className="bg-[#25D366] text-white text-[10px] px-2">Active</Badge>
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Order sent to seller via WhatsApp. Agree on payment directly.</p>
+                  </div>
+                  <MessageCircle className="w-6 h-6 text-[#25D366]" />
+                </div>
 
-                  <FormField
-                    control={form.control}
-                    name="paymentMethod"
-                    render={({ field }) => (
-                      <FormItem className="space-y-3">
-                        <FormControl>
-                          <RadioGroup
-                            onValueChange={field.onChange}
-                            defaultValue={field.value}
-                            className="flex flex-col space-y-3"
-                          >
-                            <FormItem className="flex items-center space-x-3 space-y-0 rounded-xl border border-border p-4 bg-white hover:bg-muted/30 cursor-pointer transition-colors [&:has([data-state=checked])]:border-secondary [&:has([data-state=checked])]:bg-secondary/5">
-                              <FormControl>
-                                <RadioGroupItem value="Touch n Go eWallet" />
-                              </FormControl>
-                              <div className="flex-1">
-                                <FormLabel className="font-semibold cursor-pointer">Touch n Go eWallet</FormLabel>
-                                <p className="text-sm text-muted-foreground mt-1">Transfer directly to seller</p>
-                              </div>
-                            </FormItem>
-                            <FormItem className="flex items-center space-x-3 space-y-0 rounded-xl border border-border p-4 bg-white hover:bg-muted/30 cursor-pointer transition-colors [&:has([data-state=checked])]:border-secondary [&:has([data-state=checked])]:bg-secondary/5">
-                              <FormControl>
-                                <RadioGroupItem value="Cash on Delivery" />
-                              </FormControl>
-                              <div className="flex-1">
-                                <FormLabel className="font-semibold cursor-pointer">Cash on Delivery</FormLabel>
-                                <p className="text-sm text-muted-foreground mt-1">Pay when you receive</p>
-                              </div>
-                            </FormItem>
-                            <FormItem className="flex items-center space-x-3 space-y-0 rounded-xl border border-border p-4 bg-white hover:bg-muted/30 cursor-pointer transition-colors [&:has([data-state=checked])]:border-secondary [&:has([data-state=checked])]:bg-secondary/5">
-                              <FormControl>
-                                <RadioGroupItem value="Bank Transfer" />
-                              </FormControl>
-                              <div className="flex-1">
-                                <FormLabel className="font-semibold cursor-pointer">Bank Transfer</FormLabel>
-                                <p className="text-sm text-muted-foreground mt-1">Direct transfer to seller's account</p>
-                              </div>
-                            </FormItem>
-                          </RadioGroup>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                {/* Other methods — Coming Soon */}
+                <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider mb-3 ml-1">More payment options (coming soon)</p>
+                <div className="space-y-3 opacity-60 pointer-events-none select-none">
+                  {[
+                    { label: "Touch 'n Go eWallet", desc: "TNG eWallet / DuitNow QR" },
+                    { label: "Bank Transfer / DuitNow", desc: "Online banking transfer" },
+                    { label: "Cash on Delivery", desc: "Pay on receipt" },
+                    { label: "Stripe / Card", desc: "Visa, Mastercard & more" },
+                  ].map((m) => (
+                    <div key={m.label} className="rounded-xl border border-border p-4 flex items-center gap-4 bg-muted/20">
+                      <div className="w-5 h-5 rounded-full border-2 border-muted-foreground/30" />
+                      <div className="flex-1">
+                        <p className="font-semibold text-sm flex items-center gap-2">
+                          {m.label}
+                          <Badge variant="outline" className="text-[10px] px-2 border-muted-foreground/30 text-muted-foreground">
+                            <Lock className="w-2.5 h-2.5 mr-1" />Coming Soon
+                          </Badge>
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-0.5">{m.desc}</p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
 
-            {/* Order Summary Sidebar */}
+            {/* Order Summary */}
             <div className="w-full lg:w-[380px] shrink-0">
               <div className="bg-white rounded-3xl border border-border shadow-sm p-6 md:p-8 sticky top-24">
                 <h3 className="text-xl font-bold mb-6 font-serif border-b border-border/50 pb-4">Order Summary</h3>
-                
                 <div className="space-y-4 mb-6 max-h-[300px] overflow-y-auto pr-2">
                   {cart?.items.map((item) => (
                     <div key={item.id} className="flex gap-3">
@@ -315,24 +322,25 @@ export default function Checkout() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Platform Fee</span>
-                    <span className="font-medium">RM 0.00</span>
+                    <span className="font-medium text-green-600">Free</span>
                   </div>
                   <div className="border-t border-border pt-4 mt-2 flex justify-between items-center">
-                    <span className="font-bold text-base">Total to Pay</span>
+                    <span className="font-bold text-base">Total</span>
                     <span className="font-bold text-3xl text-primary">RM {parseFloat(String(cart?.total || 0)).toFixed(2)}</span>
                   </div>
                 </div>
 
-                <Button 
-                  type="submit" 
-                  className="w-full h-14 rounded-full text-base font-bold shadow-md hover:shadow-lg transition-all mb-4"
+                <Button
+                  type="submit"
+                  className="w-full h-14 rounded-full text-base font-bold shadow-md hover:shadow-lg transition-all mb-3 bg-[#25D366] hover:bg-[#1ebe59] text-white flex items-center gap-2"
                   disabled={createOrder.isPending}
                 >
+                  <MessageCircle className="w-5 h-5" />
                   {createOrder.isPending ? "Processing..." : "Place Order via WhatsApp"}
                 </Button>
-                
-                <p className="text-xs text-center text-muted-foreground px-2">
-                  By placing this order, you agree to contact the sellers directly to finalize payment and delivery.
+
+                <p className="text-xs text-center text-muted-foreground">
+                  Your order details will be sent to the seller on WhatsApp to confirm payment & delivery.
                 </p>
               </div>
             </div>

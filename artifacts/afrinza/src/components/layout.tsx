@@ -78,7 +78,7 @@ export function Layout({ children }: LayoutProps) {
                   <Link href="/sellers" className="flex items-center gap-3 px-3 py-2 text-base rounded-md hover:bg-muted font-medium">
                     <Store className="h-5 w-5 text-muted-foreground" /> Sellers
                   </Link>
-                  <Link href="/products?category=Services" className="flex items-center gap-3 px-3 py-2 text-base rounded-md hover:bg-muted font-medium">
+                  <Link href="/services" className="flex items-center gap-3 px-3 py-2 text-base rounded-md hover:bg-muted font-medium">
                     <Sparkles className="h-5 w-5 text-muted-foreground" /> Services
                   </Link>
                   <Link href="/about" className="flex items-center gap-3 px-3 py-2 text-base rounded-md hover:bg-muted font-medium">
@@ -109,7 +109,7 @@ export function Layout({ children }: LayoutProps) {
             <Link href="/sellers" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors whitespace-nowrap">
               Sellers
             </Link>
-            <Link href="/products?category=Services" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors whitespace-nowrap">
+            <Link href="/services" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors whitespace-nowrap">
               Services
             </Link>
             <Link href="/about" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors whitespace-nowrap">

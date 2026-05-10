@@ -20,12 +20,14 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { MALAYSIA_LOCATIONS } from "@/lib/malaysia-locations";
 
 const CATEGORIES = [
   { id: "Food", label: "African Food & Catering" },
   { id: "Fashion", label: "Fashion, Clothing & Tailoring" },
-  { id: "Services", label: "Hair Braiding & Beauty Services" },
+  { id: "Services", label: "Services (Hair, Plumbing, Delivery & More)" },
   { id: "Groceries", label: "Groceries & African Spices" },
+  { id: "Beauty", label: "Beauty & Skincare Products" },
   { id: "Other", label: "Other" }
 ];
 
@@ -180,12 +182,10 @@ export default function BecomeSeller() {
                               <SelectValue placeholder="Select location" />
                             </SelectTrigger>
                           </FormControl>
-                          <SelectContent>
-                            <SelectItem value="KL">Kuala Lumpur</SelectItem>
-                            <SelectItem value="Selangor">Selangor</SelectItem>
-                            <SelectItem value="Penang">Penang</SelectItem>
-                            <SelectItem value="Johor">Johor</SelectItem>
-                            <SelectItem value="Cyberjaya">Cyberjaya</SelectItem>
+                          <SelectContent className="max-h-64">
+                            {MALAYSIA_LOCATIONS.map((loc) => (
+                              <SelectItem key={loc.value} value={loc.value}>{loc.label}</SelectItem>
+                            ))}
                             <SelectItem value="Other">Other</SelectItem>
                           </SelectContent>
                         </Select>
