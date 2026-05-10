@@ -58,7 +58,7 @@ export default function About() {
         <div className="absolute -bottom-40 -left-40 w-[500px] h-[500px] bg-primary/20 rounded-full blur-[120px]" />
         <div className="container mx-auto max-w-4xl text-center relative z-10">
           <div className="flex justify-center mb-10">
-            <AfrinzaLogo height={68} />
+            <AfrinzaLogo height={68} variant="light" />
           </div>
           <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 text-amber-400 text-xs font-bold tracking-widest uppercase px-4 py-1.5 rounded-full mb-6 backdrop-blur-sm">
             <Globe className="w-3.5 h-3.5" /> Global African Diaspora Marketplace
