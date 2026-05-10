@@ -71,7 +71,7 @@ export function AfrinzaLogo({ className, height = 40, variant = "dark" }: Afrinz
         fill={taglineColor}
         letterSpacing="1.6"
       >
-        AFRICAN MARKETPLACE
+        AFRICAN MARKETPLACE ABROAD
       </text>
     </svg>
   );
