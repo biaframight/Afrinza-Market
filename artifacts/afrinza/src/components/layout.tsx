@@ -2,6 +2,7 @@ import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AfrinzaLogo } from "@/components/afrinza-logo";
+import { MarketBanner } from "@/components/market-banner";
 import { 
   ShoppingCart, 
   Search, 
@@ -51,6 +52,7 @@ export function Layout({ children }: LayoutProps) {
 
   return (
     <div className="min-h-[100dvh] flex flex-col bg-background">
+      <MarketBanner />
       <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80 shadow-sm">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between gap-4">
           
@@ -96,9 +98,12 @@ export function Layout({ children }: LayoutProps) {
             </Sheet>
           </div>
 
-          {/* Logo */}
-          <Link href="/" className="flex items-center">
+          {/* Logo + Market Badge */}
+          <Link href="/" className="flex items-center gap-2">
             <AfrinzaLogo height={44} />
+            <span className="hidden lg:inline-flex items-center gap-1 text-[10px] font-bold bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 rounded-full whitespace-nowrap">
+              🇲🇾 Malaysia · Phase 1
+            </span>
           </Link>
 
           {/* Desktop Nav Links */}
@@ -177,28 +182,38 @@ export function Layout({ children }: LayoutProps) {
               <Link href="/" className="inline-flex items-center mb-4">
                 <AfrinzaLogo height={48} />
               </Link>
-              <p className="text-muted-foreground text-sm max-w-sm mb-6 leading-relaxed mt-4">
-                Your African Marketplace in Malaysia. Find home, anywhere. Buy and sell authentic food, fashion, and services.
+              <p className="text-muted-foreground text-sm max-w-sm mb-3 leading-relaxed mt-4">
+                The global African diaspora marketplace. Buy, sell and connect — wherever you are in the world.
               </p>
-              <Button variant="outline" className="rounded-full gap-2 text-primary border-primary/20 hover:bg-primary/5 hover:text-primary">
+              <p className="text-xs text-muted-foreground/70 mb-5">
+                🇲🇾 Live in Malaysia &nbsp;·&nbsp; 🇬🇧 🇨🇦 🇦🇪 🇩🇪 🇺🇸 Coming soon
+              </p>
+              <a
+                href="https://wa.me/60173346205"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 rounded-full border border-primary/20 text-primary hover:bg-primary/5 px-4 py-2 text-sm font-medium transition-colors"
+              >
                 <MessageCircleQuestion className="w-4 h-4" />
                 Support on WhatsApp
-              </Button>
+              </a>
             </div>
             
             <div>
               <h3 className="font-semibold text-foreground mb-4">Marketplace</h3>
               <ul className="space-y-3">
                 <li><Link href="/products" className="text-sm text-muted-foreground hover:text-primary transition-colors">All Products</Link></li>
-                <li><Link href="/products?category=food" className="text-sm text-muted-foreground hover:text-primary transition-colors">African Food</Link></li>
-                <li><Link href="/products?category=fashion" className="text-sm text-muted-foreground hover:text-primary transition-colors">Fashion & Style</Link></li>
-                <li><Link href="/products?category=beauty" className="text-sm text-muted-foreground hover:text-primary transition-colors">Beauty Services</Link></li>
+                <li><Link href="/products?category=Food" className="text-sm text-muted-foreground hover:text-primary transition-colors">African Food</Link></li>
+                <li><Link href="/products?category=Fashion" className="text-sm text-muted-foreground hover:text-primary transition-colors">Fashion & Style</Link></li>
+                <li><Link href="/services" className="text-sm text-muted-foreground hover:text-primary transition-colors">Services</Link></li>
               </ul>
             </div>
             
             <div>
-              <h3 className="font-semibold text-foreground mb-4">For Sellers</h3>
+              <h3 className="font-semibold text-foreground mb-4">Company</h3>
               <ul className="space-y-3">
+                <li><Link href="/about" className="text-sm text-muted-foreground hover:text-primary transition-colors">About Afrinza</Link></li>
+                <li><Link href="/how-it-works" className="text-sm text-muted-foreground hover:text-primary transition-colors">How it Works</Link></li>
                 <li><Link href="/become-seller" className="text-sm text-muted-foreground hover:text-primary transition-colors">Open a Store</Link></li>
                 <li><Link href="/sellers" className="text-sm text-muted-foreground hover:text-primary transition-colors">Seller Directory</Link></li>
               </ul>
@@ -207,10 +222,10 @@ export function Layout({ children }: LayoutProps) {
           
           <div className="border-t border-border mt-12 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
             <p className="text-xs text-muted-foreground">
-              © {new Date().getFullYear()} Afrinza Marketplace. All rights reserved.
+              © {new Date().getFullYear()} Afrinza — The Global African Marketplace. All rights reserved.
             </p>
             <p className="text-xs text-muted-foreground">
-              Connecting African sellers and buyers across Malaysia
+              🇲🇾 Phase 1: Malaysia &nbsp;·&nbsp; Expanding worldwide
             </p>
           </div>
         </div>

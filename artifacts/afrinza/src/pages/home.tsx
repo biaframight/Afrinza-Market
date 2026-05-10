@@ -8,7 +8,7 @@ import { ProductCard } from "@/components/product-card";
 import { SellerCard } from "@/components/seller-card";
 import { HeroSlider } from "@/components/hero-slider";
 import { Button } from "@/components/ui/button";
-import { Search, MapPin, ArrowRight, UtensilsCrossed, Shirt, Sparkles, Store, Send, Users, CheckCircle } from "lucide-react";
+import { Search, MapPin, ArrowRight, UtensilsCrossed, Shirt, Sparkles, Store, Send, Users, CheckCircle, Globe } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -51,9 +51,13 @@ export default function Home() {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
+            className="flex flex-col sm:flex-row items-center gap-2 mb-4"
           >
-            <span className="inline-block py-1.5 px-4 rounded-full bg-primary/10 text-primary font-medium text-sm mb-4 border border-primary/20 shadow-sm">
-              Your African Marketplace in Malaysia
+            <span className="inline-flex items-center gap-1.5 py-1.5 px-4 rounded-full bg-primary/10 text-primary font-medium text-sm border border-primary/20 shadow-sm">
+              <Globe className="w-3.5 h-3.5" /> Global African Diaspora Marketplace
+            </span>
+            <span className="inline-flex items-center gap-1 py-1 px-3 rounded-full bg-amber-50 text-amber-700 font-semibold text-xs border border-amber-200">
+              🇲🇾 Now Live in Malaysia — Phase 1
             </span>
           </motion.div>
 
@@ -101,9 +105,34 @@ export default function Home() {
                 >
                   <option value="">All Malaysia</option>
                   <option value="KL">Kuala Lumpur</option>
+                  <option value="Putrajaya">Putrajaya</option>
                   <option value="Selangor">Selangor</option>
+                  <option value="Shah Alam">Shah Alam</option>
+                  <option value="Petaling Jaya">Petaling Jaya</option>
+                  <option value="Subang Jaya">Subang Jaya</option>
+                  <option value="Cyberjaya">Cyberjaya</option>
+                  <option value="Puchong">Puchong</option>
+                  <option value="Klang">Klang</option>
                   <option value="Penang">Penang</option>
+                  <option value="Georgetown">Georgetown</option>
                   <option value="Johor">Johor</option>
+                  <option value="Johor Bahru">Johor Bahru</option>
+                  <option value="Perak">Perak</option>
+                  <option value="Ipoh">Ipoh</option>
+                  <option value="Negeri Sembilan">Negeri Sembilan</option>
+                  <option value="Seremban">Seremban</option>
+                  <option value="Melaka">Melaka</option>
+                  <option value="Pahang">Pahang</option>
+                  <option value="Kuantan">Kuantan</option>
+                  <option value="Kedah">Kedah</option>
+                  <option value="Kelantan">Kelantan</option>
+                  <option value="Terengganu">Terengganu</option>
+                  <option value="Perlis">Perlis</option>
+                  <option value="Sabah">Sabah</option>
+                  <option value="Kota Kinabalu">Kota Kinabalu</option>
+                  <option value="Sarawak">Sarawak</option>
+                  <option value="Kuching">Kuching</option>
+                  <option value="Labuan">Labuan</option>
                 </select>
               </div>
               <Button type="submit" className="h-12 rounded-xl md:rounded-full px-7 font-semibold shadow-md">
