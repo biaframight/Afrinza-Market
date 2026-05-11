@@ -4,6 +4,7 @@ import { supabase } from "./supabase";
 
 export interface Seller {
   id: number;
+  userId: string | null;
   storeName: string;
   ownerName: string;
   description: string | null;
@@ -77,6 +78,7 @@ export interface ReviewsResponse {
 function mapSeller(r: Record<string, any>): Seller {
   return {
     id: r.id,
+    userId: r.user_id ?? null,
     storeName: r.store_name,
     ownerName: r.owner_name,
     description: r.description ?? null,
@@ -253,6 +255,7 @@ export async function createSeller(input: {
   whatsapp: string;
   avatarUrl?: string | null;
   bannerUrl?: string | null;
+  userId?: string | null;
 }): Promise<Seller> {
   const { data, error } = await supabase
     .from("sellers")
@@ -265,11 +268,109 @@ export async function createSeller(input: {
       whatsapp: input.whatsapp,
       avatar_url: input.avatarUrl ?? null,
       banner_url: input.bannerUrl ?? null,
+      user_id: input.userId ?? null,
     })
     .select()
     .single();
   throwIfError(data, error, "createSeller");
   return mapSeller(data);
+}
+
+export async function getSellerByUserId(userId: string): Promise<Seller | null> {
+  const { data, error } = await supabase
+    .from("sellers")
+    .select("*")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (error) {
+    console.error("[Supabase / getSellerByUserId]", error.message);
+    return null;
+  }
+  return data ? mapSeller(data) : null;
+}
+
+export async function updateSeller(
+  id: number,
+  updates: {
+    storeName?: string;
+    ownerName?: string;
+    description?: string;
+    location?: string;
+    categories?: string[];
+    whatsapp?: string;
+    avatarUrl?: string | null;
+  }
+): Promise<Seller> {
+  const payload: Record<string, unknown> = {};
+  if (updates.storeName !== undefined) payload.store_name = updates.storeName;
+  if (updates.ownerName !== undefined) payload.owner_name = updates.ownerName;
+  if (updates.description !== undefined) payload.description = updates.description;
+  if (updates.location !== undefined) payload.location = updates.location;
+  if (updates.categories !== undefined) payload.categories = updates.categories;
+  if (updates.whatsapp !== undefined) payload.whatsapp = updates.whatsapp;
+  if (updates.avatarUrl !== undefined) payload.avatar_url = updates.avatarUrl;
+  const { data, error } = await supabase
+    .from("sellers")
+    .update(payload)
+    .eq("id", id)
+    .select()
+    .single();
+  throwIfError(data, error, "updateSeller");
+  return mapSeller(data);
+}
+
+export async function getProductsBySellerId(sellerId: number): Promise<Product[]> {
+  const { data, error } = await supabase
+    .from("products")
+    .select("*")
+    .eq("seller_id", sellerId)
+    .order("created_at", { ascending: false });
+  throwIfError(data, error, "getProductsBySellerId");
+  return (data as Record<string, any>[]).map(mapProduct);
+}
+
+export async function updateProduct(
+  id: number,
+  updates: {
+    title?: string;
+    description?: string;
+    price?: number;
+    category?: string;
+    stock?: number;
+    imageUrl?: string | null;
+    deliveryOptions?: string[];
+    paymentMethods?: string[];
+  }
+): Promise<Product> {
+  const payload: Record<string, unknown> = {};
+  if (updates.title !== undefined) payload.title = updates.title;
+  if (updates.description !== undefined) payload.description = updates.description;
+  if (updates.price !== undefined) payload.price = updates.price;
+  if (updates.category !== undefined) payload.category = updates.category;
+  if (updates.stock !== undefined) payload.stock = updates.stock;
+  if (updates.imageUrl !== undefined) {
+    payload.image_url = updates.imageUrl;
+    if (updates.imageUrl) payload.images = [updates.imageUrl];
+  }
+  if (updates.deliveryOptions !== undefined) payload.delivery_options = updates.deliveryOptions;
+  if (updates.paymentMethods !== undefined) payload.payment_methods = updates.paymentMethods;
+  const { data, error } = await supabase
+    .from("products")
+    .update(payload)
+    .eq("id", id)
+    .select()
+    .single();
+  throwIfError(data, error, "updateProduct");
+  return mapProduct(data);
+}
+
+export async function deleteProduct(id: number): Promise<void> {
+  const { error } = await supabase.from("products").delete().eq("id", id);
+  if (error) {
+    const msg = `[Supabase / deleteProduct] ${error.message}`;
+    console.error(msg);
+    throw new Error(msg);
+  }
 }
 
 export async function uploadProductImage(file: File): Promise<string | null> {

@@ -92,6 +92,49 @@ export function useCreateProduct() {
   });
 }
 
+export function useUpdateSeller() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { id: number; updates: Parameters<typeof db.updateSeller>[1] }) =>
+      db.updateSeller(input.id, input.updates),
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: ["sellers"] });
+      queryClient.invalidateQueries({ queryKey: ["seller-profile"] });
+      queryClient.invalidateQueries({ queryKey: keys.seller(id) });
+    },
+  });
+}
+
+export function useGetProductsBySeller(sellerId: number | null | undefined) {
+  return useQuery({
+    queryKey: ["products", "by-seller", sellerId],
+    queryFn: () => db.getProductsBySellerId(sellerId!),
+    enabled: !!sellerId,
+  });
+}
+
+export function useUpdateProduct() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { id: number; updates: Parameters<typeof db.updateProduct>[1] }) =>
+      db.updateProduct(input.id, input.updates),
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      queryClient.invalidateQueries({ queryKey: keys.product(id) });
+    },
+  });
+}
+
+export function useDeleteProduct() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { id: number }) => db.deleteProduct(input.id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+    },
+  });
+}
+
 // ─── Cart ─────────────────────────────────────────────────────────
 
 export function useGetCart(params: { sessionId: string }) {

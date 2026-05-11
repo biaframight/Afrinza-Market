@@ -16,8 +16,31 @@ import { supabase } from "./supabase";
 import type { Provider } from "@supabase/supabase-js";
 
 /** Sign up a new user with email and password */
-export async function signUpWithEmail(email: string, password: string) {
-  return supabase.auth.signUp({ email, password });
+export async function signUpWithEmail(
+  email: string,
+  password: string,
+  options?: { fullName?: string; role?: "buyer" | "seller" }
+) {
+  return supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      data: {
+        full_name: options?.fullName ?? "",
+        role: options?.role ?? "buyer",
+      },
+    },
+  });
+}
+
+/** Update the current user's metadata */
+export async function updateUserProfile(updates: { fullName?: string; phone?: string }) {
+  return supabase.auth.updateUser({
+    data: {
+      ...(updates.fullName !== undefined && { full_name: updates.fullName }),
+      ...(updates.phone !== undefined && { phone: updates.phone }),
+    },
+  });
 }
 
 /** Sign in an existing user with email and password */

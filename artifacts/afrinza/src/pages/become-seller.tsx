@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { useLocation } from "wouter";
 import { useCreateSeller, useCreateProduct } from "@/hooks/use-marketplace";
 import { uploadProductImage } from "@/lib/supabase-db";
+import { useAuthContext } from "@/contexts/auth-context";
 import type { Seller } from "@/lib/supabase-db";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -74,6 +75,7 @@ export default function BecomeSeller() {
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const { user } = useAuthContext();
   const createSeller = useCreateSeller();
   const createProduct = useCreateProduct();
 
@@ -114,6 +116,7 @@ export default function BecomeSeller() {
           ...data,
           avatarUrl: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(data.storeName)}&backgroundColor=00897b,e53935,1e88e5,ffb300`,
           bannerUrl: `/images/seller-${categoryQuery === "groceries" ? "grocery" : categoryQuery}.png`,
+          userId: user?.id ?? null,
         },
       },
       {
