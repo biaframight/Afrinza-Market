@@ -23,7 +23,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 
-const DEFAULT_WHATSAPP = "60173346205";
+const ADMIN_WHATSAPP = "60173346205";
 
 const checkoutSchema = z.object({
   buyerName: z.string().min(2, "Name must be at least 2 characters"),
@@ -35,19 +35,19 @@ const checkoutSchema = z.object({
 
 type CheckoutFormValues = z.infer<typeof checkoutSchema>;
 
-function buildWhatsAppMessage(
+function buildSellerMessage(
   data: CheckoutFormValues,
   items: { title: string; qty: number; price: string }[],
   total: string
 ) {
-  const lines = [
+  return encodeURIComponent([
     `*New Order from Afrinza Marketplace*`,
     ``,
     `*Buyer:* ${data.buyerName}`,
     `*Phone:* ${data.buyerPhone}`,
     `*Address:* ${data.buyerAddress}`,
     `*Delivery:* ${data.deliveryMethod}`,
-    `*Payment:* WhatsApp Order`,
+    `*Payment:* ${data.paymentMethod}`,
     ``,
     `*Items Ordered:*`,
     ...items.map((it) => `• ${it.title} x${it.qty} — RM ${it.price}`),
@@ -55,8 +55,30 @@ function buildWhatsAppMessage(
     `*Total: RM ${total}*`,
     ``,
     `Please confirm my order. Thank you!`,
-  ];
-  return encodeURIComponent(lines.join("\n"));
+  ].join("\n"));
+}
+
+function buildAdminMessage(
+  data: CheckoutFormValues,
+  items: { title: string; qty: number; price: string }[],
+  total: string,
+  sellerPhone: string
+) {
+  return encodeURIComponent([
+    `🛒 *New Order — Afrinza*`,
+    ``,
+    `*Buyer:* ${data.buyerName}`,
+    `*Phone:* ${data.buyerPhone}`,
+    `*Address:* ${data.buyerAddress}`,
+    `*Delivery:* ${data.deliveryMethod}`,
+    `*Payment:* ${data.paymentMethod}`,
+    `*Seller WhatsApp:* ${sellerPhone}`,
+    ``,
+    `*Items:*`,
+    ...items.map((it) => `• ${it.title} x${it.qty} — RM ${it.price}`),
+    ``,
+    `*Total: RM ${total}*`,
+  ].join("\n"));
 }
 
 export default function Checkout() {
@@ -64,7 +86,12 @@ export default function Checkout() {
   const sessionId = getSessionId();
   const queryClient = useQueryClient();
   const [isSuccess, setIsSuccess] = useState(false);
-  const [sellerWhatsApp] = useState<string>(DEFAULT_WHATSAPP);
+  const [orderSnapshot, setOrderSnapshot] = useState<{
+    sellerPhone: string;
+    items: { title: string; qty: number; price: string }[];
+    total: string;
+    formData: CheckoutFormValues;
+  } | null>(null);
 
   const { data: cart, isLoading } = useGetCart({ sessionId });
   const createOrder = useCreateOrder();
@@ -102,13 +129,17 @@ export default function Checkout() {
             price: (parseFloat(String(it.product?.price || 0)) * it.quantity).toFixed(2),
           }));
           const total = parseFloat(String(cart?.total || 0)).toFixed(2);
-          const message = buildWhatsAppMessage(data, items, total);
-          const phone = sellerWhatsApp.replace(/\D/g, "");
-          const waUrl = `https://wa.me/${phone}?text=${message}`;
 
+          // Use the seller's own WhatsApp from the first cart item
+          const sellerPhone = (cart?.items?.[0]?.product?.sellerWhatsapp ?? ADMIN_WHATSAPP).replace(/\D/g, "");
+
+          setOrderSnapshot({ sellerPhone, items, total, formData: data });
           setIsSuccess(true);
           window.scrollTo(0, 0);
-          setTimeout(() => { window.open(waUrl, "_blank"); }, 800);
+
+          // Auto-open seller WhatsApp for the buyer
+          const sellerMsg = buildSellerMessage(data, items, total);
+          setTimeout(() => { window.open(`https://wa.me/${sellerPhone}?text=${sellerMsg}`, "_blank"); }, 800);
         },
         onError: () => {
           toast.error("Failed to place order. Please try again.");
@@ -117,17 +148,12 @@ export default function Checkout() {
     );
   };
 
-  if (isSuccess) {
-    const items = (cart?.items || []).map((it) => ({
-      title: it.product?.title || "Item",
-      qty: it.quantity,
-      price: (parseFloat(String(it.product?.price || 0)) * it.quantity).toFixed(2),
-    }));
-    const total = parseFloat(String(cart?.total || 0)).toFixed(2);
-    const formData = form.getValues();
-    const message = buildWhatsAppMessage(formData, items, total);
-    const phone = sellerWhatsApp.replace(/\D/g, "");
-    const waUrl = `https://wa.me/${phone}?text=${message}`;
+  if (isSuccess && orderSnapshot) {
+    const { sellerPhone, items, total, formData } = orderSnapshot;
+    const sellerMsg = buildSellerMessage(formData, items, total);
+    const adminMsg = buildAdminMessage(formData, items, total, sellerPhone);
+    const sellerUrl = `https://wa.me/${sellerPhone}?text=${sellerMsg}`;
+    const adminUrl  = `https://wa.me/${ADMIN_WHATSAPP}?text=${adminMsg}`;
 
     return (
       <div className="container mx-auto px-4 py-20 max-w-2xl text-center">
@@ -136,27 +162,44 @@ export default function Checkout() {
         </div>
         <h1 className="text-4xl font-bold font-serif mb-4">Order Placed!</h1>
         <p className="text-lg text-muted-foreground mb-6">
-          Your order has been recorded. A WhatsApp chat with the seller is opening so you can confirm details and arrange payment.
+          Your order is confirmed. A WhatsApp chat with the seller is opening — confirm your details and arrange payment directly with them.
         </p>
+
+        {/* Primary: seller WhatsApp */}
         <a
-          href={waUrl}
+          href={sellerUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 bg-[#25D366] hover:bg-[#1ebe59] text-white font-bold px-8 py-4 rounded-full text-base shadow-lg mb-6 transition-all hover:scale-105"
+          className="inline-flex items-center gap-2 bg-[#25D366] hover:bg-[#1ebe59] text-white font-bold px-8 py-4 rounded-full text-base shadow-lg mb-4 transition-all hover:scale-105"
         >
           <MessageCircle className="w-5 h-5" />
-          Open WhatsApp Chat with Seller
+          Chat with Seller on WhatsApp
         </a>
-        <br />
-        <Button variant="ghost" onClick={() => setLocation("/")} className="rounded-full mt-2">
+
+        {/* Secondary: notify Afrinza admin */}
+        <div className="mt-2 mb-6">
+          <a
+            href={adminUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 border border-border bg-white hover:bg-muted/50 text-foreground font-semibold px-6 py-3 rounded-full text-sm shadow-sm transition-all"
+          >
+            <MessageCircle className="w-4 h-4 text-[#25D366]" />
+            Also Notify Afrinza Team
+          </a>
+        </div>
+
+        <Button variant="ghost" onClick={() => setLocation("/")} className="rounded-full">
           Continue Shopping
         </Button>
       </div>
     );
   }
 
-  if (isLoading || (!cart?.items.length && !createOrder.isPending)) {
-    if (!isLoading && !cart?.items.length) setLocation("/cart");
+  const cartEmpty = !isLoading && !createOrder.isPending && !cart?.items.length && !isSuccess;
+  if (cartEmpty) { setLocation("/cart"); return null; }
+
+  if (isLoading) {
     return <div className="min-h-[60vh] flex items-center justify-center">Loading...</div>;
   }
 
