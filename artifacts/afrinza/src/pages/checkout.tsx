@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, ChevronLeft, MapPin, Truck, MessageCircle, Lock } from "lucide-react";
 import { toast } from "sonner";
-import { sendTelegramNotification, buildOrderNotificationMessage } from "@/lib/notifications";
+import { sendOrderEmailNotification } from "@/lib/notifications";
 import { useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -107,10 +107,8 @@ export default function Checkout() {
           const phone = sellerWhatsApp.replace(/\D/g, "");
           const waUrl = `https://wa.me/${phone}?text=${message}`;
 
-          // Send Telegram notification to admin (@Andersonkizito)
-          sendTelegramNotification(
-            buildOrderNotificationMessage({ ...data, items, total })
-          );
+          // Send email notification to admin (alphuplift@gmail.com)
+          sendOrderEmailNotification({ ...data, items, total });
 
           setIsSuccess(true);
           window.scrollTo(0, 0);

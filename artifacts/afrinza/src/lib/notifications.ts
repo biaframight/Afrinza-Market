@@ -1,28 +1,17 @@
 // ─── Afrinza Notification Helpers ──────────────────────────────────────────
-// Telegram: set VITE_TELEGRAM_BOT_TOKEN and VITE_TELEGRAM_CHAT_ID in .env
-// Email:    alphuplift@gmail.com is notified via Telegram + WhatsApp
+// Email: uses EmailJS (free, browser-based, no backend needed)
+// Set these in artifacts/afrinza/.env:
+//   VITE_EMAILJS_SERVICE_ID   — from emailjs.com → Email Services
+//   VITE_EMAILJS_TEMPLATE_ID  — from emailjs.com → Email Templates
+//   VITE_EMAILJS_PUBLIC_KEY   — from emailjs.com → Account → Public Key
 
-const TELEGRAM_TOKEN = import.meta.env.VITE_TELEGRAM_BOT_TOKEN as string | undefined;
-const TELEGRAM_CHAT_ID = import.meta.env.VITE_TELEGRAM_CHAT_ID as string | undefined;
+const EMAILJS_SERVICE_ID  = import.meta.env.VITE_EMAILJS_SERVICE_ID as string | undefined;
+const EMAILJS_TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID as string | undefined;
+const EMAILJS_PUBLIC_KEY  = import.meta.env.VITE_EMAILJS_PUBLIC_KEY as string | undefined;
 
-export async function sendTelegramNotification(message: string): Promise<void> {
-  if (!TELEGRAM_TOKEN || !TELEGRAM_CHAT_ID) return;
-  try {
-    await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id: TELEGRAM_CHAT_ID,
-        text: message,
-        parse_mode: "Markdown",
-      }),
-    });
-  } catch (err) {
-    console.error("[Afrinza] Telegram notification failed:", err);
-  }
-}
+const ADMIN_EMAIL = "alphuplift@gmail.com";
 
-export function buildOrderNotificationMessage(params: {
+export async function sendOrderEmailNotification(params: {
   buyerName: string;
   buyerPhone: string;
   buyerAddress: string;
@@ -30,20 +19,35 @@ export function buildOrderNotificationMessage(params: {
   paymentMethod: string;
   items: { title: string; qty: number; price: string }[];
   total: string;
-}): string {
-  const itemLines = params.items.map((it) => `• ${it.title} x${it.qty} — RM ${it.price}`).join("\n");
-  return [
-    `🛒 *New Order — Afrinza Marketplace*`,
-    ``,
-    `👤 *Buyer:* ${params.buyerName}`,
-    `📱 *Phone:* ${params.buyerPhone}`,
-    `📍 *Address:* ${params.buyerAddress}`,
-    `🚚 *Delivery:* ${params.deliveryMethod}`,
-    `💳 *Payment:* ${params.paymentMethod}`,
-    ``,
-    `*Items:*`,
-    itemLines,
-    ``,
-    `💰 *Total: RM ${params.total}*`,
-  ].join("\n");
+}): Promise<void> {
+  if (!EMAILJS_SERVICE_ID || !EMAILJS_TEMPLATE_ID || !EMAILJS_PUBLIC_KEY) return;
+
+  const itemLines = params.items
+    .map((it) => `• ${it.title} x${it.qty} — RM ${it.price}`)
+    .join("\n");
+
+  try {
+    await fetch("https://api.emailjs.com/api/v1.0/email/send", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        service_id: EMAILJS_SERVICE_ID,
+        template_id: EMAILJS_TEMPLATE_ID,
+        user_id: EMAILJS_PUBLIC_KEY,
+        template_params: {
+          to_email: ADMIN_EMAIL,
+          subject: `New Order — Afrinza Marketplace`,
+          buyer_name: params.buyerName,
+          buyer_phone: params.buyerPhone,
+          buyer_address: params.buyerAddress,
+          delivery_method: params.deliveryMethod,
+          payment_method: params.paymentMethod,
+          items: itemLines,
+          total: `RM ${params.total}`,
+        },
+      }),
+    });
+  } catch (err) {
+    console.error("[Afrinza] Email notification failed:", err);
+  }
 }
