@@ -4,22 +4,28 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, Wrench, Truck, Scissors, Package, Zap, Droplets, Star, ArrowRight } from "lucide-react";
+import {
+  CheckCircle2, Wrench, Truck, Scissors, Package, Zap, Droplets,
+  Star, ArrowRight, Mail, Lock, Loader2, Bike,
+} from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
-  Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription
+  Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription,
 } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MALAYSIA_LOCATIONS } from "@/lib/malaysia-locations";
+import { signUpWithEmail } from "@/lib/supabase-auth";
+import { useAuthContext } from "@/contexts/auth-context";
 
 const SERVICE_TYPES = [
+  { id: "Afrinza Rider", label: "Afrinza Rider (Delivery)", icon: <Bike className="w-4 h-4" /> },
+  { id: "Delivery", label: "Delivery & Courier", icon: <Truck className="w-4 h-4" /> },
   { id: "Plumbing", label: "Plumbing & Pipework", icon: <Droplets className="w-4 h-4" /> },
   { id: "Electrical", label: "Electrical Services", icon: <Zap className="w-4 h-4" /> },
   { id: "Hair Braiding", label: "Hair Braiding & Styling", icon: <Scissors className="w-4 h-4" /> },
-  { id: "Delivery", label: "Delivery & Courier", icon: <Truck className="w-4 h-4" /> },
   { id: "Cargo", label: "Cargo Transport", icon: <Package className="w-4 h-4" /> },
   { id: "Cleaning", label: "House Cleaning", icon: <Star className="w-4 h-4" /> },
   { id: "Catering", label: "Catering & Food Services", icon: <Star className="w-4 h-4" /> },
@@ -41,14 +47,18 @@ const serviceSchema = z.object({
 type ServiceFormValues = z.infer<typeof serviceSchema>;
 
 const FEATURES = [
-  { icon: <Truck className="w-6 h-6 text-amber-500" />, title: "Delivery Riders", desc: "Join as a rider and earn delivering to Africans across Malaysia." },
+  { icon: <Bike className="w-6 h-6 text-primary" />, title: "Afrinza Rider", desc: "Join as an Afrinza Rider and earn delivering to Africans across Malaysia." },
   { icon: <Droplets className="w-6 h-6 text-blue-500" />, title: "Plumbing & Repairs", desc: "Offer home repair services to households in your city." },
   { icon: <Scissors className="w-6 h-6 text-purple-500" />, title: "Hair & Beauty", desc: "Reach clients looking for African braiding, locs, twists & more." },
   { icon: <Package className="w-6 h-6 text-green-500" />, title: "Cargo & Moving", desc: "Help businesses and families move goods across states." },
 ];
 
 export default function Services() {
+  const { user, isAuthenticated } = useAuthContext();
   const [isSuccess, setIsSuccess] = useState(false);
+  const [authEmail, setAuthEmail] = useState("");
+  const [authPassword, setAuthPassword] = useState("");
+  const [isCreatingAuth, setIsCreatingAuth] = useState(false);
 
   const form = useForm<ServiceFormValues>({
     resolver: zodResolver(serviceSchema),
@@ -63,11 +73,30 @@ export default function Services() {
     },
   });
 
-  const onSubmit = (data: ServiceFormValues) => {
-    // In real app, call API. For now, just show success.
+  const onSubmit = async (data: ServiceFormValues) => {
+    // Step 1: Create login account if not already signed in
+    if (!isAuthenticated) {
+      if (!authEmail.trim()) { toast.error("Email address is required to create your account."); return; }
+      if (authPassword.length < 6) { toast.error("Password must be at least 6 characters."); return; }
+
+      setIsCreatingAuth(true);
+      const { error: authError } = await signUpWithEmail(authEmail, authPassword, {
+        fullName: data.providerName,
+        role: "seller",
+      });
+      setIsCreatingAuth(false);
+
+      if (authError) {
+        toast.error(authError.message);
+        return;
+      }
+      toast.success("Account created! You can now log in to manage your profile.");
+    }
+
+    // Step 2: Send WhatsApp notification to Afrinza team
     const waNumber = "60173346205";
     const msg = encodeURIComponent(
-      `*New Service Provider Registration — Afrinza*\n\n*Name:* ${data.providerName}\n*Business:* ${data.businessName}\n*Services:* ${data.serviceTypes.join(", ")}\n*Location:* ${data.location}\n*WhatsApp:* ${data.whatsapp}\n*Experience:* ${data.experience}\n*Description:* ${data.description}`
+      `*New Service Provider — Afrinza*\n\n*Name:* ${data.providerName}\n*Business:* ${data.businessName}\n*Services:* ${data.serviceTypes.join(", ")}\n*Location:* ${data.location}\n*WhatsApp:* ${data.whatsapp}\n*Experience:* ${data.experience}\n*Description:* ${data.description}\n*Login Email:* ${authEmail || user?.email || "N/A"}`
     );
     setIsSuccess(true);
     window.scrollTo(0, 0);
@@ -83,12 +112,20 @@ export default function Services() {
           <CheckCircle2 className="w-12 h-12" />
         </div>
         <h1 className="text-4xl font-bold font-serif mb-4">Registration Submitted!</h1>
-        <p className="text-lg text-muted-foreground mb-8 max-w-md">
-          Your service listing is being reviewed. A WhatsApp message has been sent to the Afrinza team to get you verified and listed.
+        <p className="text-lg text-muted-foreground mb-4 max-w-md">
+          Your service listing is being reviewed. A WhatsApp message has been sent to the Afrinza team.
         </p>
-        <Button onClick={() => setIsSuccess(false)} variant="outline" className="rounded-full px-8 h-12 font-semibold">
-          Register Another Service
-        </Button>
+        <p className="text-sm text-muted-foreground mb-8 max-w-md">
+          Your login account has been created — use your email and password to sign in and manage your profile anytime.
+        </p>
+        <div className="flex flex-col sm:flex-row gap-3">
+          <Button onClick={() => setIsSuccess(false)} variant="outline" className="rounded-full px-8 h-12 font-semibold">
+            Register Another Service
+          </Button>
+          <Button asChild className="rounded-full px-8 h-12 font-semibold">
+            <a href="/auth">Sign In to My Account</a>
+          </Button>
+        </div>
       </div>
     );
   }
@@ -106,7 +143,7 @@ export default function Services() {
             List Your Services on Afrinza
           </h1>
           <p className="text-primary-foreground/90 text-lg md:text-xl max-w-2xl mx-auto">
-            Whether you're a rider, plumber, hair braider, or cargo transporter — reach thousands of Africans across Malaysia who need your skills.
+            Whether you're an Afrinza Rider, plumber, hair braider, or cargo transporter — reach thousands of Africans across Malaysia who need your skills.
           </p>
         </div>
       </div>
@@ -133,10 +170,55 @@ export default function Services() {
                 <Wrench className="w-6 h-6" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold">Service Provider Details</h2>
-                <p className="text-muted-foreground text-sm">Tell us about the services you offer</p>
+                <h2 className="text-2xl font-bold">Service Provider Registration</h2>
+                <p className="text-muted-foreground text-sm">Your login account will be created automatically.</p>
               </div>
             </div>
+
+            {/* Login account section (shown only when not logged in) */}
+            {!isAuthenticated && (
+              <div className="mb-8 p-5 rounded-2xl bg-primary/5 border border-primary/20">
+                <p className="text-sm font-bold text-primary mb-1 flex items-center gap-2">
+                  <Lock className="w-4 h-4" /> Create Your Login Account
+                </p>
+                <p className="text-xs text-muted-foreground mb-4">
+                  Use these credentials to sign in and manage your service profile anytime.
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-semibold block mb-1.5 flex items-center gap-1.5">
+                      <Mail className="w-3.5 h-3.5 text-muted-foreground" /> Email Address
+                    </label>
+                    <Input
+                      type="email"
+                      placeholder="you@email.com"
+                      value={authEmail}
+                      onChange={(e) => setAuthEmail(e.target.value)}
+                      className="h-11 bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-semibold block mb-1.5 flex items-center gap-1.5">
+                      <Lock className="w-3.5 h-3.5 text-muted-foreground" /> Password
+                    </label>
+                    <Input
+                      type="password"
+                      placeholder="Min. 6 characters"
+                      value={authPassword}
+                      onChange={(e) => setAuthPassword(e.target.value)}
+                      className="h-11 bg-white"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {isAuthenticated && (
+              <div className="mb-6 p-4 rounded-xl bg-green-50 border border-green-200 text-sm text-green-800 flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+                Signed in as <strong>{user?.email}</strong> — your account is already linked.
+              </div>
+            )}
 
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
@@ -218,7 +300,7 @@ export default function Services() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {SERVICE_TYPES.map((svc) => (
                         <FormField key={svc.id} control={form.control} name="serviceTypes" render={({ field }) => (
-                          <FormItem className="flex items-center space-x-3 space-y-0 rounded-xl border border-border p-3.5 bg-muted/10 hover:bg-muted/30 transition-colors cursor-pointer">
+                          <FormItem className={`flex items-center space-x-3 space-y-0 rounded-xl border p-3.5 bg-muted/10 hover:bg-muted/30 transition-colors cursor-pointer ${svc.id === "Afrinza Rider" ? "border-primary/30 bg-primary/5 hover:bg-primary/10" : "border-border"}`}>
                             <FormControl>
                               <Checkbox
                                 checked={field.value?.includes(svc.id)}
@@ -230,8 +312,13 @@ export default function Services() {
                               />
                             </FormControl>
                             <div className="flex items-center gap-2">
-                              <span className="text-muted-foreground">{svc.icon}</span>
-                              <FormLabel className="font-normal cursor-pointer text-sm">{svc.label}</FormLabel>
+                              <span className={svc.id === "Afrinza Rider" ? "text-primary" : "text-muted-foreground"}>{svc.icon}</span>
+                              <FormLabel className="font-normal cursor-pointer text-sm">
+                                {svc.label}
+                                {svc.id === "Afrinza Rider" && (
+                                  <span className="ml-2 text-[10px] bg-primary text-white px-1.5 py-0.5 rounded-full font-bold">NEW</span>
+                                )}
+                              </FormLabel>
                             </div>
                           </FormItem>
                         )} />
@@ -245,16 +332,30 @@ export default function Services() {
                   <FormItem>
                     <FormLabel>Service Description</FormLabel>
                     <FormControl>
-                      <Textarea placeholder="Describe your services, availability, pricing structure, areas you cover, and why clients should choose you..." className="min-h-[120px] resize-none bg-muted/30 p-4" {...field} />
+                      <Textarea
+                        placeholder="Describe your services, availability, pricing structure, areas you cover, and why clients should choose you..."
+                        className="min-h-[120px] resize-none bg-muted/30 p-4"
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )} />
 
                 <div className="pt-6 border-t border-border/50">
-                  <Button type="submit" size="lg" className="w-full h-14 rounded-full text-base font-bold shadow-md hover:shadow-lg transition-all" disabled={form.formState.isSubmitting}>
-                    {form.formState.isSubmitting ? "Submitting..." : "List My Services"}
-                    <ArrowRight className="w-5 h-5 ml-2" />
+                  <Button
+                    type="submit"
+                    size="lg"
+                    className="w-full h-14 rounded-full text-base font-bold shadow-md hover:shadow-lg transition-all"
+                    disabled={form.formState.isSubmitting || isCreatingAuth}
+                  >
+                    {isCreatingAuth ? (
+                      <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Creating Account…</>
+                    ) : form.formState.isSubmitting ? (
+                      <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Submitting…</>
+                    ) : (
+                      <>List My Services <ArrowRight className="w-5 h-5 ml-2" /></>
+                    )}
                   </Button>
                   <p className="text-center text-xs text-muted-foreground mt-4">
                     Your registration will be reviewed and you'll be contacted via WhatsApp within 24 hours.

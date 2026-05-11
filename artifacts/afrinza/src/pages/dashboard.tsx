@@ -34,7 +34,7 @@ import {
 import { MALAYSIA_LOCATIONS } from "@/lib/malaysia-locations";
 
 const CATEGORIES = ["Food", "Fashion", "Services", "Groceries", "Beauty", "Other"];
-const DELIVERY_OPTIONS = ["Grab Delivery", "Lalamove", "Poslaju", "J&T Express", "Self Pickup"];
+const DELIVERY_OPTIONS = ["Afrinza Rider", "Grab Delivery", "Lalamove", "Self Pickup"];
 const PAYMENT_METHODS = ["Bank Transfer", "Touch n Go", "DuitNow QR", "Cash on Delivery", "Cash"];
 
 type Tab = "store" | "products" | "add-product" | "profile";
