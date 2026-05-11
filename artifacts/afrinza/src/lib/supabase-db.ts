@@ -547,6 +547,59 @@ export async function getReviews(productId: number): Promise<ReviewsResponse> {
   };
 }
 
+// ─── Admin Functions ──────────────────────────────────────────────
+
+export async function adminGetAllSellers(): Promise<Seller[]> {
+  const { data, error } = await supabase
+    .from("sellers")
+    .select("*")
+    .order("joined_at", { ascending: false });
+  throwIfError(data, error, "adminGetAllSellers");
+  return (data as Record<string, any>[]).map(mapSeller);
+}
+
+export async function adminGetAllProducts(): Promise<Product[]> {
+  const { data, error } = await supabase
+    .from("products")
+    .select("*")
+    .order("created_at", { ascending: false });
+  throwIfError(data, error, "adminGetAllProducts");
+  return (data as Record<string, any>[]).map(mapProduct);
+}
+
+export async function adminToggleSellerPremium(id: number, isPremium: boolean): Promise<Seller> {
+  const { data, error } = await supabase
+    .from("sellers")
+    .update({ is_premium: isPremium })
+    .eq("id", id)
+    .select()
+    .single();
+  throwIfError(data, error, "adminToggleSellerPremium");
+  return mapSeller(data);
+}
+
+export async function adminToggleProductSponsored(id: number, isSponsored: boolean): Promise<Product> {
+  const { data, error } = await supabase
+    .from("products")
+    .update({ is_sponsored: isSponsored })
+    .eq("id", id)
+    .select()
+    .single();
+  throwIfError(data, error, "adminToggleProductSponsored");
+  return mapProduct(data);
+}
+
+export async function adminDeleteSeller(id: number): Promise<void> {
+  await supabase.from("products").delete().eq("seller_id", id);
+  const { error } = await supabase.from("sellers").delete().eq("id", id);
+  if (error) throw new Error(`[Supabase / adminDeleteSeller] ${error.message}`);
+}
+
+export async function adminDeleteProduct(id: number): Promise<void> {
+  const { error } = await supabase.from("products").delete().eq("id", id);
+  if (error) throw new Error(`[Supabase / adminDeleteProduct] ${error.message}`);
+}
+
 // ─── Marketplace Stats ────────────────────────────────────────────
 
 export async function getMarketplaceStats(): Promise<{

@@ -19,6 +19,7 @@ import About from "@/pages/about";
 import HowItWorks from "@/pages/how-it-works";
 import AuthPage from "@/pages/auth";
 import Dashboard from "@/pages/dashboard";
+import Admin from "@/pages/admin";
 
 const queryClient = new QueryClient();
 
@@ -39,6 +40,7 @@ function Router() {
         <Route path="/how-it-works" component={HowItWorks} />
         <Route path="/auth" component={AuthPage} />
         <Route path="/dashboard" component={Dashboard} />
+        <Route path="/admin" component={Admin} />
         <Route component={NotFound} />
       </Switch>
     </Layout>

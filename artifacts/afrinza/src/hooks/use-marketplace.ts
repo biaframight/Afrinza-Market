@@ -186,6 +186,69 @@ export function useGetReviews(params: { productId: number }) {
   });
 }
 
+// ─── Admin ────────────────────────────────────────────────────────
+
+export function useAdminGetAllSellers() {
+  return useQuery({
+    queryKey: ["admin", "sellers"],
+    queryFn: db.adminGetAllSellers,
+  });
+}
+
+export function useAdminGetAllProducts() {
+  return useQuery({
+    queryKey: ["admin", "products"],
+    queryFn: db.adminGetAllProducts,
+  });
+}
+
+export function useAdminToggleSellerPremium() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, isPremium }: { id: number; isPremium: boolean }) =>
+      db.adminToggleSellerPremium(id, isPremium),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin", "sellers"] });
+      qc.invalidateQueries({ queryKey: ["sellers"] });
+    },
+  });
+}
+
+export function useAdminToggleProductSponsored() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, isSponsored }: { id: number; isSponsored: boolean }) =>
+      db.adminToggleProductSponsored(id, isSponsored),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin", "products"] });
+      qc.invalidateQueries({ queryKey: ["products"] });
+    },
+  });
+}
+
+export function useAdminDeleteSeller() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id }: { id: number }) => db.adminDeleteSeller(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin", "sellers"] });
+      qc.invalidateQueries({ queryKey: ["admin", "products"] });
+      qc.invalidateQueries({ queryKey: ["sellers"] });
+    },
+  });
+}
+
+export function useAdminDeleteProduct() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id }: { id: number }) => db.adminDeleteProduct(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin", "products"] });
+      qc.invalidateQueries({ queryKey: ["products"] });
+    },
+  });
+}
+
 // ─── Marketplace Stats ────────────────────────────────────────────
 
 export function useGetMarketplaceStats() {
