@@ -16,8 +16,8 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState("");
   const [location, setLocationFilter] = useState("KL");
 
-  const { data: featuredProducts, isLoading: isProductsLoading } = useGetFeaturedProducts();
-  const { data: featuredSellers, isLoading: isSellersLoading } = useGetFeaturedSellers();
+  const { data: featuredProducts, isLoading: isProductsLoading, isError: isProductsError } = useGetFeaturedProducts();
+  const { data: featuredSellers, isLoading: isSellersLoading, isError: isSellersError } = useGetFeaturedSellers();
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -174,9 +174,19 @@ export default function Home() {
               </div>
             ))}
           </div>
+        ) : isProductsError ? (
+          <div className="text-center py-12 text-muted-foreground">
+            <p className="text-lg font-medium mb-2">Could not load products</p>
+            <p className="text-sm">Check your connection or try again shortly.</p>
+          </div>
+        ) : !featuredProducts?.products.length ? (
+          <div className="text-center py-12 text-muted-foreground">
+            <p className="text-lg font-medium">No featured products yet</p>
+            <p className="text-sm mt-1">Be the first to list your products!</p>
+          </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
-            {featuredProducts?.products.slice(0, 5).map((product, i) => (
+            {featuredProducts.products.slice(0, 5).map((product, i) => (
               <ProductCard key={product.id} product={product} index={i} />
             ))}
           </div>
@@ -208,9 +218,19 @@ export default function Home() {
                 <Skeleton key={i} className="w-full h-64 rounded-xl" />
               ))}
             </div>
+          ) : isSellersError ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <p className="text-lg font-medium mb-2">Could not load sellers</p>
+              <p className="text-sm">Check your connection or try again shortly.</p>
+            </div>
+          ) : !featuredSellers?.sellers.length ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <p className="text-lg font-medium">No featured sellers yet</p>
+              <p className="text-sm mt-1">Sellers will appear here once approved.</p>
+            </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {featuredSellers?.sellers.slice(0, 4).map((seller, i) => (
+              {featuredSellers.sellers.slice(0, 4).map((seller, i) => (
                 <SellerCard key={seller.id} seller={seller} index={i} />
               ))}
             </div>

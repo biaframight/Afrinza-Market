@@ -75,8 +75,10 @@ export default function BecomeSeller() {
           setIsSuccess(true);
           window.scrollTo(0, 0);
         },
-        onError: () => {
-          toast.error("Failed to register. Please try again.");
+        onError: (err) => {
+          const msg = err instanceof Error ? err.message : "Failed to register. Please try again.";
+          toast.error(msg);
+          console.error("[Afrinza] Seller creation error:", err);
         },
       }
     );
