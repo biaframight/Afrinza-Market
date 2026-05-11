@@ -272,6 +272,61 @@ export async function createSeller(input: {
   return mapSeller(data);
 }
 
+export async function uploadProductImage(file: File): Promise<string | null> {
+  const ext = file.name.split(".").pop() ?? "jpg";
+  const path = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+  const { data, error } = await supabase.storage
+    .from("product-images")
+    .upload(path, file, { contentType: file.type, upsert: false });
+  if (error) {
+    console.error("[Supabase / uploadProductImage]", error.message);
+    return null;
+  }
+  const { data: { publicUrl } } = supabase.storage.from("product-images").getPublicUrl(data.path);
+  return publicUrl;
+}
+
+export async function createProduct(input: {
+  title: string;
+  description: string;
+  price: number;
+  category: string;
+  location: string;
+  sellerId: number;
+  sellerName: string;
+  sellerWhatsapp: string;
+  sellerAvatar?: string | null;
+  imageUrl?: string | null;
+  stock: number;
+  deliveryOptions: string[];
+  paymentMethods: string[];
+}): Promise<Product> {
+  const { data, error } = await supabase
+    .from("products")
+    .insert({
+      title: input.title,
+      description: input.description,
+      price: input.price,
+      category: input.category,
+      location: input.location,
+      seller_id: input.sellerId,
+      seller_name: input.sellerName,
+      seller_whatsapp: input.sellerWhatsapp,
+      seller_avatar: input.sellerAvatar ?? null,
+      image_url: input.imageUrl ?? null,
+      images: input.imageUrl ? [input.imageUrl] : [],
+      stock: input.stock,
+      delivery_options: input.deliveryOptions,
+      payment_methods: input.paymentMethods,
+      is_sponsored: false,
+      is_premium_seller: false,
+    })
+    .select()
+    .single();
+  throwIfError(data, error, "createProduct");
+  return mapProduct(data);
+}
+
 // ─── Cart ─────────────────────────────────────────────────────────
 
 export async function getCart(sessionId: string): Promise<CartResponse> {

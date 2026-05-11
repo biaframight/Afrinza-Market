@@ -81,6 +81,17 @@ export function useCreateSeller() {
   });
 }
 
+export function useCreateProduct() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { data: Parameters<typeof db.createProduct>[0] }) =>
+      db.createProduct(input.data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+    },
+  });
+}
+
 // ─── Cart ─────────────────────────────────────────────────────────
 
 export function useGetCart(params: { sessionId: string }) {
