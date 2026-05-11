@@ -2,44 +2,39 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import path from "path";
-import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 import { VitePWA } from "vite-plugin-pwa";
 
-const rawPort = process.env.PORT;
+// PORT and BASE_PATH are optional — provided by Replit at runtime,
+// not needed during a Vercel (or any CI) build.
+const port = process.env.PORT ? Number(process.env.PORT) : 3000;
+const basePath = process.env.BASE_PATH ?? "/";
 
-if (!rawPort) {
-  throw new Error(
-    "PORT environment variable is required but was not provided.",
-  );
-}
-
-const port = Number(rawPort);
-
-if (Number.isNaN(port) || port <= 0) {
-  throw new Error(`Invalid PORT value: "${rawPort}"`);
-}
-
-const basePath = process.env.BASE_PATH;
-
-if (!basePath) {
-  throw new Error(
-    "BASE_PATH environment variable is required but was not provided.",
-  );
-}
+// Replit-only dev plugins — skipped entirely outside Replit
+const replitPlugins =
+  process.env.NODE_ENV !== "production" && process.env.REPL_ID !== undefined
+    ? await Promise.all([
+        import("@replit/vite-plugin-runtime-error-modal").then((m) => m.default()),
+        import("@replit/vite-plugin-cartographer").then((m) =>
+          m.cartographer({ root: path.resolve(import.meta.dirname, "..") }),
+        ),
+        import("@replit/vite-plugin-dev-banner").then((m) => m.devBanner()),
+      ])
+    : [];
 
 export default defineConfig({
   base: basePath,
+
   plugins: [
     react(),
     tailwindcss(),
-    runtimeErrorOverlay(),
     VitePWA({
       registerType: "autoUpdate",
       includeAssets: ["favicon.svg", "apple-touch-icon.svg", "pwa-192.svg", "pwa-512.svg"],
       manifest: {
         name: "Afrinza — African Marketplace Abroad",
         short_name: "Afrinza",
-        description: "The global African diaspora marketplace. Find African food, fashion, beauty and trusted services — wherever you are in the world.",
+        description:
+          "The global African diaspora marketplace. Find African food, fashion, beauty and trusted services — wherever you are in the world.",
         theme_color: "#C84B31",
         background_color: "#ffffff",
         display: "standalone",
@@ -63,7 +58,9 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ["**/*.{js,css,html,svg,png,jpg,webp,woff2}"],
+        // Precache only app-shell assets; large images are handled by runtime caching below
+        globPatterns: ["**/*.{js,css,html,svg,woff2}"],
+        maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/images\.unsplash\.com\/.*/i,
@@ -97,36 +94,28 @@ export default defineConfig({
           },
         ],
       },
-      devOptions: {
-        enabled: false,
-      },
+      devOptions: { enabled: false },
     }),
-    ...(process.env.NODE_ENV !== "production" &&
-    process.env.REPL_ID !== undefined
-      ? [
-          await import("@replit/vite-plugin-cartographer").then((m) =>
-            m.cartographer({
-              root: path.resolve(import.meta.dirname, ".."),
-            }),
-          ),
-          await import("@replit/vite-plugin-dev-banner").then((m) =>
-            m.devBanner(),
-          ),
-        ]
-      : []),
+    ...replitPlugins,
   ],
+
   resolve: {
     alias: {
       "@": path.resolve(import.meta.dirname, "src"),
+      // @assets maps to attached_assets in Replit; falls back gracefully elsewhere
       "@assets": path.resolve(import.meta.dirname, "..", "..", "attached_assets"),
     },
     dedupe: ["react", "react-dom"],
   },
+
   root: path.resolve(import.meta.dirname),
+
   build: {
-    outDir: path.resolve(import.meta.dirname, "dist/public"),
+    // Vercel expects output in "dist" at the project root
+    outDir: path.resolve(import.meta.dirname, "dist"),
     emptyOutDir: true,
   },
+
   server: {
     port,
     host: "0.0.0.0",
@@ -136,6 +125,7 @@ export default defineConfig({
       deny: ["**/.*"],
     },
   },
+
   preview: {
     port,
     host: "0.0.0.0",
