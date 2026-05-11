@@ -17,7 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Store, Package, Plus, Pencil, Trash2, Loader2, ImagePlus,
-  X, CheckCircle2, User, DollarSign, ShoppingBag, AlertTriangle,
+  X, CheckCircle2, User, DollarSign, ShoppingBag, AlertTriangle, Shield,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -327,6 +327,23 @@ export default function Dashboard() {
             </button>
           ))}
         </div>
+
+        {/* ── ADMIN SHORTCUT (Kizito only) ─────────────────────────── */}
+        {user?.email === "alphuplift@gmail.com" && (
+          <a
+            href="/admin"
+            className="flex items-center gap-4 bg-gradient-to-r from-primary to-primary/80 text-white rounded-2xl p-5 mb-6 shadow-lg hover:opacity-95 transition-opacity"
+          >
+            <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+              <Shield className="w-6 h-6 text-white" />
+            </div>
+            <div className="flex-1">
+              <p className="font-bold text-lg leading-tight">Admin Panel</p>
+              <p className="text-white/80 text-sm mt-0.5">Manage sellers, products & sponsored listings</p>
+            </div>
+            <span className="text-white/60 text-2xl font-light">›</span>
+          </a>
+        )}
 
         {/* ── MY STORE TAB ─────────────────────────────────────────── */}
         {currentTab === "store" && sellerProfile && (

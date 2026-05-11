@@ -6,7 +6,7 @@ import { MarketBanner } from "@/components/market-banner";
 import {
   ShoppingCart, Search, Menu, Store, Home, PackageSearch,
   MessageCircleQuestion, Sparkles, Info, HelpCircle,
-  LayoutDashboard, LogOut, UserCircle,
+  LayoutDashboard, LogOut, UserCircle, Shield,
 } from "lucide-react";
 import { useGetCart } from "@/hooks/use-marketplace";
 import { getSessionId } from "@/lib/session";
@@ -91,6 +91,11 @@ export function Layout({ children }: LayoutProps) {
                       <Link href="/dashboard" className="flex items-center gap-3 px-3 py-2 text-base rounded-md hover:bg-muted font-medium">
                         <LayoutDashboard className="h-5 w-5 text-muted-foreground" /> My Dashboard
                       </Link>
+                      {user?.email === "alphuplift@gmail.com" && (
+                        <Link href="/admin" className="flex items-center gap-3 px-3 py-2 text-base rounded-md bg-primary/10 text-primary hover:bg-primary/20 font-semibold">
+                          <Shield className="h-5 w-5" /> Admin Panel
+                        </Link>
+                      )}
                       {!sellerProfile && (
                         <Link href="/become-seller" className="flex items-center gap-3 px-3 py-2 text-base rounded-md text-primary bg-primary/5 hover:bg-primary/10 font-medium">
                           <Store className="h-5 w-5" /> Open a Store
@@ -174,6 +179,13 @@ export function Layout({ children }: LayoutProps) {
                         <LayoutDashboard className="w-4 h-4" /> My Dashboard
                       </Link>
                     </DropdownMenuItem>
+                    {user?.email === "alphuplift@gmail.com" && (
+                      <DropdownMenuItem asChild>
+                        <Link href="/admin" className="flex items-center gap-2 cursor-pointer text-primary font-semibold">
+                          <Shield className="w-4 h-4" /> Admin Panel
+                        </Link>
+                      </DropdownMenuItem>
+                    )}
                     {!sellerProfile && (
                       <DropdownMenuItem asChild>
                         <Link href="/become-seller" className="flex items-center gap-2 cursor-pointer">
