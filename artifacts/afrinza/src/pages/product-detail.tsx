@@ -94,10 +94,10 @@ export default function ProductDetail() {
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="aspect-square rounded-2xl overflow-hidden bg-muted relative"
+                className="aspect-square rounded-2xl overflow-hidden bg-white border border-border/40 relative"
               >
                 {mainImage ? (
-                  <img src={mainImage} alt={product.title} className="w-full h-full object-cover" />
+                  <img src={mainImage} alt={product.title} className="w-full h-full object-contain" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-muted-foreground">
                     No image available

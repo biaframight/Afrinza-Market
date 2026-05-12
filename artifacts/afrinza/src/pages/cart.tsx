@@ -98,9 +98,9 @@ export default function Cart() {
                 {cart.items.map((item) => (
                   <div key={item.id} className="p-6 flex flex-col md:grid md:grid-cols-12 gap-4 md:items-center">
                     <div className="col-span-6 flex gap-4">
-                      <div className="w-24 h-24 rounded-xl overflow-hidden bg-muted shrink-0">
+                      <div className="w-24 h-24 rounded-xl overflow-hidden bg-white border border-border/50 shrink-0">
                         {item.product?.imageUrl ? (
-                          <img src={item.product.imageUrl} alt={item.product.title} className="w-full h-full object-cover" />
+                          <img src={item.product.imageUrl} alt={item.product.title} className="w-full h-full object-contain p-1" />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center">
                             <ShoppingCart className="w-6 h-6 text-muted-foreground/30" />

@@ -20,12 +20,12 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
     >
       <Link href={`/products/${product.id}`} className="block h-full outline-none">
         <Card className="h-full overflow-hidden hover:shadow-lg transition-all duration-300 group border-transparent hover:border-primary/20 bg-white">
-          <div className="relative aspect-square overflow-hidden bg-muted">
+          <div className="relative aspect-square overflow-hidden bg-white">
             {product.imageUrl ? (
               <img 
                 src={product.imageUrl} 
                 alt={product.title} 
-                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-105"
               />
             ) : (
               <div className="w-full h-full bg-muted flex items-center justify-center text-muted-foreground">

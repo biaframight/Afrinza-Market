@@ -434,9 +434,9 @@ export default function Dashboard() {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {products.map((product) => (
                   <div key={product.id} className="bg-white rounded-2xl border border-border shadow-sm overflow-hidden">
-                    <div className="aspect-video bg-muted relative overflow-hidden">
+                    <div className="aspect-square bg-white relative overflow-hidden border-b border-border/40">
                       {product.imageUrl ? (
-                        <img src={product.imageUrl} alt={product.title} className="w-full h-full object-cover" />
+                        <img src={product.imageUrl} alt={product.title} className="w-full h-full object-contain p-2" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-muted-foreground/30">
                           <ImagePlus className="w-10 h-10" />
@@ -477,8 +477,8 @@ export default function Dashboard() {
                 <label className="text-sm font-semibold block mb-2">Product Photo</label>
                 <input ref={addFileRef} type="file" accept="image/*" className="hidden" onChange={handleAddImageChange} />
                 {addImagePreview ? (
-                  <div className="relative w-full aspect-video rounded-xl overflow-hidden border">
-                    <img src={addImagePreview} alt="Preview" className="w-full h-full object-cover" />
+                  <div className="relative w-full aspect-video rounded-xl overflow-hidden border bg-muted/20">
+                    <img src={addImagePreview} alt="Preview" className="w-full h-full object-contain" />
                     <button type="button" onClick={() => { setAddImageFile(null); setAddImagePreview(null); if (addFileRef.current) addFileRef.current.value = ""; }} className="absolute top-2 right-2 bg-black/60 text-white rounded-full p-1.5">
                       <X className="w-4 h-4" />
                     </button>
@@ -576,8 +576,8 @@ export default function Dashboard() {
               <label className="text-sm font-semibold block mb-2">Photo</label>
               <input ref={editFileRef} type="file" accept="image/*" className="hidden" onChange={handleEditImageChange} />
               {editImagePreview ? (
-                <div className="relative aspect-video rounded-xl overflow-hidden border">
-                  <img src={editImagePreview} alt="Preview" className="w-full h-full object-cover" />
+                <div className="relative aspect-video rounded-xl overflow-hidden border bg-muted/20">
+                  <img src={editImagePreview} alt="Preview" className="w-full h-full object-contain" />
                   <div className="absolute inset-0 flex items-end justify-end p-2">
                     <button type="button" onClick={() => editFileRef.current?.click()} className="bg-black/60 text-white text-xs rounded-full px-3 py-1.5 hover:bg-black/80">Change photo</button>
                   </div>
