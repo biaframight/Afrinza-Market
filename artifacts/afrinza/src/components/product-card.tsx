@@ -25,7 +25,7 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
               <img 
                 src={product.imageUrl} 
                 alt={product.title} 
-                className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-105"
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
               />
             ) : (
               <div className="w-full h-full bg-muted flex items-center justify-center text-muted-foreground">
