@@ -27,6 +27,7 @@ interface LayoutProps {
 export function Layout({ children }: LayoutProps) {
   const [, setLocation] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const sessionId = getSessionId();
   const { user, isAuthenticated, sellerProfile, signOut } = useAuthContext();
 
@@ -57,7 +58,7 @@ export function Layout({ children }: LayoutProps) {
 
           {/* Mobile Menu */}
           <div className="md:hidden flex items-center">
-            <Sheet>
+            <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
               <SheetTrigger asChild>
                 <Button variant="ghost" size="icon" className="-ml-2">
                   <Menu className="h-6 w-6" />
@@ -68,50 +69,50 @@ export function Layout({ children }: LayoutProps) {
                   <SheetTitle className="text-left"><AfrinzaLogo height={38} /></SheetTitle>
                 </SheetHeader>
                 <div className="flex flex-col gap-2 mt-8">
-                  <Link href="/" className="flex items-center gap-3 px-3 py-2 text-base rounded-md hover:bg-muted font-medium">
+                  <Link href="/" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 px-3 py-2 text-base rounded-md hover:bg-muted font-medium">
                     <Home className="h-5 w-5 text-muted-foreground" /> Home
                   </Link>
-                  <Link href="/products" className="flex items-center gap-3 px-3 py-2 text-base rounded-md hover:bg-muted font-medium">
+                  <Link href="/products" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 px-3 py-2 text-base rounded-md hover:bg-muted font-medium">
                     <PackageSearch className="h-5 w-5 text-muted-foreground" /> Products
                   </Link>
-                  <Link href="/sellers" className="flex items-center gap-3 px-3 py-2 text-base rounded-md hover:bg-muted font-medium">
+                  <Link href="/sellers" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 px-3 py-2 text-base rounded-md hover:bg-muted font-medium">
                     <Store className="h-5 w-5 text-muted-foreground" /> Sellers
                   </Link>
-                  <Link href="/services" className="flex items-center gap-3 px-3 py-2 text-base rounded-md hover:bg-muted font-medium">
+                  <Link href="/services" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 px-3 py-2 text-base rounded-md hover:bg-muted font-medium">
                     <Sparkles className="h-5 w-5 text-muted-foreground" /> Services
                   </Link>
-                  <Link href="/about" className="flex items-center gap-3 px-3 py-2 text-base rounded-md hover:bg-muted font-medium">
+                  <Link href="/about" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 px-3 py-2 text-base rounded-md hover:bg-muted font-medium">
                     <Info className="h-5 w-5 text-muted-foreground" /> About
                   </Link>
-                  <Link href="/how-it-works" className="flex items-center gap-3 px-3 py-2 text-base rounded-md hover:bg-muted font-medium">
+                  <Link href="/how-it-works" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 px-3 py-2 text-base rounded-md hover:bg-muted font-medium">
                     <HelpCircle className="h-5 w-5 text-muted-foreground" /> How it Works
                   </Link>
                   <div className="h-px bg-border my-2" />
                   {isAuthenticated ? (
                     <>
-                      <Link href="/dashboard" className="flex items-center gap-3 px-3 py-2 text-base rounded-md hover:bg-muted font-medium">
+                      <Link href="/dashboard" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 px-3 py-2 text-base rounded-md hover:bg-muted font-medium">
                         <LayoutDashboard className="h-5 w-5 text-muted-foreground" /> My Dashboard
                       </Link>
                       {user?.email === "alphuplift@gmail.com" && (
-                        <Link href="/admin" className="flex items-center gap-3 px-3 py-2 text-base rounded-md bg-primary/10 text-primary hover:bg-primary/20 font-semibold">
+                        <Link href="/admin" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 px-3 py-2 text-base rounded-md bg-primary/10 text-primary hover:bg-primary/20 font-semibold">
                           <Shield className="h-5 w-5" /> Admin Panel
                         </Link>
                       )}
                       {!sellerProfile && (
-                        <Link href="/become-seller" className="flex items-center gap-3 px-3 py-2 text-base rounded-md text-primary bg-primary/5 hover:bg-primary/10 font-medium">
+                        <Link href="/become-seller" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 px-3 py-2 text-base rounded-md text-primary bg-primary/5 hover:bg-primary/10 font-medium">
                           <Store className="h-5 w-5" /> Open a Store
                         </Link>
                       )}
-                      <button onClick={signOut} className="flex items-center gap-3 px-3 py-2 text-base rounded-md hover:bg-muted font-medium text-left text-muted-foreground">
+                      <button onClick={() => { signOut(); setMobileMenuOpen(false); }} className="flex items-center gap-3 px-3 py-2 text-base rounded-md hover:bg-muted font-medium text-left text-muted-foreground">
                         <LogOut className="h-5 w-5" /> Sign Out
                       </button>
                     </>
                   ) : (
                     <>
-                      <Link href="/auth" className="flex items-center gap-3 px-3 py-2 text-base rounded-md hover:bg-muted font-medium">
+                      <Link href="/auth" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 px-3 py-2 text-base rounded-md hover:bg-muted font-medium">
                         <UserCircle className="h-5 w-5 text-muted-foreground" /> Sign In / Register
                       </Link>
-                      <Link href="/become-seller" className="flex items-center gap-3 px-3 py-2 text-base rounded-md text-primary bg-primary/5 hover:bg-primary/10 font-medium">
+                      <Link href="/become-seller" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 px-3 py-2 text-base rounded-md text-primary bg-primary/5 hover:bg-primary/10 font-medium">
                         <Store className="h-5 w-5" /> Become a Seller
                       </Link>
                     </>
