@@ -325,6 +325,7 @@ export default function Admin() {
                         <th className="text-left px-5 py-4 font-semibold text-muted-foreground whitespace-nowrap">#</th>
                         <th className="text-left px-5 py-4 font-semibold text-muted-foreground whitespace-nowrap">Buyer</th>
                         <th className="text-left px-5 py-4 font-semibold text-muted-foreground whitespace-nowrap">Phone</th>
+                        <th className="text-left px-5 py-4 font-semibold text-muted-foreground whitespace-nowrap">Store</th>
                         <th className="text-left px-5 py-4 font-semibold text-muted-foreground whitespace-nowrap">Total</th>
                         <th className="text-left px-5 py-4 font-semibold text-muted-foreground whitespace-nowrap">Payment</th>
                         <th className="text-left px-5 py-4 font-semibold text-muted-foreground whitespace-nowrap">Delivery</th>
@@ -341,6 +342,11 @@ export default function Admin() {
                             {order.buyerAddress && <div className="text-xs text-muted-foreground mt-0.5 max-w-[160px] truncate">{order.buyerAddress}</div>}
                           </td>
                           <td className="px-5 py-4 text-muted-foreground whitespace-nowrap">{order.buyerPhone}</td>
+                          <td className="px-5 py-4 whitespace-nowrap">
+                            {order.sellerName
+                              ? <span className="inline-flex items-center gap-1.5 font-medium text-foreground"><Store className="w-3.5 h-3.5 text-primary shrink-0" />{order.sellerName}</span>
+                              : <span className="text-muted-foreground text-xs">—</span>}
+                          </td>
                           <td className="px-5 py-4 font-bold text-primary whitespace-nowrap">RM {order.total.toFixed(2)}</td>
                           <td className="px-5 py-4 text-muted-foreground whitespace-nowrap">{order.paymentMethod}</td>
                           <td className="px-5 py-4 text-muted-foreground whitespace-nowrap">{order.deliveryMethod}</td>

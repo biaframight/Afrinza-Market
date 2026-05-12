@@ -617,6 +617,8 @@ export interface AdminOrder {
   paymentMethod: string;
   deliveryMethod: string;
   status: string;
+  sellerId: number | null;
+  sellerName: string | null;
   createdAt: string;
 }
 
@@ -631,6 +633,8 @@ function mapOrder(row: Record<string, any>): AdminOrder {
     paymentMethod: row.payment_method,
     deliveryMethod: row.delivery_method,
     status: row.status,
+    sellerId: row.seller_id ?? null,
+    sellerName: row.seller_name ?? null,
     createdAt: row.created_at,
   };
 }
