@@ -600,6 +600,53 @@ export async function adminDeleteProduct(id: number): Promise<void> {
   if (error) throw new Error(`[Supabase / adminDeleteProduct] ${error.message}`);
 }
 
+// ─── Admin Orders ─────────────────────────────────────────────────
+
+export interface AdminOrder {
+  id: number;
+  sessionId: string;
+  buyerName: string;
+  buyerPhone: string;
+  buyerAddress: string | null;
+  total: number;
+  paymentMethod: string;
+  deliveryMethod: string;
+  status: string;
+  createdAt: string;
+}
+
+function mapOrder(row: Record<string, any>): AdminOrder {
+  return {
+    id: row.id,
+    sessionId: row.session_id,
+    buyerName: row.buyer_name,
+    buyerPhone: row.buyer_phone,
+    buyerAddress: row.buyer_address ?? null,
+    total: parseFloat(row.total),
+    paymentMethod: row.payment_method,
+    deliveryMethod: row.delivery_method,
+    status: row.status,
+    createdAt: row.created_at,
+  };
+}
+
+export async function adminGetAllOrders(): Promise<AdminOrder[]> {
+  const { data, error } = await supabase
+    .from("orders")
+    .select("*")
+    .order("created_at", { ascending: false });
+  throwIfError(data, error, "adminGetAllOrders");
+  return (data as Record<string, any>[]).map(mapOrder);
+}
+
+export async function adminUpdateOrderStatus(id: number, status: string): Promise<void> {
+  const { error } = await supabase
+    .from("orders")
+    .update({ status })
+    .eq("id", id);
+  if (error) throw new Error(`[Supabase / adminUpdateOrderStatus] ${error.message}`);
+}
+
 // ─── Marketplace Stats ────────────────────────────────────────────
 
 export async function getMarketplaceStats(): Promise<{

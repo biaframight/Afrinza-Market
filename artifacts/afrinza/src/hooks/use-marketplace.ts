@@ -249,6 +249,24 @@ export function useAdminDeleteProduct() {
   });
 }
 
+// ─── Admin Orders ─────────────────────────────────────────────────
+
+export function useAdminGetAllOrders() {
+  return useQuery({
+    queryKey: ["admin", "orders"],
+    queryFn: db.adminGetAllOrders,
+  });
+}
+
+export function useAdminUpdateOrderStatus() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, status }: { id: number; status: string }) =>
+      db.adminUpdateOrderStatus(id, status),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin", "orders"] }),
+  });
+}
+
 // ─── Marketplace Stats ────────────────────────────────────────────
 
 export function useGetMarketplaceStats() {
