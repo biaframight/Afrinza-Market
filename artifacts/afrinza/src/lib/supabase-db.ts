@@ -506,17 +506,23 @@ export async function createOrder(input: {
   const cart = await getCart(input.sessionId);
   if (cart.items.length === 0) throw new Error("Cart is empty");
 
+  const firstProduct = cart.items[0]?.product;
+  const sellerId   = firstProduct?.sellerId   ?? null;
+  const sellerName = firstProduct?.sellerName ?? null;
+
   const { error: orderError } = await supabase
     .from("orders")
     .insert({
-      session_id: input.sessionId,
-      buyer_name: input.buyerName,
-      buyer_phone: input.buyerPhone,
-      buyer_address: input.buyerAddress ?? null,
-      total: cart.total.toFixed(2),
-      payment_method: input.paymentMethod,
+      session_id:      input.sessionId,
+      buyer_name:      input.buyerName,
+      buyer_phone:     input.buyerPhone,
+      buyer_address:   input.buyerAddress ?? null,
+      total:           cart.total.toFixed(2),
+      payment_method:  input.paymentMethod,
       delivery_method: input.deliveryMethod,
-      status: "pending",
+      status:          "pending",
+      seller_id:       sellerId,
+      seller_name:     sellerName,
     });
 
   if (orderError) {
