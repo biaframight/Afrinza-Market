@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useLocation } from "wouter";
+import { useState, useEffect } from "react";
+import { useLocation, useSearch } from "wouter";
 import { useGetProducts } from "@/hooks/use-marketplace";
 import { ProductCard } from "@/components/product-card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -24,18 +24,26 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 export default function Products() {
   const [, setLocation] = useLocation();
-  const searchParams = new URLSearchParams(window.location.search);
+  const searchString = useSearch(); // reactive — updates whenever the URL query changes
 
-  const [search, setSearch] = useState(searchParams.get("search") || "");
-  const [category, setCategory] = useState(searchParams.get("category") || "");
-  const [locFilter, setLocFilter] = useState(searchParams.get("location") || "");
+  const urlParams = new URLSearchParams(searchString);
+  const urlSearch = urlParams.get("search") || "";
+  const urlCategory = urlParams.get("category") || "";
+  const urlLocFilter = urlParams.get("location") || "";
+
+  // Local form state — kept in sync with URL so nav-bar searches update the input too
+  const [search, setSearch] = useState(urlSearch);
+  const [category, setCategory] = useState(urlCategory);
+  const [locFilter, setLocFilter] = useState(urlLocFilter);
+
+  useEffect(() => {
+    setSearch(urlSearch);
+    setCategory(urlCategory);
+    setLocFilter(urlLocFilter);
+  }, [searchString]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    updateUrl();
-  };
-
-  const updateUrl = () => {
     const params = new URLSearchParams();
     if (search) params.append("search", search);
     if (category) params.append("category", category);
@@ -43,10 +51,11 @@ export default function Products() {
     setLocation(`/products?${params.toString()}`);
   };
 
+  // useGetProducts reads from URL params directly — always in sync
   const { data, isLoading } = useGetProducts({
-    search: search || undefined,
-    category: category || undefined,
-    location: locFilter || undefined,
+    search: urlSearch || undefined,
+    category: urlCategory || undefined,
+    location: urlLocFilter || undefined,
   });
 
   const clearFilters = () => {
@@ -72,7 +81,7 @@ export default function Products() {
           <AccordionItem value="category" className="border-b-0">
             <AccordionTrigger className="hover:no-underline py-3">Category</AccordionTrigger>
             <AccordionContent>
-              <RadioGroup value={category} onValueChange={(v) => { setCategory(v); setTimeout(updateUrl, 0); }} className="space-y-3 pt-2">
+              <RadioGroup value={category} onValueChange={(v) => { setCategory(v); const p = new URLSearchParams(); if (search) p.append("search", search); if (v) p.append("category", v); if (locFilter) p.append("location", locFilter); setLocation(`/products?${p.toString()}`); }} className="space-y-3 pt-2">
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="" id="cat-all" />
                   <Label htmlFor="cat-all">All Categories</Label>
@@ -100,7 +109,7 @@ export default function Products() {
           <AccordionItem value="location" className="border-b-0 mt-4">
             <AccordionTrigger className="hover:no-underline py-3">Location</AccordionTrigger>
             <AccordionContent>
-              <RadioGroup value={locFilter} onValueChange={(v) => { setLocFilter(v); setTimeout(updateUrl, 0); }} className="space-y-2 pt-2 max-h-64 overflow-y-auto pr-1">
+              <RadioGroup value={locFilter} onValueChange={(v) => { setLocFilter(v); const p = new URLSearchParams(); if (search) p.append("search", search); if (category) p.append("category", category); if (v) p.append("location", v); setLocation(`/products?${p.toString()}`); }} className="space-y-2 pt-2 max-h-64 overflow-y-auto pr-1">
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="" id="loc-all" />
                   <Label htmlFor="loc-all">Anywhere in Malaysia</Label>

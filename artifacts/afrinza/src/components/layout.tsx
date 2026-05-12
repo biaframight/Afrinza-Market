@@ -36,6 +36,7 @@ export function Layout({ children }: LayoutProps) {
     e.preventDefault();
     if (searchQuery.trim()) {
       setLocation(`/products?search=${encodeURIComponent(searchQuery.trim())}`);
+      setSearchQuery("");
     }
   };
 
