@@ -343,6 +343,7 @@ export async function updateProduct(
     category?: string;
     stock?: number;
     imageUrl?: string | null;
+    images?: string[];
     deliveryOptions?: string[];
     paymentMethods?: string[];
   }
@@ -353,7 +354,10 @@ export async function updateProduct(
   if (updates.price !== undefined) payload.price = updates.price;
   if (updates.category !== undefined) payload.category = updates.category;
   if (updates.stock !== undefined) payload.stock = updates.stock;
-  if (updates.imageUrl !== undefined) {
+  if (updates.images !== undefined) {
+    payload.images = updates.images;
+    payload.image_url = updates.images[0] ?? null;
+  } else if (updates.imageUrl !== undefined) {
     payload.image_url = updates.imageUrl;
     if (updates.imageUrl) payload.images = [updates.imageUrl];
   }
@@ -403,10 +407,12 @@ export async function createProduct(input: {
   sellerWhatsapp: string;
   sellerAvatar?: string | null;
   imageUrl?: string | null;
+  images?: string[];
   stock: number;
   deliveryOptions: string[];
   paymentMethods: string[];
 }): Promise<Product> {
+  const resolvedImages = input.images ?? (input.imageUrl ? [input.imageUrl] : []);
   const { data, error } = await supabase
     .from("products")
     .insert({
@@ -419,8 +425,8 @@ export async function createProduct(input: {
       seller_name: input.sellerName,
       seller_whatsapp: input.sellerWhatsapp,
       seller_avatar: input.sellerAvatar ?? null,
-      image_url: input.imageUrl ?? null,
-      images: input.imageUrl ? [input.imageUrl] : [],
+      image_url: resolvedImages[0] ?? null,
+      images: resolvedImages,
       stock: input.stock,
       delivery_options: input.deliveryOptions,
       payment_methods: input.paymentMethods,

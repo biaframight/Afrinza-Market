@@ -53,8 +53,9 @@ export default function Dashboard() {
   // Product edit dialog
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [editForm, setEditForm] = useState({ title: "", description: "", price: "", stock: "", category: "", deliveryOptions: [] as string[], paymentMethods: [] as string[] });
-  const [editImageFile, setEditImageFile] = useState<File | null>(null);
-  const [editImagePreview, setEditImagePreview] = useState<string | null>(null);
+  const [editExistingImages, setEditExistingImages] = useState<string[]>([]);
+  const [editNewFiles, setEditNewFiles] = useState<File[]>([]);
+  const [editNewPreviews, setEditNewPreviews] = useState<string[]>([]);
   const [editUploading, setEditUploading] = useState(false);
   const editFileRef = useRef<HTMLInputElement>(null);
 
@@ -63,8 +64,8 @@ export default function Dashboard() {
 
   // Add product form
   const [addForm, setAddForm] = useState({ title: "", description: "", price: "", stock: "1", category: "", deliveryOptions: [] as string[], paymentMethods: [] as string[] });
-  const [addImageFile, setAddImageFile] = useState<File | null>(null);
-  const [addImagePreview, setAddImagePreview] = useState<string | null>(null);
+  const [addImageFiles, setAddImageFiles] = useState<File[]>([]);
+  const [addImagePreviews, setAddImagePreviews] = useState<string[]>([]);
   const [addUploading, setAddUploading] = useState(false);
   const addFileRef = useRef<HTMLInputElement>(null);
 
@@ -138,30 +139,38 @@ export default function Dashboard() {
       deliveryOptions: product.deliveryOptions,
       paymentMethods: product.paymentMethods,
     });
-    setEditImagePreview(product.imageUrl);
-    setEditImageFile(null);
+    setEditExistingImages(product.images?.length ? product.images : product.imageUrl ? [product.imageUrl] : []);
+    setEditNewFiles([]);
+    setEditNewPreviews([]);
   };
 
-  const handleEditImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 5 * 1024 * 1024) { toast.error("Max 5 MB"); return; }
-    setEditImageFile(file);
-    const reader = new FileReader();
-    reader.onload = (ev) => setEditImagePreview(ev.target?.result as string);
-    reader.readAsDataURL(file);
+  const handleEditImagesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const incoming = Array.from(e.target.files ?? []);
+    e.target.value = "";
+    if (!incoming.length) return;
+    const remaining = 5 - editExistingImages.length - editNewFiles.length;
+    const allowed = incoming.slice(0, remaining);
+    if (allowed.length < incoming.length) toast.warning(`Max 5 photos — only ${allowed.length} added.`);
+    allowed.forEach((f) => {
+      if (f.size > 5 * 1024 * 1024) { toast.error(`${f.name} exceeds 5 MB`); return; }
+      setEditNewFiles((prev) => [...prev, f]);
+      const reader = new FileReader();
+      reader.onload = (ev) => setEditNewPreviews((prev) => [...prev, ev.target?.result as string]);
+      reader.readAsDataURL(f);
+    });
   };
 
   const handleSaveProduct = async () => {
     if (!editingProduct) return;
     if (!editForm.title.trim() || !editForm.price) { toast.error("Title and price are required."); return; }
     setEditUploading(true);
-    let imageUrl: string | null | undefined = undefined;
-    if (editImageFile) {
-      const url = await uploadProductImage(editImageFile);
-      imageUrl = url ?? editingProduct.imageUrl;
+    const newUrls: string[] = [];
+    for (const f of editNewFiles) {
+      const url = await uploadProductImage(f);
+      if (url) newUrls.push(url);
     }
     setEditUploading(false);
+    const allImages = [...editExistingImages, ...newUrls];
     updateProduct.mutate(
       {
         id: editingProduct.id,
@@ -171,7 +180,7 @@ export default function Dashboard() {
           price: parseFloat(editForm.price),
           category: editForm.category,
           stock: parseInt(editForm.stock) || 0,
-          ...(imageUrl !== undefined && { imageUrl }),
+          images: allImages,
           deliveryOptions: editForm.deliveryOptions,
           paymentMethods: editForm.paymentMethods,
         },
@@ -194,14 +203,25 @@ export default function Dashboard() {
     );
   };
 
-  const handleAddImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 5 * 1024 * 1024) { toast.error("Max 5 MB"); return; }
-    setAddImageFile(file);
-    const reader = new FileReader();
-    reader.onload = (ev) => setAddImagePreview(ev.target?.result as string);
-    reader.readAsDataURL(file);
+  const handleAddImagesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const incoming = Array.from(e.target.files ?? []);
+    e.target.value = "";
+    if (!incoming.length) return;
+    const remaining = 5 - addImageFiles.length;
+    const allowed = incoming.slice(0, remaining);
+    if (allowed.length < incoming.length) toast.warning(`Max 5 photos — only ${allowed.length} added.`);
+    allowed.forEach((f) => {
+      if (f.size > 5 * 1024 * 1024) { toast.error(`${f.name} exceeds 5 MB`); return; }
+      setAddImageFiles((prev) => [...prev, f]);
+      const reader = new FileReader();
+      reader.onload = (ev) => setAddImagePreviews((prev) => [...prev, ev.target?.result as string]);
+      reader.readAsDataURL(f);
+    });
+  };
+
+  const removeAddImage = (idx: number) => {
+    setAddImageFiles((f) => f.filter((_, i) => i !== idx));
+    setAddImagePreviews((p) => p.filter((_, i) => i !== idx));
   };
 
   const handleAddProduct = async () => {
@@ -210,10 +230,13 @@ export default function Dashboard() {
       toast.error("Title, price, and category are required."); return;
     }
     setAddUploading(true);
-    let imageUrl: string | null = null;
-    if (addImageFile) {
-      imageUrl = await uploadProductImage(addImageFile);
-      if (!imageUrl) toast.warning("Image upload failed — product will be listed without a photo.");
+    const uploadedUrls: string[] = [];
+    for (const f of addImageFiles) {
+      const url = await uploadProductImage(f);
+      if (url) uploadedUrls.push(url);
+    }
+    if (addImageFiles.length > 0 && uploadedUrls.length === 0) {
+      toast.warning("Image upload failed — product will be listed without a photo.");
     }
     setAddUploading(false);
     createProduct.mutate(
@@ -228,7 +251,8 @@ export default function Dashboard() {
           sellerName: sellerProfile.storeName,
           sellerWhatsapp: sellerProfile.whatsapp,
           sellerAvatar: sellerProfile.avatarUrl,
-          imageUrl,
+          imageUrl: uploadedUrls[0] ?? null,
+          images: uploadedUrls,
           stock: parseInt(addForm.stock) || 1,
           deliveryOptions: addForm.deliveryOptions,
           paymentMethods: addForm.paymentMethods,
@@ -238,8 +262,7 @@ export default function Dashboard() {
         onSuccess: () => {
           toast.success("Product added!");
           setAddForm({ title: "", description: "", price: "", stock: "1", category: "", deliveryOptions: [], paymentMethods: [] });
-          setAddImageFile(null); setAddImagePreview(null);
-          if (addFileRef.current) addFileRef.current.value = "";
+          setAddImageFiles([]); setAddImagePreviews([]);
           setActiveTab("products");
         },
         onError: (e) => toast.error(e instanceof Error ? e.message : "Failed to add product"),
@@ -472,22 +495,32 @@ export default function Dashboard() {
               <Plus className="w-5 h-5 text-primary" /> Add New Product
             </h2>
             <div className="space-y-5">
-              {/* Image */}
+              {/* Images */}
               <div>
-                <label className="text-sm font-semibold block mb-2">Product Photo</label>
-                <input ref={addFileRef} type="file" accept="image/*" className="hidden" onChange={handleAddImageChange} />
-                {addImagePreview ? (
-                  <div className="relative w-full aspect-video rounded-xl overflow-hidden border bg-muted/20">
-                    <img src={addImagePreview} alt="Preview" className="w-full h-full object-contain" />
-                    <button type="button" onClick={() => { setAddImageFile(null); setAddImagePreview(null); if (addFileRef.current) addFileRef.current.value = ""; }} className="absolute top-2 right-2 bg-black/60 text-white rounded-full p-1.5">
-                      <X className="w-4 h-4" />
-                    </button>
+                <label className="text-sm font-semibold block mb-2">
+                  Product Photos <span className="text-muted-foreground font-normal text-xs">({addImageFiles.length}/5 · up to 5 photos)</span>
+                </label>
+                <input ref={addFileRef} type="file" accept="image/*" multiple className="hidden" onChange={handleAddImagesChange} />
+                {addImagePreviews.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {addImagePreviews.map((src, i) => (
+                      <div key={i} className="relative w-20 h-20 rounded-xl overflow-hidden border border-border bg-muted/20 shrink-0">
+                        <img src={src} alt="" className="w-full h-full object-cover" />
+                        <button type="button" onClick={() => removeAddImage(i)} className="absolute top-0.5 right-0.5 bg-black/60 text-white rounded-full p-0.5">
+                          <X className="w-3 h-3" />
+                        </button>
+                        {i === 0 && <span className="absolute bottom-0 left-0 right-0 text-center text-[9px] bg-primary text-white font-bold py-0.5">Cover</span>}
+                      </div>
+                    ))}
                   </div>
-                ) : (
-                  <button type="button" onClick={() => addFileRef.current?.click()} className="w-full border-2 border-dashed border-border rounded-xl p-8 flex flex-col items-center gap-2 text-muted-foreground hover:border-primary/40 hover:text-primary transition-all">
-                    <ImagePlus className="w-8 h-8" />
-                    <p className="text-sm font-medium">Click to upload · Max 5 MB</p>
+                )}
+                {addImageFiles.length < 5 ? (
+                  <button type="button" onClick={() => addFileRef.current?.click()} className="w-full border-2 border-dashed border-border rounded-xl p-6 flex flex-col items-center gap-2 text-muted-foreground hover:border-primary/40 hover:text-primary transition-all">
+                    <ImagePlus className="w-7 h-7" />
+                    <p className="text-sm font-medium">{addImageFiles.length === 0 ? "Click to upload · up to 5 photos · max 5 MB each" : `Add more (${5 - addImageFiles.length} slot${5 - addImageFiles.length !== 1 ? "s" : ""} left)`}</p>
                   </button>
+                ) : (
+                  <p className="text-xs text-muted-foreground text-center py-2">5 photos added (maximum reached)</p>
                 )}
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -573,19 +606,39 @@ export default function Dashboard() {
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div>
-              <label className="text-sm font-semibold block mb-2">Photo</label>
-              <input ref={editFileRef} type="file" accept="image/*" className="hidden" onChange={handleEditImageChange} />
-              {editImagePreview ? (
-                <div className="relative aspect-video rounded-xl overflow-hidden border bg-muted/20">
-                  <img src={editImagePreview} alt="Preview" className="w-full h-full object-contain" />
-                  <div className="absolute inset-0 flex items-end justify-end p-2">
-                    <button type="button" onClick={() => editFileRef.current?.click()} className="bg-black/60 text-white text-xs rounded-full px-3 py-1.5 hover:bg-black/80">Change photo</button>
-                  </div>
+              <label className="text-sm font-semibold block mb-2">
+                Photos <span className="text-muted-foreground font-normal text-xs">({editExistingImages.length + editNewFiles.length}/5)</span>
+              </label>
+              <input ref={editFileRef} type="file" accept="image/*" multiple className="hidden" onChange={handleEditImagesChange} />
+              {(editExistingImages.length > 0 || editNewPreviews.length > 0) && (
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {editExistingImages.map((src, i) => (
+                    <div key={`ex-${i}`} className="relative w-16 h-16 rounded-xl overflow-hidden border border-border bg-muted/20 shrink-0">
+                      <img src={src} alt="" className="w-full h-full object-cover" />
+                      <button type="button" onClick={() => setEditExistingImages((p) => p.filter((_, j) => j !== i))} className="absolute top-0.5 right-0.5 bg-black/60 text-white rounded-full p-0.5">
+                        <X className="w-3 h-3" />
+                      </button>
+                      {i === 0 && editNewFiles.length === 0 && <span className="absolute bottom-0 left-0 right-0 text-center text-[9px] bg-primary text-white font-bold py-0.5">Cover</span>}
+                    </div>
+                  ))}
+                  {editNewPreviews.map((src, i) => (
+                    <div key={`new-${i}`} className="relative w-16 h-16 rounded-xl overflow-hidden border border-dashed border-primary/50 bg-primary/5 shrink-0">
+                      <img src={src} alt="" className="w-full h-full object-cover" />
+                      <button type="button" onClick={() => { setEditNewFiles((f) => f.filter((_, j) => j !== i)); setEditNewPreviews((p) => p.filter((_, j) => j !== i)); }} className="absolute top-0.5 right-0.5 bg-black/60 text-white rounded-full p-0.5">
+                        <X className="w-3 h-3" />
+                      </button>
+                      <span className="absolute bottom-0 left-0 right-0 text-center text-[9px] bg-primary/80 text-white font-bold py-0.5">New</span>
+                    </div>
+                  ))}
                 </div>
-              ) : (
-                <button type="button" onClick={() => editFileRef.current?.click()} className="w-full border-2 border-dashed border-border rounded-xl p-6 flex flex-col items-center gap-2 text-muted-foreground hover:border-primary/40 transition-all">
-                  <ImagePlus className="w-7 h-7" /><p className="text-sm">Upload photo</p>
+              )}
+              {editExistingImages.length + editNewFiles.length < 5 ? (
+                <button type="button" onClick={() => editFileRef.current?.click()} className="w-full border-2 border-dashed border-border rounded-xl p-5 flex flex-col items-center gap-1.5 text-muted-foreground hover:border-primary/40 hover:text-primary transition-all">
+                  <ImagePlus className="w-6 h-6" />
+                  <p className="text-xs">{editExistingImages.length + editNewFiles.length === 0 ? "Upload photos (up to 5)" : `Add more (${5 - editExistingImages.length - editNewFiles.length} left)`}</p>
                 </button>
+              ) : (
+                <p className="text-xs text-muted-foreground text-center py-1">5 photos (maximum reached)</p>
               )}
             </div>
             <div>

@@ -21,6 +21,7 @@ export default function ProductDetail() {
   const sessionId = getSessionId();
   const queryClient = useQueryClient();
 
+  const [activeIdx, setActiveIdx] = useState(0);
   const { data: product, isLoading, error } = useGetProduct(id);
   const { data: reviewsData } = useGetReviews({ productId: id });
   const addToCart = useAddToCart();
@@ -82,7 +83,8 @@ export default function ProductDetail() {
   }
 
   const allImages = product.images?.length ? product.images : [product.imageUrl].filter(Boolean) as string[];
-  const mainImage = allImages[0] || "";
+  const safeIdx = Math.min(activeIdx, allImages.length - 1);
+  const mainImage = allImages[safeIdx] ?? "";
 
   return (
     <div className="bg-muted/10 min-h-screen pb-20">
@@ -92,8 +94,10 @@ export default function ProductDetail() {
 
             <div className="w-full lg:w-1/2 p-4 md:p-8">
               <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
+                key={safeIdx}
+                initial={{ opacity: 0.6, scale: 0.98 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.15 }}
                 className="aspect-square rounded-2xl overflow-hidden bg-white border border-border/40 relative"
               >
                 {mainImage ? (
@@ -108,12 +112,25 @@ export default function ProductDetail() {
                     Sponsored
                   </Badge>
                 )}
+                {allImages.length > 1 && (
+                  <div className="absolute bottom-3 right-3 bg-black/50 text-white text-xs font-semibold px-2 py-1 rounded-full">
+                    {safeIdx + 1} / {allImages.length}
+                  </div>
+                )}
               </motion.div>
 
               {allImages.length > 1 && (
-                <div className="flex gap-4 mt-4 overflow-x-auto pb-2">
+                <div className="flex gap-2 mt-3 overflow-x-auto pb-1">
                   {allImages.map((img, idx) => (
-                    <button key={idx} className="w-20 h-20 rounded-xl overflow-hidden border-2 border-transparent hover:border-primary shrink-0 transition-all">
+                    <button
+                      key={idx}
+                      onClick={() => setActiveIdx(idx)}
+                      className={`w-16 h-16 md:w-20 md:h-20 rounded-xl overflow-hidden border-2 shrink-0 transition-all duration-150 ${
+                        idx === safeIdx
+                          ? "border-primary shadow-md scale-105"
+                          : "border-transparent hover:border-primary/40 opacity-70 hover:opacity-100"
+                      }`}
+                    >
                       <img src={img} alt={`${product.title} ${idx + 1}`} className="w-full h-full object-cover" />
                     </button>
                   ))}
