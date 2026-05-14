@@ -10,8 +10,7 @@ import {
 } from "lucide-react";
 import { useGetCart } from "@/hooks/use-marketplace";
 import { getSessionId } from "@/lib/session";
-import { useState, useEffect, useRef } from "react";
-import * as db from "@/lib/supabase-db";
+import { useState } from "react";
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger,
 } from "@/components/ui/sheet";
@@ -26,21 +25,13 @@ interface LayoutProps {
 }
 
 export function Layout({ children }: LayoutProps) {
-  const [location, setLocation] = useLocation();
+  const [, setLocation] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const lastTrackedPath = useRef<string | null>(null);
   const sessionId = getSessionId();
   const { user, isAuthenticated, sellerProfile, signOut } = useAuthContext();
 
   const { data: cartData } = useGetCart({ sessionId });
-
-  useEffect(() => {
-    if (location !== lastTrackedPath.current) {
-      lastTrackedPath.current = location;
-      db.trackPageView(sessionId, location).catch(() => {});
-    }
-  }, [location, sessionId]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
