@@ -10,6 +10,7 @@ import {
   useAdminDeleteProduct,
   useAdminGetAllOrders,
   useAdminUpdateOrderStatus,
+  useAdminGetVisitorStats,
 } from "@/hooks/use-marketplace";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,6 +18,7 @@ import { toast } from "sonner";
 import {
   Shield, Store, Package, Star, Trash2, Loader2, StarOff, Users, Tag,
   ShoppingBag, TrendingUp, Calendar, ChevronDown, CheckCircle, Clock, XCircle,
+  Eye, MousePointerClick, BarChart2, Globe,
 } from "lucide-react";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -29,7 +31,7 @@ import type { AdminOrder } from "@/lib/supabase-db";
 
 const ADMIN_EMAIL = "alphuplift@gmail.com";
 
-type Tab = "orders" | "sellers" | "products";
+type Tab = "orders" | "sellers" | "products" | "visitors";
 type Period = "today" | "week" | "month" | "year" | "all";
 
 const PERIOD_LABELS: Record<Period, string> = {
@@ -114,6 +116,7 @@ export default function Admin() {
   const allSellers = useAdminGetAllSellers();
   const allProducts = useAdminGetAllProducts();
   const allOrdersQ = useAdminGetAllOrders();
+  const visitorStatsQ = useAdminGetVisitorStats();
   const toggleSellerPremium = useAdminToggleSellerPremium();
   const toggleProductSponsored = useAdminToggleProductSponsored();
   const deleteSeller = useAdminDeleteSeller();
@@ -236,6 +239,7 @@ export default function Admin() {
             { id: "orders",   icon: <ShoppingBag className="w-4 h-4" />, label: `Orders (${allOrders.length})` },
             { id: "sellers",  icon: <Store       className="w-4 h-4" />, label: `Sellers (${sellers.length})` },
             { id: "products", icon: <Package     className="w-4 h-4" />, label: `Products (${products.length})` },
+            { id: "visitors", icon: <Eye         className="w-4 h-4" />, label: "Visitors" },
           ] as const).map(({ id, icon, label }) => (
             <button
               key={id}
@@ -374,6 +378,124 @@ export default function Admin() {
                 </div>
               )}
             </div>
+          </div>
+        )}
+
+        {/* ══════════════════════════════════════════════════════════
+            VISITORS TAB
+        ══════════════════════════════════════════════════════════ */}
+        {tab === "visitors" && (
+          <div className="space-y-6">
+            {visitorStatsQ.isLoading ? (
+              <div className="flex items-center justify-center py-20 bg-white rounded-3xl border border-border shadow-sm">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+              </div>
+            ) : visitorStatsQ.error ? (
+              <div className="bg-white rounded-3xl border border-border shadow-sm p-10 text-center text-muted-foreground">
+                <Globe className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                <p className="font-semibold">Visitor data not available yet</p>
+                <p className="text-sm mt-1">Run migration 007 in Supabase SQL Editor to enable tracking.</p>
+              </div>
+            ) : (() => {
+              const stats = visitorStatsQ.data!;
+              const maxVisitors = Math.max(...stats.days.map(d => d.uniqueVisitors), 1);
+              const maxViews    = Math.max(...stats.days.map(d => d.pageViews), 1);
+              return (
+                <>
+                  {/* Summary cards */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    {[
+                      { icon: <Eye className="w-4 h-4" />,              label: "Today's Visitors",  value: stats.today.uniqueVisitors, color: "bg-blue-50 text-blue-700",    sub: "unique sessions" },
+                      { icon: <MousePointerClick className="w-4 h-4" />, label: "Today's Page Views", value: stats.today.pageViews,       color: "bg-indigo-50 text-indigo-700", sub: "total page loads" },
+                      { icon: <BarChart2 className="w-4 h-4" />,         label: "14-day Visitors",   value: stats.totalUniqueVisitors,   color: "bg-violet-50 text-violet-700", sub: "unique sessions" },
+                      { icon: <Globe className="w-4 h-4" />,             label: "Top Page",          value: stats.topPages[0]?.path ?? "—", color: "bg-emerald-50 text-emerald-700", sub: `${stats.topPages[0]?.views ?? 0} views` },
+                    ].map((c) => (
+                      <div key={c.label} className={`rounded-2xl p-5 ${c.color}`}>
+                        <div className="flex items-center gap-1.5 opacity-70 mb-1">{c.icon}<p className="text-xs font-semibold">{c.label}</p></div>
+                        <p className="text-2xl font-bold leading-tight truncate">{c.value}</p>
+                        <p className="text-xs opacity-60 mt-0.5">{c.sub}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Unique visitors bar chart */}
+                  <div className="bg-white rounded-3xl border border-border shadow-sm p-6">
+                    <h3 className="font-bold text-base mb-1 flex items-center gap-2">
+                      <Eye className="w-4 h-4 text-primary" /> Unique Visitors — Last 14 Days
+                    </h3>
+                    <p className="text-xs text-muted-foreground mb-4">Each bar = one calendar day. Height = distinct visitors (unique session IDs).</p>
+                    <div className="flex items-end gap-1 h-36 overflow-x-auto pb-2">
+                      {stats.days.map((d) => (
+                        <div key={d.date} className="flex flex-col items-center gap-1 min-w-[34px] flex-1">
+                          <div className="text-[10px] text-muted-foreground font-medium">{d.uniqueVisitors > 0 ? d.uniqueVisitors : ""}</div>
+                          <div
+                            className="w-full rounded-t-lg bg-primary/80 hover:bg-primary transition-colors min-h-[4px]"
+                            style={{ height: `${Math.max((d.uniqueVisitors / maxVisitors) * 108, d.uniqueVisitors > 0 ? 6 : 4)}px` }}
+                            title={`${d.date}: ${d.uniqueVisitors} unique visitor${d.uniqueVisitors !== 1 ? "s" : ""}, ${d.pageViews} page view${d.pageViews !== 1 ? "s" : ""}`}
+                          />
+                          <div className="text-[9px] text-muted-foreground rotate-45 origin-left whitespace-nowrap mt-1 ml-1">
+                            {new Date(d.date + "T00:00:00").toLocaleDateString("en-MY", { day: "2-digit", month: "short" })}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Page views chart */}
+                  <div className="bg-white rounded-3xl border border-border shadow-sm p-6">
+                    <h3 className="font-bold text-base mb-1 flex items-center gap-2">
+                      <MousePointerClick className="w-4 h-4 text-indigo-500" /> Page Views — Last 14 Days
+                    </h3>
+                    <p className="text-xs text-muted-foreground mb-4">Total page loads (including multiple visits from the same session).</p>
+                    <div className="flex items-end gap-1 h-28 overflow-x-auto pb-2">
+                      {stats.days.map((d) => (
+                        <div key={d.date} className="flex flex-col items-center gap-1 min-w-[34px] flex-1">
+                          <div className="text-[10px] text-muted-foreground font-medium">{d.pageViews > 0 ? d.pageViews : ""}</div>
+                          <div
+                            className="w-full rounded-t-lg bg-indigo-400/70 hover:bg-indigo-500 transition-colors min-h-[4px]"
+                            style={{ height: `${Math.max((d.pageViews / maxViews) * 80, d.pageViews > 0 ? 6 : 4)}px` }}
+                            title={`${d.date}: ${d.pageViews} page view${d.pageViews !== 1 ? "s" : ""}`}
+                          />
+                          <div className="text-[9px] text-muted-foreground rotate-45 origin-left whitespace-nowrap mt-1 ml-1">
+                            {new Date(d.date + "T00:00:00").toLocaleDateString("en-MY", { day: "2-digit", month: "short" })}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Top pages */}
+                  {stats.topPages.length > 0 && (
+                    <div className="bg-white rounded-3xl border border-border shadow-sm p-6">
+                      <h3 className="font-bold text-base mb-4 flex items-center gap-2">
+                        <BarChart2 className="w-4 h-4 text-violet-500" /> Most Visited Pages
+                        <span className="text-xs text-muted-foreground font-normal">(last 14 days)</span>
+                      </h3>
+                      <div className="space-y-3">
+                        {stats.topPages.map((p, i) => {
+                          const pct = Math.round((p.views / (stats.topPages[0]?.views || 1)) * 100);
+                          const label = p.path === "/" ? "Home" : p.path.replace(/^\//, "").replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+                          return (
+                            <div key={p.path} className="flex items-center gap-3">
+                              <div className="w-5 text-xs font-bold text-muted-foreground text-right">{i + 1}</div>
+                              <div className="flex-1">
+                                <div className="flex items-center justify-between mb-0.5">
+                                  <span className="text-sm font-medium">{label}</span>
+                                  <span className="text-xs text-muted-foreground">{p.views} view{p.views !== 1 ? "s" : ""}</span>
+                                </div>
+                                <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                                  <div className="h-full rounded-full bg-violet-400" style={{ width: `${pct}%` }} />
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </>
+              );
+            })()}
           </div>
         )}
 

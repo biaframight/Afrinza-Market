@@ -275,3 +275,13 @@ export function useGetMarketplaceStats() {
     queryFn: db.getMarketplaceStats,
   });
 }
+
+// ─── Visitor Tracking ─────────────────────────────────────────────
+
+export function useAdminGetVisitorStats() {
+  return useQuery({
+    queryKey: ["admin", "visitor-stats"],
+    queryFn: db.getVisitorStats,
+    refetchInterval: 60_000,
+  });
+}

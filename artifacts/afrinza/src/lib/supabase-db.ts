@@ -662,6 +662,85 @@ export async function adminUpdateOrderStatus(id: number, status: string): Promis
   if (error) throw new Error(`[Supabase / adminUpdateOrderStatus] ${error.message}`);
 }
 
+// ─── Visitor Tracking ─────────────────────────────────────────────
+
+export async function trackPageView(sessionId: string, path: string): Promise<void> {
+  await supabase.from("page_views").insert({ session_id: sessionId, path });
+}
+
+export interface VisitorDay {
+  date: string;
+  uniqueVisitors: number;
+  pageViews: number;
+}
+
+export interface VisitorStats {
+  today: { uniqueVisitors: number; pageViews: number };
+  days: VisitorDay[];
+  topPages: { path: string; views: number }[];
+  totalUniqueVisitors: number;
+}
+
+export async function getVisitorStats(): Promise<VisitorStats> {
+  const since = new Date();
+  since.setDate(since.getDate() - 13);
+  since.setHours(0, 0, 0, 0);
+
+  const { data, error } = await supabase
+    .from("page_views")
+    .select("session_id, path, created_at")
+    .gte("created_at", since.toISOString())
+    .order("created_at", { ascending: true });
+
+  if (error) throw new Error(`[Supabase / getVisitorStats] ${error.message}`);
+
+  const rows = (data ?? []) as { session_id: string; path: string; created_at: string }[];
+
+  const dayMap: Record<string, { sessions: Set<string>; views: number }> = {};
+  const pathMap: Record<string, number> = {};
+  const allSessions = new Set<string>();
+
+  for (const row of rows) {
+    const day = row.created_at.slice(0, 10);
+    if (!dayMap[day]) dayMap[day] = { sessions: new Set(), views: 0 };
+    dayMap[day].sessions.add(row.session_id);
+    dayMap[day].views++;
+    allSessions.add(row.session_id);
+    pathMap[row.path] = (pathMap[row.path] ?? 0) + 1;
+  }
+
+  const days: VisitorDay[] = [];
+  for (let i = 13; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const key = d.toISOString().slice(0, 10);
+    const entry = dayMap[key];
+    days.push({
+      date: key,
+      uniqueVisitors: entry ? entry.sessions.size : 0,
+      pageViews: entry ? entry.views : 0,
+    });
+  }
+
+  const todayKey = new Date().toISOString().slice(0, 10);
+  const todayEntry = dayMap[todayKey];
+
+  const topPages = Object.entries(pathMap)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 8)
+    .map(([path, views]) => ({ path, views }));
+
+  return {
+    today: {
+      uniqueVisitors: todayEntry?.sessions.size ?? 0,
+      pageViews: todayEntry?.views ?? 0,
+    },
+    days,
+    topPages,
+    totalUniqueVisitors: allSessions.size,
+  };
+}
+
 // ─── Marketplace Stats ────────────────────────────────────────────
 
 export async function getMarketplaceStats(): Promise<{
