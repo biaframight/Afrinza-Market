@@ -1,9 +1,86 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ChevronDown, ChevronUp, Repeat } from 'lucide-react';
+import { ChevronDown, ChevronUp, Repeat, Download, Loader2, CircleDot } from 'lucide-react';
 import VideoTemplate, { SCENE_DURATIONS } from './VideoTemplate';
 import { useSceneControls } from '@/hooks/useSceneControls';
 
 const PROGRESS_TICK_MS = 60;
+const TOTAL_DURATION_MS = Object.values(SCENE_DURATIONS).reduce((a, b) => a + b, 0);
+
+type RecordState = 'idle' | 'waiting' | 'recording' | 'processing';
+
+function useTabRecorder(onSceneJump: (i: number) => void) {
+  const [state, setState] = useState<RecordState>('idle');
+  const [countdown, setCountdown] = useState(0);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const stopAndDownload = useCallback(() => {
+    if (countdownRef.current) clearInterval(countdownRef.current);
+    const mr = mediaRecorderRef.current;
+    if (!mr || mr.state === 'inactive') return;
+    mr.stop();
+  }, []);
+
+  const start = useCallback(async () => {
+    if (state !== 'idle') return;
+    setState('waiting');
+    try {
+      const stream = await (navigator.mediaDevices as MediaDevices & {
+        getDisplayMedia(opts?: DisplayMediaStreamOptions): Promise<MediaStream>;
+      }).getDisplayMedia({ video: { frameRate: 30 }, audio: false });
+
+      chunksRef.current = [];
+      const mr = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp9' });
+      mediaRecorderRef.current = mr;
+
+      mr.ondataavailable = (e) => {
+        if (e.data.size > 0) chunksRef.current.push(e.data);
+      };
+
+      mr.onstop = () => {
+        stream.getTracks().forEach((t) => t.stop());
+        setState('processing');
+        setTimeout(() => {
+          const blob = new Blob(chunksRef.current, { type: 'video/webm' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'afrinza-promo.webm';
+          a.click();
+          setTimeout(() => URL.revokeObjectURL(url), 5000);
+          setState('idle');
+        }, 200);
+      };
+
+      mr.start(100);
+      onSceneJump(0);
+      setState('recording');
+
+      let remaining = Math.ceil(TOTAL_DURATION_MS / 1000);
+      setCountdown(remaining);
+      countdownRef.current = setInterval(() => {
+        remaining -= 1;
+        setCountdown(remaining);
+        if (remaining <= 0) {
+          if (countdownRef.current) clearInterval(countdownRef.current);
+          mr.stop();
+        }
+      }, 1000);
+    } catch {
+      setState('idle');
+    }
+  }, [state, onSceneJump]);
+
+  useEffect(() => {
+    return () => {
+      if (countdownRef.current) clearInterval(countdownRef.current);
+      mediaRecorderRef.current?.stop();
+    };
+  }, []);
+
+  return { state, countdown, start, stopAndDownload };
+}
 
 interface ControlBarProps {
   visible: boolean;
@@ -13,9 +90,13 @@ interface ControlBarProps {
   activeIndex: number;
   activeDuration: number;
   tick: number;
+  recordState: RecordState;
+  countdown: number;
   onToggleLock: () => void;
   onJumpTo: (index: number) => void;
   onToggleCollapsed: () => void;
+  onRecord: () => void;
+  onStopRecord: () => void;
 }
 
 function ProgressSegments({
@@ -76,10 +157,19 @@ function ControlBar({
   activeIndex,
   activeDuration,
   tick,
+  recordState,
+  countdown,
   onToggleLock,
   onJumpTo,
   onToggleCollapsed,
+  onRecord,
+  onStopRecord,
 }: ControlBarProps) {
+  const isRecording = recordState === 'recording';
+  const isWaiting = recordState === 'waiting';
+  const isProcessing = recordState === 'processing';
+  const busy = isWaiting || isProcessing;
+
   return (
     <div
       className={`flex items-center gap-3 bg-black/50 backdrop-blur-sm px-5 py-4 transition-all duration-200 ease-out ${
@@ -91,7 +181,8 @@ function ControlBar({
     >
       <button
         onClick={onToggleLock}
-        className={`w-14 h-14 flex items-center justify-center transition-colors rounded-lg shrink-0 ${
+        disabled={isRecording || busy}
+        className={`w-14 h-14 flex items-center justify-center transition-colors rounded-lg shrink-0 disabled:opacity-40 ${
           locked
             ? 'text-white bg-white/15 hover:bg-white/25'
             : 'text-white/60 hover:text-white hover:bg-white/10'
@@ -114,8 +205,39 @@ function ControlBar({
       />
 
       <div className="text-xl text-white/60 font-mono tabular-nums shrink-0">
-        {activeIndex + 1}/{sceneKeys.length}
+        {isRecording ? (
+          <span className="text-red-400 font-mono tabular-nums">{countdown}s</span>
+        ) : (
+          <span>{activeIndex + 1}/{sceneKeys.length}</span>
+        )}
       </div>
+
+      <div className="w-px self-stretch bg-white/15" aria-hidden="true" />
+
+      {isRecording ? (
+        <button
+          onClick={onStopRecord}
+          className="w-14 h-14 flex items-center justify-center text-red-400 hover:text-red-300 hover:bg-white/10 transition-colors rounded-lg shrink-0"
+          title="Stop recording"
+          aria-label="Stop recording"
+        >
+          <CircleDot className="w-8 h-8 animate-pulse" />
+        </button>
+      ) : (
+        <button
+          onClick={onRecord}
+          disabled={busy}
+          className="w-14 h-14 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 transition-colors rounded-lg shrink-0 disabled:opacity-40"
+          title={busy ? (isProcessing ? 'Preparing download...' : 'Select the tab to record...') : 'Record & download video'}
+          aria-label="Record and download video"
+        >
+          {busy ? (
+            <Loader2 className="w-8 h-8 animate-spin" />
+          ) : (
+            <Download className="w-8 h-8" />
+          )}
+        </button>
+      )}
 
       <button
         onClick={onToggleCollapsed}
@@ -145,6 +267,8 @@ export default function VideoWithControls() {
     jumpTo,
     toggleLock,
   } = useSceneControls(SCENE_DURATIONS);
+
+  const { state: recordState, countdown, start: startRecord, stopAndDownload } = useTabRecorder(jumpTo);
 
   const sensorRef = useRef<HTMLDivElement | null>(null);
   const [collapsed, setCollapsed] = useState(false);
@@ -198,6 +322,19 @@ export default function VideoWithControls() {
         onSceneChange={onSceneChange}
       />
 
+      {recordState === 'recording' && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 bg-black/70 backdrop-blur-sm text-white text-sm px-4 py-2 rounded-full pointer-events-none">
+          <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse shrink-0" />
+          Recording — {countdown}s left
+        </div>
+      )}
+      {recordState === 'waiting' && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 bg-black/70 backdrop-blur-sm text-white text-sm px-4 py-2 rounded-full pointer-events-none">
+          <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+          Select this tab to record...
+        </div>
+      )}
+
       <div
         ref={sensorRef}
         className="absolute bottom-0 left-0 right-0 z-50 flex flex-col justify-end"
@@ -215,9 +352,13 @@ export default function VideoWithControls() {
           activeIndex={activeIndex}
           activeDuration={activeDuration}
           tick={tick}
+          recordState={recordState}
+          countdown={countdown}
           onToggleLock={toggleLock}
           onJumpTo={jumpTo}
           onToggleCollapsed={handleToggleCollapsed}
+          onRecord={startRecord}
+          onStopRecord={stopAndDownload}
         />
       </div>
     </div>
