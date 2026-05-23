@@ -1,9 +1,0 @@
-{
-  "/_not-found/page": "/_not-found",
-  "/feedback/[token]/page": "/feedback/[token]",
-  "/log/[token]/page": "/log/[token]",
-  "/login/page": "/login",
-  "/page": "/",
-  "/setup/page": "/setup",
-  "/dashboard/page": "/dashboard"
-}
