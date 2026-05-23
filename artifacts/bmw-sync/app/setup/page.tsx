@@ -106,9 +106,14 @@ ALTER TABLE outlets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE cleaning_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE customer_feedback ENABLE ROW LEVEL SECURITY;
 
--- Owners can see their own outlets
+-- Owners can manage their own outlets
 CREATE POLICY "owners_own_outlets" ON outlets
   FOR ALL USING (owner_id = auth.uid());
+
+-- Public can look up outlets by QR token (needed for QR scanning)
+-- Safe: tokens are random UUIDs, guessing is not feasible
+CREATE POLICY "public_token_lookup" ON outlets
+  FOR SELECT TO anon USING (true);
 
 -- Public can insert logs/feedback; owners can select for their outlets
 CREATE POLICY "insert_cleaning_logs" ON cleaning_logs

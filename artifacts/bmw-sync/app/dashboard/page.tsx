@@ -682,7 +682,7 @@ function OutletCard({
   const [editingWA, setEditingWA] = useState(false);
   const [waBuf, setWaBuf] = useState(outlet.whatsapp_number ?? "");
   const [waSaving, setWaSaving] = useState(false);
-  const qrRef = useRef<HTMLCanvasElement>(null);
+  const qrDownloadRef = useRef<HTMLDivElement>(null);
 
   async function saveWhatsApp() {
     setWaSaving(true);
@@ -809,17 +809,32 @@ function OutletCard({
 
       {(showingStaff || showingCustomer) && (
         <div className="mt-3 flex flex-col items-center gap-3 p-4 bg-slate-50 rounded-xl">
+          {/* Visible QR — display only */}
           <div className="bg-white p-3 rounded-xl shadow-sm">
             <QRCodeCanvas
-              ref={qrRef}
               value={showingStaff ? staffUrl : customerUrl}
-              size={400}
+              size={200}
               bgColor="#ffffff"
               fgColor={showingStaff ? "#059669" : "#1e293b"}
-              level="M"
-              style={{ width: 160, height: 160, display: "block" }}
+              level="H"
             />
           </div>
+
+          {/* Hidden high-res canvas used exclusively for download */}
+          <div
+            ref={qrDownloadRef}
+            aria-hidden="true"
+            style={{ position: "absolute", left: "-9999px", top: "-9999px", pointerEvents: "none" }}
+          >
+            <QRCodeCanvas
+              value={showingStaff ? staffUrl : customerUrl}
+              size={800}
+              bgColor="#ffffff"
+              fgColor={showingStaff ? "#059669" : "#1e293b"}
+              level="H"
+            />
+          </div>
+
           <p className="text-xs text-slate-500 text-center break-all">
             {showingStaff ? staffUrl : customerUrl}
           </p>
@@ -828,7 +843,7 @@ function OutletCard({
           </p>
           <button
             onClick={() => {
-              const canvas = qrRef.current;
+              const canvas = qrDownloadRef.current?.querySelector("canvas");
               if (!canvas) return;
               const filename = showingStaff
                 ? `bmw-sync_staff_${safeName}.png`
