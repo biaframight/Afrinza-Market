@@ -14,6 +14,7 @@ import {
   Download,
   Filter,
   LogOut,
+  Phone,
   Plus,
   RefreshCw,
   ShieldCheck,
@@ -62,6 +63,7 @@ export default function DashboardPage() {
   const [showAddOutlet, setShowAddOutlet] = useState(false);
   const [newOutletName, setNewOutletName] = useState("");
   const [newOutletAddress, setNewOutletAddress] = useState("");
+  const [newOutletWhatsApp, setNewOutletWhatsApp] = useState("");
   const [addingOutlet, setAddingOutlet] = useState(false);
   const [addOutletError, setAddOutletError] = useState<string | null>(null);
 
@@ -154,6 +156,7 @@ export default function DashboardPage() {
         address: newOutletAddress.trim() || null,
         staff_qr_token: staffToken,
         customer_qr_token: customerToken,
+        whatsapp_number: newOutletWhatsApp.trim() || null,
       });
       if (error) throw error;
       setShowAddOutlet(false);
@@ -233,6 +236,7 @@ export default function DashboardPage() {
                 setAddOutletError(null);
                 setNewOutletName("");
                 setNewOutletAddress("");
+                setNewOutletWhatsApp("");
               }}
               className="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center hover:bg-slate-200 transition"
             >
@@ -278,6 +282,23 @@ export default function DashboardPage() {
                   placeholder="e.g. No. 12, Jalan Ampang, KL"
                   className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm"
                 />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  WhatsApp Number{" "}
+                  <span className="text-slate-400 font-normal">(for customer alerts)</span>
+                </label>
+                <div className="relative">
+                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <input
+                    type="tel"
+                    value={newOutletWhatsApp}
+                    onChange={(e) => setNewOutletWhatsApp(e.target.value)}
+                    placeholder="+60173346205"
+                    className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm"
+                  />
+                </div>
+                <p className="text-xs text-slate-400 mt-1">Include country code, e.g. +60xxxxxxxxx</p>
               </div>
               <button
                 type="submit"
@@ -406,6 +427,7 @@ export default function DashboardPage() {
                   baseUrl={baseUrl}
                   activeQR={activeQR}
                   setActiveQR={setActiveQR}
+                  onRefresh={fetchData}
                 />
               ))}
             </div>
@@ -674,6 +696,7 @@ function OutletCard({
   baseUrl,
   activeQR,
   setActiveQR,
+  onRefresh,
 }: {
   outlet: Outlet;
   baseUrl: string;
@@ -681,7 +704,27 @@ function OutletCard({
   setActiveQR: (
     v: { outletId: string; type: "staff" | "customer" } | null,
   ) => void;
+  onRefresh: () => void;
 }) {
+  const [editingWA, setEditingWA] = useState(false);
+  const [waBuf, setWaBuf] = useState(outlet.whatsapp_number ?? "");
+  const [waSaving, setWaSaving] = useState(false);
+
+  async function saveWhatsApp() {
+    setWaSaving(true);
+    try {
+      const supabase = createClient();
+      await supabase
+        .from("outlets")
+        .update({ whatsapp_number: waBuf.trim() || null })
+        .eq("id", outlet.id);
+      setEditingWA(false);
+      onRefresh();
+    } finally {
+      setWaSaving(false);
+    }
+  }
+
   const staffUrl = `${baseUrl}/bmw-sync/log/${outlet.staff_qr_token}`;
   const customerUrl = `${baseUrl}/bmw-sync/feedback/${outlet.customer_qr_token}`;
 
@@ -709,6 +752,50 @@ function OutletCard({
         <span className="bg-emerald-100 text-emerald-700 text-xs font-semibold px-2 py-0.5 rounded-full">
           Active
         </span>
+      </div>
+
+      {/* WhatsApp row */}
+      <div className="flex items-center gap-2 mb-3 bg-slate-50 rounded-xl px-3 py-2">
+        <Phone className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+        {editingWA ? (
+          <>
+            <input
+              type="tel"
+              value={waBuf}
+              onChange={(e) => setWaBuf(e.target.value)}
+              placeholder="+60xxxxxxxxx"
+              className="flex-1 text-xs bg-transparent outline-none text-slate-700 placeholder-slate-400"
+              autoFocus
+            />
+            <button
+              onClick={saveWhatsApp}
+              disabled={waSaving}
+              className="text-xs font-semibold text-emerald-700 hover:text-emerald-900 disabled:opacity-50"
+            >
+              {waSaving ? "Saving…" : "Save"}
+            </button>
+            <button
+              onClick={() => { setEditingWA(false); setWaBuf(outlet.whatsapp_number ?? ""); }}
+              className="text-xs text-slate-400 hover:text-slate-600"
+            >
+              Cancel
+            </button>
+          </>
+        ) : (
+          <>
+            <span className="flex-1 text-xs text-slate-600 truncate">
+              {outlet.whatsapp_number ?? (
+                <span className="text-slate-400 italic">No WhatsApp set</span>
+              )}
+            </span>
+            <button
+              onClick={() => setEditingWA(true)}
+              className="text-xs text-emerald-700 hover:text-emerald-900 font-medium shrink-0"
+            >
+              {outlet.whatsapp_number ? "Edit" : "Add"}
+            </button>
+          </>
+        )}
       </div>
 
       <div className="grid grid-cols-2 gap-2 mb-3">

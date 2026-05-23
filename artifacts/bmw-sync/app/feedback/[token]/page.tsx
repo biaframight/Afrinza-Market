@@ -14,7 +14,6 @@ import {
   ShieldCheck,
   Trash2,
   Wind,
-  X,
 } from "lucide-react";
 
 const ISSUES = [
@@ -84,18 +83,15 @@ const COLOR_MAP: Record<
   },
 };
 
-type WhatsAppModal = {
-  visible: boolean;
-  outletName: string;
-  issueLabel: string;
-};
-
 export default function CustomerFeedbackPage() {
   const params = useParams();
   const token = params?.token as string;
 
+  const FALLBACK_WA = "60173346205"; // Kizi — default until outlet sets own number
+
   const [outletName, setOutletName] = useState<string | null>(null);
   const [outletId, setOutletId] = useState<string | null>(null);
+  const [outletWhatsApp, setOutletWhatsApp] = useState<string | null>(null);
   const [loadingOutlet, setLoadingOutlet] = useState(true);
   const [outletError, setOutletError] = useState<string | null>(null);
 
@@ -104,12 +100,6 @@ export default function CustomerFeedbackPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-
-  const [waModal, setWaModal] = useState<WhatsAppModal>({
-    visible: false,
-    outletName: "",
-    issueLabel: "",
-  });
 
   const configured = isSupabaseConfigured();
 
@@ -123,7 +113,7 @@ export default function CustomerFeedbackPage() {
       const supabase = createClient();
       const { data, error } = await supabase
         .from("outlets")
-        .select("id, name")
+        .select("id, name, whatsapp_number")
         .eq("customer_qr_token", token)
         .single();
 
@@ -132,6 +122,7 @@ export default function CustomerFeedbackPage() {
       } else {
         setOutletName(data.name);
         setOutletId(data.id);
+        setOutletWhatsApp((data as { whatsapp_number?: string | null }).whatsapp_number ?? null);
       }
       setLoadingOutlet(false);
     }
@@ -157,15 +148,30 @@ export default function CustomerFeedbackPage() {
 
       if (error) throw error;
 
-      console.log(
-        `[BMW-Sync WhatsApp Webhook] 🚨 Issue reported at "${outletName}": ${issueLabel}${notes ? ` — Notes: ${notes}` : ""}`,
-      );
-
-      setWaModal({
-        visible: true,
-        outletName: outletName ?? "",
-        issueLabel,
+      // Send real WhatsApp alert to the outlet owner
+      const rawNumber = (outletWhatsApp ?? FALLBACK_WA)
+        .replace(/^\+/, "")
+        .replace(/\s/g, "");
+      const timestamp = new Date().toLocaleString("en-MY", {
+        timeZone: "Asia/Kuala_Lumpur",
+        dateStyle: "short",
+        timeStyle: "short",
       });
+      const msgLines = [
+        `🚨 *BMW-Sync Alert*`,
+        `Outlet: ${outletName}`,
+        `Issue: ${issueLabel}`,
+        `Time: ${timestamp}`,
+        notes.trim() ? `Notes: ${notes.trim()}` : null,
+        ``,
+        `Please take action immediately.`,
+      ]
+        .filter((l) => l !== null)
+        .join("\n");
+      const waUrl = `https://wa.me/${rawNumber}?text=${encodeURIComponent(msgLines)}`;
+      window.open(waUrl, "_blank");
+
+      setSuccess(true);
     } catch (err: unknown) {
       setSubmitError(
         err instanceof Error ? err.message : "Failed to submit. Try again.",
@@ -173,11 +179,6 @@ export default function CustomerFeedbackPage() {
     } finally {
       setSubmitting(false);
     }
-  }
-
-  function onModalClose() {
-    setWaModal({ visible: false, outletName: "", issueLabel: "" });
-    setSuccess(true);
   }
 
   if (!configured) {
@@ -227,6 +228,9 @@ export default function CustomerFeedbackPage() {
   }
 
   if (success) {
+    const rawNumber = (outletWhatsApp ?? FALLBACK_WA)
+      .replace(/^\+/, "")
+      .replace(/\s/g, "");
     return (
       <div className="min-h-screen bg-emerald-600 flex items-center justify-center px-4">
         <div className="text-center">
@@ -235,16 +239,28 @@ export default function CustomerFeedbackPage() {
           </div>
           <h2 className="text-3xl font-bold text-white mb-2">Thank You!</h2>
           <p className="text-emerald-100 text-lg mb-2">{outletName}</p>
-          <p className="text-emerald-200 text-sm">
-            Your feedback has been received and the team has been notified.
+          <div className="inline-flex items-center gap-2 bg-white/20 text-white text-sm font-medium px-4 py-2 rounded-full mt-1 mb-4">
+            <MessageSquare className="w-4 h-4" />
+            WhatsApp alert sent to owner
+          </div>
+          <p className="text-emerald-200 text-sm mb-6">
+            The management team has been notified and will take action shortly.
           </p>
+          <a
+            href={`https://wa.me/${rawNumber}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block text-emerald-300 text-xs underline mb-6"
+          >
+            WhatsApp didn&apos;t open? Tap here
+          </a>
           <button
             onClick={() => {
               setSuccess(false);
               setSelectedIssue(null);
               setNotes("");
             }}
-            className="mt-8 bg-white text-emerald-700 font-semibold px-8 py-3 rounded-xl shadow-lg active:scale-95 transition-transform"
+            className="bg-white text-emerald-700 font-semibold px-8 py-3 rounded-xl shadow-lg active:scale-95 transition-transform"
           >
             Report Another Issue
           </button>
@@ -254,46 +270,7 @@ export default function CustomerFeedbackPage() {
   }
 
   return (
-    <>
-      {/* WhatsApp Notification Modal */}
-      {waModal.visible && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6 text-center relative">
-            <button
-              onClick={onModalClose}
-              className="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center hover:bg-slate-200 transition"
-            >
-              <X className="w-4 h-4" />
-            </button>
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <MessageSquare className="w-8 h-8 text-green-600" />
-            </div>
-            <h3 className="text-lg font-bold text-slate-800 mb-1">
-              Notification Sent!
-            </h3>
-            <p className="text-slate-500 text-sm mb-4">
-              The restaurant manager at{" "}
-              <strong>{waModal.outletName}</strong> has been notified via
-              WhatsApp about:
-            </p>
-            <div className="bg-slate-50 rounded-xl px-4 py-3 text-sm font-medium text-slate-700 mb-5">
-              &quot;{waModal.issueLabel}&quot;
-            </div>
-            <p className="text-xs text-slate-400 mb-5">
-              ⚠️ WhatsApp integration simulated — notification logged to
-              console.
-            </p>
-            <button
-              onClick={onModalClose}
-              className="w-full bg-emerald-600 text-white font-semibold py-3 rounded-xl hover:bg-emerald-700 transition active:scale-95"
-            >
-              Done
-            </button>
-          </div>
-        </div>
-      )}
-
-      <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-slate-50">
         <div className="bg-slate-800 text-white px-4 pt-10 pb-6 text-center">
           <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center mx-auto mb-3">
             <ShieldCheck className="w-7 h-7 text-white" />
@@ -386,6 +363,5 @@ export default function CustomerFeedbackPage() {
           </p>
         </div>
       </div>
-    </>
   );
 }

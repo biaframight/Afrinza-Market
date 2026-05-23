@@ -56,6 +56,7 @@ type OutletRow = {
   address: string | null;
   staff_qr_token: string;
   customer_qr_token: string;
+  whatsapp_number: string | null;
   created_at: string;
 };
 
