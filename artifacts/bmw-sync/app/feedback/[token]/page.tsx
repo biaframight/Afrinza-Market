@@ -111,19 +111,36 @@ export default function CustomerFeedbackPage() {
     async function loadOutlet() {
       if (!token) return;
       const supabase = createClient();
+
+      // Fetch core fields first — never fails due to missing optional columns
       const { data, error } = await supabase
         .from("outlets")
-        .select("id, name, whatsapp_number")
+        .select("id, name")
         .eq("customer_qr_token", token)
         .single();
 
       if (error || !data) {
         setOutletError("Invalid or expired QR code. Please scan again.");
-      } else {
-        setOutletName(data.name);
-        setOutletId(data.id);
-        setOutletWhatsApp((data as { whatsapp_number?: string | null }).whatsapp_number ?? null);
+        setLoadingOutlet(false);
+        return;
       }
+
+      setOutletName(data.name);
+      setOutletId(data.id);
+
+      // Attempt to fetch whatsapp_number separately; ignore if column not yet added
+      try {
+        const { data: waData } = await supabase
+          .from("outlets")
+          .select("whatsapp_number")
+          .eq("id", data.id)
+          .single();
+        const waRow = waData as { whatsapp_number?: string | null } | null;
+        setOutletWhatsApp(waRow?.whatsapp_number ?? null);
+      } catch {
+        // column not yet added — fallback number will be used
+      }
+
       setLoadingOutlet(false);
     }
     loadOutlet();

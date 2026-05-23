@@ -4,7 +4,7 @@ export const dynamic = "force-dynamic";
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { QRCodeSVG } from "qrcode.react";
+import { QRCodeCanvas } from "qrcode.react";
 import { createClient, type Database } from "@/lib/supabase";
 import {
   AlertTriangle,
@@ -659,36 +659,14 @@ function StatCard({
   );
 }
 
-function downloadQRCode(svgId: string, filename: string) {
-  const svgEl = document.getElementById(svgId);
-  if (!svgEl) return;
-
-  const svgData = new XMLSerializer().serializeToString(svgEl);
-  const canvas = document.createElement("canvas");
-  const size = 400;
-  canvas.width = size;
-  canvas.height = size;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return;
-
-  ctx.fillStyle = "#ffffff";
-  ctx.fillRect(0, 0, size, size);
-
-  const img = new Image();
-  const svgBlob = new Blob([svgData], {
-    type: "image/svg+xml;charset=utf-8",
-  });
-  const url = URL.createObjectURL(svgBlob);
-  img.onload = () => {
-    ctx.drawImage(img, 0, 0, size, size);
-    URL.revokeObjectURL(url);
-    const pngUrl = canvas.toDataURL("image/png");
-    const a = document.createElement("a");
-    a.href = pngUrl;
-    a.download = filename;
-    a.click();
-  };
-  img.src = url;
+function downloadQRCode(canvasId: string, filename: string) {
+  const canvasEl = document.getElementById(canvasId) as HTMLCanvasElement | null;
+  if (!canvasEl) return;
+  const pngUrl = canvasEl.toDataURL("image/png");
+  const a = document.createElement("a");
+  a.href = pngUrl;
+  a.download = filename;
+  a.click();
 }
 
 function OutletCard({
@@ -835,13 +813,14 @@ function OutletCard({
 
       {(showingStaff || showingCustomer) && (
         <div className="mt-3 flex flex-col items-center gap-3 p-4 bg-slate-50 rounded-xl">
-          <QRCodeSVG
+          <QRCodeCanvas
             id={showingStaff ? staffQrId : customerQrId}
             value={showingStaff ? staffUrl : customerUrl}
-            size={160}
-            bgColor="#f8fafc"
+            size={400}
+            bgColor="#ffffff"
             fgColor={showingStaff ? "#059669" : "#1e293b"}
-            level="M"
+            level="H"
+            style={{ width: 160, height: 160 }}
           />
           <p className="text-xs text-slate-500 text-center break-all">
             {showingStaff ? staffUrl : customerUrl}
