@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { createClient, isSupabaseConfigured } from "@/lib/supabase";
+import { useActionState, useState } from "react";
+import { isSupabaseConfigured } from "@/lib/supabase";
+import { signInAction, signUpAction, type AuthState } from "./actions";
 import {
   CheckCircle,
   ExternalLink,
@@ -13,46 +14,29 @@ import {
 
 export default function LoginPage() {
   const [isSignUp, setIsSignUp] = useState(false);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
+  const [signInState, signInFormAction, signInPending] = useActionState<AuthState, FormData>(
+    signInAction,
+    null,
+  );
+  const [signUpState, signUpFormAction, signUpPending] = useActionState<AuthState, FormData>(
+    signUpAction,
+    null,
+  );
 
   const configured = isSupabaseConfigured();
+  const loading = signInPending || signUpPending;
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setError(null);
-    setSuccessMsg(null);
-    setLoading(true);
+  const error = isSignUp
+    ? signUpState && "error" in signUpState ? signUpState.error : null
+    : signInState && "error" in signInState ? signInState.error : null;
 
-    try {
-      const supabase = createClient();
-      if (isSignUp) {
-        const { error } = await supabase.auth.signUp({ email, password });
-        if (error) throw error;
-        setSuccessMsg(
-          "Account created! Check your email to confirm, then log in.",
-        );
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-        if (error) throw error;
-        // Hard redirect so the server re-reads the session cookie from scratch.
-        // router.push() + router.refresh() races with cookie propagation and
-        // causes the dashboard layout to bounce back to /login.
-        window.location.href = "/bmw-sync/dashboard";
-        return;
-      }
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "An error occurred.");
-    } finally {
-      setLoading(false);
-    }
-  }
+  const successMsg =
+    isSignUp && signUpState && "success" in signUpState
+      ? "Account created! Check your email to confirm, then sign in."
+      : null;
+
+  const currentAction = isSignUp ? signUpFormAction : signInFormAction;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-slate-100 flex items-center justify-center px-4">
@@ -62,9 +46,7 @@ export default function LoginPage() {
             <ShieldCheck className="w-9 h-9 text-white" />
           </div>
           <h1 className="text-3xl font-bold text-slate-800">BMW-Sync</h1>
-          <p className="text-slate-500 mt-1">
-            Toilet Hygiene Compliance System
-          </p>
+          <p className="text-slate-500 mt-1">Toilet Hygiene Compliance System</p>
           <div className="flex justify-center gap-4 mt-3 text-xs font-semibold tracking-widest text-emerald-700 uppercase">
             <span>Bersih</span>
             <span>•</span>
@@ -111,7 +93,7 @@ export default function LoginPage() {
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form action={currentAction} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">
                   Email Address
@@ -120,8 +102,7 @@ export default function LoginPage() {
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                   <input
                     type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    name="email"
                     required
                     placeholder="owner@restaurant.com"
                     className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition"
@@ -137,8 +118,7 @@ export default function LoginPage() {
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                   <input
                     type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    name="password"
                     required
                     minLength={6}
                     placeholder="••••••••"
@@ -170,11 +150,7 @@ export default function LoginPage() {
                 <>
                   Already have an account?{" "}
                   <button
-                    onClick={() => {
-                      setIsSignUp(false);
-                      setError(null);
-                      setSuccessMsg(null);
-                    }}
+                    onClick={() => setIsSignUp(false)}
                     className="text-emerald-600 font-medium hover:underline"
                   >
                     Sign in
@@ -184,11 +160,7 @@ export default function LoginPage() {
                 <>
                   New restaurant owner?{" "}
                   <button
-                    onClick={() => {
-                      setIsSignUp(true);
-                      setError(null);
-                      setSuccessMsg(null);
-                    }}
+                    onClick={() => setIsSignUp(true)}
                     className="text-emerald-600 font-medium hover:underline"
                   >
                     Create account
