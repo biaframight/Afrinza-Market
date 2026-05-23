@@ -14,9 +14,11 @@ import {
   Download,
   Filter,
   LogOut,
+  Plus,
   RefreshCw,
   ShieldCheck,
   Users,
+  X,
   XCircle,
 } from "lucide-react";
 
@@ -56,6 +58,12 @@ export default function DashboardPage() {
     outletId: string;
     type: "staff" | "customer";
   } | null>(null);
+
+  const [showAddOutlet, setShowAddOutlet] = useState(false);
+  const [newOutletName, setNewOutletName] = useState("");
+  const [newOutletAddress, setNewOutletAddress] = useState("");
+  const [addingOutlet, setAddingOutlet] = useState(false);
+  const [addOutletError, setAddOutletError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     setError(null);
@@ -129,6 +137,38 @@ export default function DashboardPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  async function handleAddOutlet(e: React.FormEvent) {
+    e.preventDefault();
+    setAddOutletError(null);
+    setAddingOutlet(true);
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated.");
+      const staffToken = crypto.randomUUID();
+      const customerToken = crypto.randomUUID();
+      const { error } = await supabase.from("outlets").insert({
+        owner_id: user.id,
+        name: newOutletName.trim(),
+        address: newOutletAddress.trim() || null,
+        staff_qr_token: staffToken,
+        customer_qr_token: customerToken,
+      });
+      if (error) throw error;
+      setShowAddOutlet(false);
+      setNewOutletName("");
+      setNewOutletAddress("");
+      await fetchData();
+    } catch (err: unknown) {
+      setAddOutletError(
+        err instanceof Error ? err.message : "Failed to add outlet.",
+      );
+    } finally {
+      setAddingOutlet(false);
+    }
+  }
+
   async function handleSignOut() {
     await supabase.auth.signOut();
     router.push("/login");
@@ -183,6 +223,84 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-slate-50">
+      {/* Add Outlet Modal */}
+      {showAddOutlet && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6 relative">
+            <button
+              onClick={() => {
+                setShowAddOutlet(false);
+                setAddOutletError(null);
+                setNewOutletName("");
+                setNewOutletAddress("");
+              }}
+              className="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center hover:bg-slate-200 transition"
+            >
+              <X className="w-4 h-4" />
+            </button>
+            <div className="w-12 h-12 bg-emerald-100 rounded-2xl flex items-center justify-center mb-4">
+              <Building2 className="w-6 h-6 text-emerald-600" />
+            </div>
+            <h3 className="text-lg font-bold text-slate-800 mb-1">
+              Add New Outlet
+            </h3>
+            <p className="text-slate-500 text-sm mb-5">
+              QR codes will be generated automatically.
+            </p>
+            {addOutletError && (
+              <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-3 py-2 mb-4">
+                {addOutletError}
+              </div>
+            )}
+            <form onSubmit={handleAddOutlet} className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  Outlet Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={newOutletName}
+                  onChange={(e) => setNewOutletName(e.target.value)}
+                  required
+                  placeholder="e.g. Restoran Maju — Main Branch"
+                  className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  Address{" "}
+                  <span className="text-slate-400 font-normal">(optional)</span>
+                </label>
+                <input
+                  type="text"
+                  value={newOutletAddress}
+                  onChange={(e) => setNewOutletAddress(e.target.value)}
+                  placeholder="e.g. No. 12, Jalan Ampang, KL"
+                  className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={addingOutlet || !newOutletName.trim()}
+                className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 text-white font-semibold py-2.5 rounded-xl transition flex items-center justify-center gap-2 mt-2"
+              >
+                {addingOutlet ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    Adding…
+                  </>
+                ) : (
+                  <>
+                    <Plus className="w-4 h-4" />
+                    Add Outlet
+                  </>
+                )}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
@@ -251,17 +369,33 @@ export default function DashboardPage() {
 
         {/* Outlets & QR Codes */}
         <section>
-          <h2 className="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
-            <Building2 className="w-5 h-5 text-emerald-600" />
-            My Outlets & QR Codes
-          </h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
+              <Building2 className="w-5 h-5 text-emerald-600" />
+              My Outlets & QR Codes
+            </h2>
+            <button
+              onClick={() => setShowAddOutlet(true)}
+              className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold px-3 py-2 rounded-xl transition"
+            >
+              <Plus className="w-4 h-4" />
+              Add Outlet
+            </button>
+          </div>
           {outlets.length === 0 ? (
             <div className="bg-white rounded-2xl border border-dashed border-slate-300 p-10 text-center text-slate-400">
               <Building2 className="w-10 h-10 mx-auto mb-3 text-slate-300" />
               <p className="font-medium">No outlets yet</p>
-              <p className="text-sm mt-1">
-                Add outlets to your account in Supabase to get started.
+              <p className="text-sm mt-1 mb-5">
+                Add your first outlet to generate QR codes for staff and customers.
               </p>
+              <button
+                onClick={() => setShowAddOutlet(true)}
+                className="inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition"
+              >
+                <Plus className="w-4 h-4" />
+                Add Your First Outlet
+              </button>
             </div>
           ) : (
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -708,11 +842,28 @@ function CleaningLogRow({
           })}
         </div>
       </div>
-      <div className="text-xs text-slate-400 whitespace-nowrap flex-shrink-0">
-        {new Date(log.logged_at).toLocaleTimeString("en-MY", {
-          hour: "2-digit",
-          minute: "2-digit",
-        })}
+      <div className="flex items-center gap-2 flex-shrink-0">
+        {log.photo_url && (
+          <a
+            href={log.photo_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            title="View photo"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={log.photo_url}
+              alt="Toilet photo"
+              className="w-10 h-10 rounded-lg object-cover border border-slate-200 hover:opacity-80 transition"
+            />
+          </a>
+        )}
+        <div className="text-xs text-slate-400 whitespace-nowrap">
+          {new Date(log.logged_at).toLocaleTimeString("en-MY", {
+            hour: "2-digit",
+            minute: "2-digit",
+          })}
+        </div>
       </div>
     </div>
   );
