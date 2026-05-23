@@ -659,15 +659,6 @@ function StatCard({
   );
 }
 
-function downloadQRCode(canvasId: string, filename: string) {
-  const canvasEl = document.getElementById(canvasId) as HTMLCanvasElement | null;
-  if (!canvasEl) return;
-  const pngUrl = canvasEl.toDataURL("image/png");
-  const a = document.createElement("a");
-  a.href = pngUrl;
-  a.download = filename;
-  a.click();
-}
 
 function OutletCard({
   outlet,
@@ -687,6 +678,7 @@ function OutletCard({
   const [editingWA, setEditingWA] = useState(false);
   const [waBuf, setWaBuf] = useState(outlet.whatsapp_number ?? "");
   const [waSaving, setWaSaving] = useState(false);
+  const qrRef = useRef<HTMLCanvasElement>(null);
 
   async function saveWhatsApp() {
     setWaSaving(true);
@@ -813,15 +805,17 @@ function OutletCard({
 
       {(showingStaff || showingCustomer) && (
         <div className="mt-3 flex flex-col items-center gap-3 p-4 bg-slate-50 rounded-xl">
-          <QRCodeCanvas
-            id={showingStaff ? staffQrId : customerQrId}
-            value={showingStaff ? staffUrl : customerUrl}
-            size={400}
-            bgColor="#ffffff"
-            fgColor={showingStaff ? "#059669" : "#1e293b"}
-            level="H"
-            style={{ width: 160, height: 160 }}
-          />
+          <div className="bg-white p-3 rounded-xl shadow-sm">
+            <QRCodeCanvas
+              ref={qrRef}
+              value={showingStaff ? staffUrl : customerUrl}
+              size={400}
+              bgColor="#ffffff"
+              fgColor={showingStaff ? "#059669" : "#1e293b"}
+              level="M"
+              style={{ width: 160, height: 160, display: "block" }}
+            />
+          </div>
           <p className="text-xs text-slate-500 text-center break-all">
             {showingStaff ? staffUrl : customerUrl}
           </p>
@@ -829,14 +823,17 @@ function OutletCard({
             {showingStaff ? "Staff Cleaning Log" : "Customer Feedback"}
           </p>
           <button
-            onClick={() =>
-              downloadQRCode(
-                showingStaff ? staffQrId : customerQrId,
-                showingStaff
-                  ? `bmw-sync_staff_${safeName}.png`
-                  : `bmw-sync_customer_${safeName}.png`,
-              )
-            }
+            onClick={() => {
+              const canvas = qrRef.current;
+              if (!canvas) return;
+              const filename = showingStaff
+                ? `bmw-sync_staff_${safeName}.png`
+                : `bmw-sync_customer_${safeName}.png`;
+              const a = document.createElement("a");
+              a.href = canvas.toDataURL("image/png");
+              a.download = filename;
+              a.click();
+            }}
             className={`flex items-center gap-1.5 text-xs font-semibold px-4 py-2 rounded-lg transition ${
               showingStaff
                 ? "bg-emerald-600 hover:bg-emerald-700 text-white"
