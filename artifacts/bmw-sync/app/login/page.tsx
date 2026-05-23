@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase";
 import {
   CheckCircle,
@@ -43,8 +42,11 @@ export default function LoginPage() {
           password,
         });
         if (error) throw error;
-        router.push("/dashboard");
-        router.refresh();
+        // Hard redirect so the server re-reads the session cookie from scratch.
+        // router.push() + router.refresh() races with cookie propagation and
+        // causes the dashboard layout to bounce back to /login.
+        window.location.href = "/bmw-sync/dashboard";
+        return;
       }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "An error occurred.");
