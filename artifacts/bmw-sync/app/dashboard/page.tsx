@@ -809,26 +809,11 @@ function OutletCard({
 
       {(showingStaff || showingCustomer) && (
         <div className="mt-3 flex flex-col items-center gap-3 p-4 bg-slate-50 rounded-xl">
-          {/* Visible QR — display only */}
-          <div className="bg-white p-3 rounded-xl shadow-sm">
+          {/* Visible QR */}
+          <div ref={qrDownloadRef} className="bg-white p-3 rounded-xl shadow-sm">
             <QRCodeCanvas
               value={showingStaff ? staffUrl : customerUrl}
               size={200}
-              bgColor="#ffffff"
-              fgColor={showingStaff ? "#059669" : "#1e293b"}
-              level="H"
-            />
-          </div>
-
-          {/* Hidden high-res canvas used exclusively for download */}
-          <div
-            ref={qrDownloadRef}
-            aria-hidden="true"
-            style={{ position: "absolute", left: "-9999px", top: "-9999px", pointerEvents: "none" }}
-          >
-            <QRCodeCanvas
-              value={showingStaff ? staffUrl : customerUrl}
-              size={800}
               bgColor="#ffffff"
               fgColor={showingStaff ? "#059669" : "#1e293b"}
               level="H"
@@ -843,13 +828,20 @@ function OutletCard({
           </p>
           <button
             onClick={() => {
-              const canvas = qrDownloadRef.current?.querySelector("canvas");
-              if (!canvas) return;
+              const sourceCanvas = qrDownloadRef.current?.querySelector("canvas");
+              if (!sourceCanvas) return;
+              const offscreen = document.createElement("canvas");
+              offscreen.width = 800;
+              offscreen.height = 800;
+              const ctx = offscreen.getContext("2d");
+              if (!ctx) return;
+              ctx.imageSmoothingEnabled = false;
+              ctx.drawImage(sourceCanvas, 0, 0, 800, 800);
               const filename = showingStaff
                 ? `bmw-sync_staff_${safeName}.png`
                 : `bmw-sync_customer_${safeName}.png`;
               const a = document.createElement("a");
-              a.href = canvas.toDataURL("image/png");
+              a.href = offscreen.toDataURL("image/png");
               a.download = filename;
               a.click();
             }}

@@ -337,7 +337,6 @@ export default function StaffLogPage() {
             ref={fileInputRef}
             type="file"
             accept="image/*"
-            capture="environment"
             onChange={handlePhotoChange}
             className="hidden"
           />

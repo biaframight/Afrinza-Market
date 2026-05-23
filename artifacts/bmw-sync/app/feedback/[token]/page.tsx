@@ -154,6 +154,34 @@ export default function CustomerFeedbackPage() {
     const issueLabel =
       ISSUES.find((i) => i.key === selectedIssue)?.label ?? selectedIssue;
 
+    // Pre-open the WhatsApp window NOW — must be synchronous inside a user
+    // gesture. After any await the browser treats the context as untrusted
+    // and blocks window.open as a popup.
+    const rawNumber = (outletWhatsApp ?? FALLBACK_WA)
+      .replace(/^\+/, "")
+      .replace(/\s/g, "");
+    const timestamp = new Date().toLocaleString("en-MY", {
+      timeZone: "Asia/Kuala_Lumpur",
+      dateStyle: "short",
+      timeStyle: "short",
+    });
+    const msgLines = [
+      `🚨 *BMW-Sync Alert*`,
+      `Outlet: ${outletName}`,
+      `Issue: ${issueLabel}`,
+      `Time: ${timestamp}`,
+      notes.trim() ? `Notes: ${notes.trim()}` : null,
+      ``,
+      `Please take action immediately.`,
+    ]
+      .filter((l) => l !== null)
+      .join("\n");
+    const waUrl = `https://wa.me/${rawNumber}?text=${encodeURIComponent(msgLines)}`;
+
+    // Open a blank tab synchronously — the browser allows this because we're
+    // still inside the click handler. We'll redirect it after the DB insert.
+    const waWindow = window.open("", "_blank");
+
     try {
       const supabase = createClient();
       const { error } = await supabase.from("customer_feedback").insert({
@@ -165,31 +193,18 @@ export default function CustomerFeedbackPage() {
 
       if (error) throw error;
 
-      // Send real WhatsApp alert to the outlet owner
-      const rawNumber = (outletWhatsApp ?? FALLBACK_WA)
-        .replace(/^\+/, "")
-        .replace(/\s/g, "");
-      const timestamp = new Date().toLocaleString("en-MY", {
-        timeZone: "Asia/Kuala_Lumpur",
-        dateStyle: "short",
-        timeStyle: "short",
-      });
-      const msgLines = [
-        `🚨 *BMW-Sync Alert*`,
-        `Outlet: ${outletName}`,
-        `Issue: ${issueLabel}`,
-        `Time: ${timestamp}`,
-        notes.trim() ? `Notes: ${notes.trim()}` : null,
-        ``,
-        `Please take action immediately.`,
-      ]
-        .filter((l) => l !== null)
-        .join("\n");
-      const waUrl = `https://wa.me/${rawNumber}?text=${encodeURIComponent(msgLines)}`;
-      window.open(waUrl, "_blank");
+      // Redirect the pre-opened tab to WhatsApp
+      if (waWindow) {
+        waWindow.location.href = waUrl;
+      } else {
+        // Fallback: show a direct link if popup was blocked entirely
+        window.location.href = waUrl;
+      }
 
       setSuccess(true);
     } catch (err: unknown) {
+      // Close the blank tab if the DB insert failed
+      waWindow?.close();
       setSubmitError(
         err instanceof Error ? err.message : "Failed to submit. Try again.",
       );
