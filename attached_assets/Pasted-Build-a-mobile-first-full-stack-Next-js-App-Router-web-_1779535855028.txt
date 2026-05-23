@@ -1,0 +1,42 @@
+Build a mobile-first full-stack Next.js (App Router) web application called "BMW-Sync" using Tailwind CSS and the `@supabase/supabase-js` client SDK. This app helps Malaysian restaurant owners comply with the 2026 municipal council "BMW" (Bersih, Menawan, Wangi) toilet hygiene mandate to protect their business licenses.
+
+The app will deploy to Vercel and connect to an external Supabase database.
+
+### 1. Configuration & Environment Variables:
+The app must read database credentials from these exact environment variables. Do not hardcode them:
+- NEXT_PUBLIC_SUPABASE_URL
+- NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+### 2. Core User Experiences & Routing:
+
+#### A. Owner Dashboard & Auth (Protected Routes: `/dashboard`)
+- Use Supabase Auth (`supabase.auth.signInWithPassword` and `signUp`) for a clean email/password authentication system for restaurant owners.
+- Once logged in, the owner can view and manage their 'Outlets'.
+- For each outlet, display the outlet's name and two dynamic, downloadable QR codes generated on the frontend using a library like `qrcode.react`:
+  1. "Staff Cleaning Log QR" -> Points to: `[Current_Domain]/log/[staff_qr_token]`
+  2. "Customer Feedback QR" -> Points to: `[Current_Domain]/feedback/[customer_qr_token]`
+- Display a real-time feed of recent logs from the `cleaning_logs` table (including timestamps and staff photos).
+- Display an urgent "Live Alerts" panel fetching from the `customer_feedback` table where status is 'Pending'.
+- Provide a clean filterable table view acting as a "Compliance Report" that owners can show to municipal inspectors (DBKL, MBPJ, etc.) to prove historical compliance.
+
+#### B. Staff Mobile View (`/log/[token]` - Public Route, No Login Required)
+- Fully mobile-optimized, clean, thumb-friendly layout.
+- Automatically fetch and display the Outlet Name corresponding to the `staff_qr_token` from the database.
+- Inputs: Staff Name (Text input).
+- Checkboxes for the 4 BMW pillars:
+  - [ ] Floor is completely dry and clean
+  - [ ] Soap and paper towels are refilled
+  - [ ] Trash bin is emptied and covered
+  - [ ] Air freshener/fragrance is active
+- Photo upload: Provide a simple file input for staff to snap and upload a photo of the clean washroom. For the MVP, upload this file to a Supabase Storage bucket named 'toilet-photos' (or fallback to converting it to a Base64 string to store directly in the `photo_url` text column if bucket storage fails).
+- On submit, insert a new record into `cleaning_logs` and display a prominent success animation/message.
+
+#### C. Customer Mobile View (`/feedback/[token]` - Public Route, No Login Required)
+- Minimal, premium mobile interface that reads: "Help [Outlet Name] Stay 5-Star BMW Compliant!"
+- 4 large, clickable grid buttons for instant issue reporting: "No Toilet Paper/Soap", "Wet/Slippery Floor", "Bad Odor", "Trash Full".
+- An optional text field for extra notes.
+- On submission, insert the data into the `customer_feedback` table. Simulate a real-time notification layer (e.g., console log an alert trigger or use a mockup modal alert) to show how an immediate WhatsApp notification webhook would be dispatched to the owner.
+
+### 3. Design Guidelines:
+- Use Tailwind CSS with a clean, high-end "hygiene and compliance" palette: deep emerald greens, clean slate grays, and pure whites.
+- Ensure the `/log` and `/feedback` pages are heavily optimized for mobile viewports, as users will strictly access them via physical QR code scans inside restrooms.
