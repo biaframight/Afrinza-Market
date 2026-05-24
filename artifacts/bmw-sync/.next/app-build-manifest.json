@@ -26,15 +26,10 @@
       "static/chunks/main-app.js",
       "static/chunks/app/dashboard/page.js"
     ],
-    "/feedback/[token]/page": [
+    "/_not-found/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/feedback/[token]/page.js"
-    ],
-    "/log/[token]/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/log/[token]/page.js"
+      "static/chunks/app/_not-found/page.js"
     ]
   }
 }

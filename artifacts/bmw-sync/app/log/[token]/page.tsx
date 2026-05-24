@@ -331,18 +331,6 @@ export default function StaffLogPage() {
             Toilet Photo{" "}
             <span className="text-slate-400 font-normal">(optional)</span>
           </p>
-          {/*
-            Use a <label> directly linked to the input via htmlFor.
-            This is a real user-gesture click — never blocked by iOS Safari
-            or Android Chrome, unlike button.click() triggered from code.
-          */}
-          <input
-            id="photo-input"
-            type="file"
-            accept="image/*"
-            onChange={handlePhotoChange}
-            className="sr-only"
-          />
           {photoPreview ? (
             <div className="relative rounded-2xl overflow-hidden">
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -351,32 +339,47 @@ export default function StaffLogPage() {
                 alt="Preview"
                 className="w-full h-48 object-cover"
               />
-              <label
-                htmlFor="photo-input"
-                className="absolute top-2 left-2 bg-black/60 text-white text-xs px-3 py-1 rounded-full cursor-pointer"
-              >
-                Change
-              </label>
+              {/* Overlay input covers the whole image — tap anywhere to change */}
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handlePhotoChange}
+                className="absolute inset-0 opacity-0 cursor-pointer"
+                style={{ fontSize: 0 }}
+              />
               <button
                 type="button"
                 onClick={() => {
                   setPhotoFile(null);
                   setPhotoPreview(null);
                 }}
-                className="absolute top-2 right-2 bg-black/60 text-white text-xs px-3 py-1 rounded-full"
+                className="absolute top-2 right-2 bg-black/60 text-white text-xs px-3 py-1 rounded-full z-10"
               >
                 Remove
               </button>
             </div>
           ) : (
-            <label
-              htmlFor="photo-input"
-              className="w-full flex flex-col items-center gap-2 py-8 rounded-2xl border-2 border-dashed border-slate-300 bg-white text-slate-400 hover:border-emerald-400 hover:text-emerald-600 transition cursor-pointer"
-            >
-              <Camera className="w-8 h-8" />
-              <span className="text-sm font-medium">Take / Upload Photo</span>
-              <span className="text-xs text-slate-400">Camera or gallery</span>
-            </label>
+            <div className="relative w-full">
+              {/* Visible button UI */}
+              <div className="w-full flex flex-col items-center gap-2 py-8 rounded-2xl border-2 border-dashed border-slate-300 bg-white text-slate-400">
+                <Camera className="w-8 h-8" />
+                <span className="text-sm font-medium">Take / Upload Photo</span>
+                <span className="text-xs">Camera or gallery</span>
+              </div>
+              {/*
+                The input is absolutely positioned over the entire button area
+                with opacity:0. The user physically taps the input element
+                itself — no JavaScript trigger, no label link, no synthetic
+                click. Works on every iOS and Android browser without exception.
+              */}
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handlePhotoChange}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                style={{ fontSize: 0 }}
+              />
+            </div>
           )}
         </div>
 
