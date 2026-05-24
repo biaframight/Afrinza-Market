@@ -58,14 +58,23 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  const ADMIN_EMAIL = "biaframight@gmail.com";
   const pathname = request.nextUrl.pathname;
   const isDashboard = pathname.startsWith("/dashboard");
+  const isAdmin = pathname.startsWith("/admin");
   const isLogin = pathname.startsWith("/login");
 
-  if (!user && isDashboard) {
+  if (!user && (isDashboard || isAdmin)) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = "/login";
     return NextResponse.redirect(loginUrl);
+  }
+
+  // Non-admin user trying to access /admin → back to dashboard
+  if (user && isAdmin && user.email !== ADMIN_EMAIL) {
+    const dashboardUrl = request.nextUrl.clone();
+    dashboardUrl.pathname = "/dashboard";
+    return NextResponse.redirect(dashboardUrl);
   }
 
   if (user && isLogin) {
@@ -78,5 +87,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/login"],
+  matcher: ["/dashboard/:path*", "/admin/:path*", "/admin", "/login"],
 };

@@ -346,6 +346,15 @@ export default function DashboardPage() {
                 {userEmail}
               </span>
             )}
+            {userEmail === "biaframight@gmail.com" && (
+              <a
+                href="/admin"
+                className="flex items-center gap-1.5 text-xs font-semibold bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg transition"
+              >
+                <ShieldCheck className="w-3.5 h-3.5" />
+                Admin
+              </a>
+            )}
             <button
               onClick={handleSignOut}
               className="flex items-center gap-1.5 text-sm text-slate-600 hover:text-red-600 transition"
