@@ -17,6 +17,27 @@ env = { "CI" = "true" }
 [workflows]
 runButton = "Project"
 
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "artifacts/bmw-sync: web"
+
+[[workflows.workflow]]
+name = "artifacts/bmw-sync: web"
+author = "agent"
+
+[workflows.workflow.metadata]
+outputType = "webview"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "PORT=19367 BASE_PATH=/bmw-sync/ pnpm --filter @workspace/bmw-sync run dev"
+waitForPort = 19367
+
 [agent]
 stack = "PNPM_WORKSPACE"
 expertMode = true
