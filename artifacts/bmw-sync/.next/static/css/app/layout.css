@@ -515,6 +515,17 @@ video {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
 .fixed {
   position: fixed;
 }
@@ -550,6 +561,9 @@ video {
 }
 .top-4 {
   top: 1rem;
+}
+.left-2 {
+  left: 0.5rem;
 }
 .z-40 {
   z-index: 40;
@@ -768,6 +782,9 @@ video {
 }
 .animate-spin {
   animation: spin 1s linear infinite;
+}
+.cursor-pointer {
+  cursor: pointer;
 }
 .resize-none {
   resize: none;

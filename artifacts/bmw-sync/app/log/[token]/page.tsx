@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase";
 import {
@@ -47,8 +47,6 @@ type PillarKey = (typeof BMW_PILLARS)[number]["key"];
 export default function StaffLogPage() {
   const params = useParams();
   const token = params?.token as string;
-
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [outletName, setOutletName] = useState<string | null>(null);
   const [outletId, setOutletId] = useState<string | null>(null);
@@ -333,12 +331,17 @@ export default function StaffLogPage() {
             Toilet Photo{" "}
             <span className="text-slate-400 font-normal">(optional)</span>
           </p>
+          {/*
+            Use a <label> directly linked to the input via htmlFor.
+            This is a real user-gesture click — never blocked by iOS Safari
+            or Android Chrome, unlike button.click() triggered from code.
+          */}
           <input
-            ref={fileInputRef}
+            id="photo-input"
             type="file"
             accept="image/*"
             onChange={handlePhotoChange}
-            className="hidden"
+            className="sr-only"
           />
           {photoPreview ? (
             <div className="relative rounded-2xl overflow-hidden">
@@ -348,6 +351,12 @@ export default function StaffLogPage() {
                 alt="Preview"
                 className="w-full h-48 object-cover"
               />
+              <label
+                htmlFor="photo-input"
+                className="absolute top-2 left-2 bg-black/60 text-white text-xs px-3 py-1 rounded-full cursor-pointer"
+              >
+                Change
+              </label>
               <button
                 type="button"
                 onClick={() => {
@@ -360,14 +369,14 @@ export default function StaffLogPage() {
               </button>
             </div>
           ) : (
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="w-full flex flex-col items-center gap-2 py-8 rounded-2xl border-2 border-dashed border-slate-300 bg-white text-slate-400 hover:border-emerald-400 hover:text-emerald-600 transition"
+            <label
+              htmlFor="photo-input"
+              className="w-full flex flex-col items-center gap-2 py-8 rounded-2xl border-2 border-dashed border-slate-300 bg-white text-slate-400 hover:border-emerald-400 hover:text-emerald-600 transition cursor-pointer"
             >
               <Camera className="w-8 h-8" />
               <span className="text-sm font-medium">Take / Upload Photo</span>
-            </button>
+              <span className="text-xs text-slate-400">Camera or gallery</span>
+            </label>
           )}
         </div>
 
