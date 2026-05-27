@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase";
 import {
@@ -62,6 +62,8 @@ export default function StaffLogPage() {
   });
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [photoError, setPhotoError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -101,10 +103,22 @@ export default function StaffLogPage() {
   function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+    setPhotoError(null);
+    if (file.size > 10 * 1024 * 1024) {
+      setPhotoError("Photo must be under 10 MB. Please try a smaller image.");
+      return;
+    }
     setPhotoFile(file);
     const reader = new FileReader();
     reader.onloadend = () => setPhotoPreview(reader.result as string);
     reader.readAsDataURL(file);
+  }
+
+  function clearPhoto() {
+    setPhotoFile(null);
+    setPhotoPreview(null);
+    setPhotoError(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -331,55 +345,61 @@ export default function StaffLogPage() {
             Toilet Photo{" "}
             <span className="text-slate-400 font-normal">(optional)</span>
           </p>
+
+          {/*
+            sr-only keeps the input in the DOM and technically visible to the
+            browser (just clipped). iOS Safari and Android Chrome both reliably
+            open the file / camera picker when a <label htmlFor> is tapped.
+            This is more reliable than opacity-0 overlays on all mobile browsers.
+          */}
+          <input
+            ref={fileInputRef}
+            id="photo-upload"
+            type="file"
+            accept="image/*"
+            onChange={handlePhotoChange}
+            className="sr-only"
+          />
+
+          {photoError && (
+            <p className="text-red-500 text-xs mb-2">{photoError}</p>
+          )}
+
           {photoPreview ? (
-            <div className="relative rounded-2xl overflow-hidden">
+            <div className="rounded-2xl overflow-hidden border border-slate-200">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={photoPreview}
                 alt="Preview"
-                className="w-full h-48 object-cover"
+                className="w-full h-52 object-cover"
               />
-              {/* Overlay input covers the whole image — tap anywhere to change */}
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handlePhotoChange}
-                className="absolute inset-0 opacity-0 cursor-pointer"
-                style={{ fontSize: 0 }}
-              />
-              <button
-                type="button"
-                onClick={() => {
-                  setPhotoFile(null);
-                  setPhotoPreview(null);
-                }}
-                className="absolute top-2 right-2 bg-black/60 text-white text-xs px-3 py-1 rounded-full z-10"
-              >
-                Remove
-              </button>
+              <div className="flex gap-2 p-2 bg-slate-50">
+                <label
+                  htmlFor="photo-upload"
+                  className="flex-1 text-center text-xs font-semibold text-slate-600 bg-white border border-slate-200 rounded-xl py-2 cursor-pointer active:bg-slate-100 transition"
+                >
+                  Change Photo
+                </label>
+                <button
+                  type="button"
+                  onClick={clearPhoto}
+                  className="flex-1 text-xs font-semibold text-red-600 bg-white border border-red-200 rounded-xl py-2 active:bg-red-50 transition"
+                >
+                  Remove
+                </button>
+              </div>
             </div>
           ) : (
-            <div className="relative w-full">
-              {/* Visible button UI */}
-              <div className="w-full flex flex-col items-center gap-2 py-8 rounded-2xl border-2 border-dashed border-slate-300 bg-white text-slate-400">
-                <Camera className="w-8 h-8" />
-                <span className="text-sm font-medium">Take / Upload Photo</span>
-                <span className="text-xs">Camera or gallery</span>
-              </div>
-              {/*
-                The input is absolutely positioned over the entire button area
-                with opacity:0. The user physically taps the input element
-                itself — no JavaScript trigger, no label link, no synthetic
-                click. Works on every iOS and Android browser without exception.
-              */}
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handlePhotoChange}
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                style={{ fontSize: 0 }}
-              />
-            </div>
+            <label
+              htmlFor="photo-upload"
+              className="flex w-full flex-col items-center gap-2 py-10 rounded-2xl border-2 border-dashed border-slate-300 bg-white text-slate-400 cursor-pointer active:bg-slate-50 active:border-emerald-400 transition"
+            >
+              <Camera className="w-9 h-9" />
+              <span className="text-sm font-semibold text-slate-600">
+                Tap to take or upload a photo
+              </span>
+              <span className="text-xs">Camera · Gallery · Max 10 MB</span>
+            </label>
           )}
         </div>
 

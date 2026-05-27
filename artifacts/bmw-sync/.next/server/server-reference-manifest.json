@@ -1,5 +1,32 @@
 {
-  "node": {},
+  "node": {
+    "60c45980ac21b6c5ea5560834a1484ff06446b4086": {
+      "workers": {
+        "app/login/page": {
+          "moduleId": "(action-browser)/../../node_modules/.pnpm/next@15.5.18_react-dom@19.1.0_react@19.1.0__react@19.1.0/node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2Fhome%2Frunner%2Fworkspace%2Fartifacts%2Fbmw-sync%2Fapp%2Flogin%2Factions.ts%22%2C%5B%7B%22id%22%3A%2260c45980ac21b6c5ea5560834a1484ff06446b4086%22%2C%22exportedName%22%3A%22signInAction%22%2C%22filename%22%3A%22app%2Flogin%2Factions.ts%22%7D%2C%7B%22id%22%3A%2260e3affd5f7fbca0b080bca45f828a1391133d1596%22%2C%22exportedName%22%3A%22signUpAction%22%2C%22filename%22%3A%22app%2Flogin%2Factions.ts%22%7D%5D%5D%5D&__client_imported__=true!",
+          "async": false
+        }
+      },
+      "layer": {
+        "app/login/page": "action-browser"
+      },
+      "filename": "app/login/actions.ts",
+      "exportedName": "signInAction"
+    },
+    "60e3affd5f7fbca0b080bca45f828a1391133d1596": {
+      "workers": {
+        "app/login/page": {
+          "moduleId": "(action-browser)/../../node_modules/.pnpm/next@15.5.18_react-dom@19.1.0_react@19.1.0__react@19.1.0/node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2Fhome%2Frunner%2Fworkspace%2Fartifacts%2Fbmw-sync%2Fapp%2Flogin%2Factions.ts%22%2C%5B%7B%22id%22%3A%2260c45980ac21b6c5ea5560834a1484ff06446b4086%22%2C%22exportedName%22%3A%22signInAction%22%2C%22filename%22%3A%22app%2Flogin%2Factions.ts%22%7D%2C%7B%22id%22%3A%2260e3affd5f7fbca0b080bca45f828a1391133d1596%22%2C%22exportedName%22%3A%22signUpAction%22%2C%22filename%22%3A%22app%2Flogin%2Factions.ts%22%7D%5D%5D%5D&__client_imported__=true!",
+          "async": false
+        }
+      },
+      "layer": {
+        "app/login/page": "action-browser"
+      },
+      "filename": "app/login/actions.ts",
+      "exportedName": "signUpAction"
+    }
+  },
   "edge": {},
   "encryptionKey": "/Wj7sAXYuxNJQQKXtmXiU6UKec7NnRo0uu8bgT0PZY4="
 }
