@@ -1,6 +1,0 @@
-{
-  "framework": "nextjs",
-  "installCommand": "cd artifacts/bmw-sync && npm install",
-  "buildCommand": "cd artifacts/bmw-sync && npm run build",
-  "outputDirectory": "artifacts/bmw-sync/.next"
-}
