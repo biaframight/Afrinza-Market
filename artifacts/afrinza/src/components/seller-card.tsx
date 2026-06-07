@@ -2,7 +2,7 @@ import { Link } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { MapPin, Crown, Package } from "lucide-react";
+import { MapPin, Crown, Package, BadgeCheck } from "lucide-react";
 import { StarRating } from "./star-rating";
 import type { Seller } from "@/lib/supabase-db";
 import { motion } from "framer-motion";
@@ -47,6 +47,9 @@ export function SellerCard({ seller, index = 0 }: SellerCardProps) {
           <CardContent className="pt-12 pb-5 px-5">
             <h3 className="font-bold text-lg text-foreground group-hover:text-primary transition-colors flex items-center gap-2">
               {seller.storeName}
+              {seller.isVerified && (
+                <BadgeCheck className="w-4 h-4 text-blue-500 shrink-0" />
+              )}
             </h3>
             
             <div className="flex items-center gap-1 mt-1.5 mb-3 text-sm text-muted-foreground">

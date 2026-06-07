@@ -10,6 +10,9 @@ import {
   useAdminDeleteProduct,
   useAdminGetAllOrders,
   useAdminUpdateOrderStatus,
+  useAdminVerifySeller,
+  useAdminRejectKyc,
+  useAdminRevokeVerification,
 } from "@/hooks/use-marketplace";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,6 +20,7 @@ import { toast } from "sonner";
 import {
   Shield, Store, Package, Star, Trash2, Loader2, StarOff, Users, Tag,
   ShoppingBag, TrendingUp, Calendar, ChevronDown, CheckCircle, Clock, XCircle,
+  BadgeCheck, Phone, UserCheck, UserX, ShieldOff,
 } from "lucide-react";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -29,7 +33,7 @@ import type { AdminOrder } from "@/lib/supabase-db";
 
 const ADMIN_EMAIL = "alphuplift@gmail.com";
 
-type Tab = "orders" | "sellers" | "products";
+type Tab = "orders" | "sellers" | "products" | "kyc";
 type Period = "today" | "week" | "month" | "year" | "all";
 
 const PERIOD_LABELS: Record<Period, string> = {
@@ -119,6 +123,9 @@ export default function Admin() {
   const deleteSeller = useAdminDeleteSeller();
   const deleteProduct = useAdminDeleteProduct();
   const updateOrderStatus = useAdminUpdateOrderStatus();
+  const verifySeller = useAdminVerifySeller();
+  const rejectKyc = useAdminRejectKyc();
+  const revokeVerification = useAdminRevokeVerification();
 
   const sellers = allSellers.data ?? [];
   const products = allProducts.data ?? [];
@@ -134,6 +141,9 @@ export default function Admin() {
   const monthOrders  = useMemo(() => filterByPeriod(allOrders, "month"),  [allOrders]);
   const yearOrders   = useMemo(() => filterByPeriod(allOrders, "year"),   [allOrders]);
 
+  const kycSellers = useMemo(() => sellers.filter((s) => s.kycStatus !== "none"), [sellers]);
+  const kycPendingCount = useMemo(() => sellers.filter((s) => s.kycStatus === "pending").length, [sellers]);
+
   const dayGroups = useMemo(() => groupByDay(filteredOrders), [filteredOrders]);
   const maxRevenue = useMemo(() => Math.max(...dayGroups.map((g) => g.revenue), 1), [dayGroups]);
 
@@ -148,6 +158,27 @@ export default function Admin() {
     toggleProductSponsored.mutate({ id, isSponsored: !current }, {
       onSuccess: () => toast.success(!current ? "Product marked as Sponsored" : "Sponsor removed"),
       onError: () => toast.error("Failed to update — check Supabase admin policy."),
+    });
+  };
+
+  const handleVerify = (id: number) => {
+    verifySeller.mutate({ id }, {
+      onSuccess: () => toast.success("Seller verified!"),
+      onError: () => toast.error("Failed — check Supabase admin policy."),
+    });
+  };
+
+  const handleRejectKyc = (id: number) => {
+    rejectKyc.mutate({ id }, {
+      onSuccess: () => toast.success("KYC request rejected."),
+      onError: () => toast.error("Failed — check Supabase admin policy."),
+    });
+  };
+
+  const handleRevokeVerification = (id: number) => {
+    revokeVerification.mutate({ id }, {
+      onSuccess: () => toast.success("Verification revoked."),
+      onError: () => toast.error("Failed — check Supabase admin policy."),
     });
   };
 
@@ -236,6 +267,7 @@ export default function Admin() {
             { id: "orders",   icon: <ShoppingBag className="w-4 h-4" />, label: `Orders (${allOrders.length})` },
             { id: "sellers",  icon: <Store       className="w-4 h-4" />, label: `Sellers (${sellers.length})` },
             { id: "products", icon: <Package     className="w-4 h-4" />, label: `Products (${products.length})` },
+            { id: "kyc",      icon: <BadgeCheck  className="w-4 h-4" />, label: `KYC${kycPendingCount > 0 ? ` (${kycPendingCount} pending)` : ""}` },
           ] as const).map(({ id, icon, label }) => (
             <button
               key={id}
@@ -398,6 +430,7 @@ export default function Admin() {
                       <th className="text-left px-5 py-4 font-semibold text-muted-foreground">Owner</th>
                       <th className="text-left px-5 py-4 font-semibold text-muted-foreground">Location</th>
                       <th className="text-left px-5 py-4 font-semibold text-muted-foreground">Categories</th>
+                      <th className="text-center px-5 py-4 font-semibold text-muted-foreground">Verified</th>
                       <th className="text-center px-5 py-4 font-semibold text-muted-foreground">Sponsored</th>
                       <th className="text-center px-5 py-4 font-semibold text-muted-foreground">Actions</th>
                     </tr>
@@ -429,6 +462,23 @@ export default function Admin() {
                             ))}
                             {seller.categories.length > 2 && <Badge variant="outline" className="text-[10px] h-5">+{seller.categories.length - 2}</Badge>}
                           </div>
+                        </td>
+                        <td className="px-5 py-4 text-center">
+                          {seller.isVerified ? (
+                            <Badge className="bg-blue-100 text-blue-700 border-transparent gap-1 text-[10px] h-5">
+                              <BadgeCheck className="w-3 h-3" /> Verified
+                            </Badge>
+                          ) : seller.kycStatus === "pending" ? (
+                            <Badge className="bg-amber-100 text-amber-700 border-transparent gap-1 text-[10px] h-5">
+                              <Clock className="w-3 h-3" /> Pending
+                            </Badge>
+                          ) : seller.kycStatus === "rejected" ? (
+                            <Badge className="bg-red-100 text-red-700 border-transparent gap-1 text-[10px] h-5">
+                              <XCircle className="w-3 h-3" /> Rejected
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground text-xs">—</span>
+                          )}
                         </td>
                         <td className="px-5 py-4 text-center">
                           <button
@@ -525,6 +575,166 @@ export default function Admin() {
                 </table>
               </div>
             )}
+          </div>
+        )}
+        {/* ══════════════════════════════════════════════════════════
+            KYC TAB
+        ══════════════════════════════════════════════════════════ */}
+        {tab === "kyc" && (
+          <div className="space-y-6">
+            {/* Summary cards */}
+            <div className="grid grid-cols-3 gap-4">
+              {[
+                { label: "Total Requests", value: kycSellers.length, color: "bg-blue-50 text-blue-700" },
+                { label: "Pending Review", value: sellers.filter((s) => s.kycStatus === "pending").length, color: "bg-amber-50 text-amber-700" },
+                { label: "Verified Sellers", value: sellers.filter((s) => s.isVerified).length, color: "bg-green-50 text-green-700" },
+              ].map((c) => (
+                <div key={c.label} className={`rounded-2xl p-5 ${c.color}`}>
+                  <p className="text-xs font-semibold opacity-70 mb-1">{c.label}</p>
+                  <p className="text-2xl font-bold">{c.value}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* SQL setup panel */}
+            <details className="bg-slate-900 text-slate-200 rounded-2xl p-5 text-xs font-mono">
+              <summary className="cursor-pointer font-sans font-semibold text-sm text-slate-300 mb-3 list-none flex items-center gap-2">
+                <Shield className="w-4 h-4" /> Database Setup — Run this SQL in Supabase if you haven't yet
+              </summary>
+              <pre className="mt-3 whitespace-pre-wrap leading-relaxed">{`ALTER TABLE sellers
+  ADD COLUMN IF NOT EXISTS kyc_status        TEXT        NOT NULL DEFAULT 'none',
+  ADD COLUMN IF NOT EXISTS kyc_whatsapp      TEXT,
+  ADD COLUMN IF NOT EXISTS kyc_submitted_at  TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS is_verified       BOOLEAN     NOT NULL DEFAULT FALSE;`}</pre>
+            </details>
+
+            {/* KYC requests table */}
+            <div className="bg-white rounded-3xl border border-border shadow-sm overflow-hidden">
+              {allSellers.isLoading ? (
+                <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
+              ) : kycSellers.length === 0 ? (
+                <div className="text-center py-20 text-muted-foreground">
+                  <BadgeCheck className="w-12 h-12 mx-auto mb-4 opacity-30" />
+                  <p className="font-semibold">No KYC requests yet</p>
+                  <p className="text-sm mt-1">Sellers will appear here once they submit a verification request.</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-border bg-muted/30">
+                        <th className="text-left px-5 py-4 font-semibold text-muted-foreground">Store</th>
+                        <th className="text-left px-5 py-4 font-semibold text-muted-foreground">WhatsApp (KYC)</th>
+                        <th className="text-left px-5 py-4 font-semibold text-muted-foreground">Submitted</th>
+                        <th className="text-center px-5 py-4 font-semibold text-muted-foreground">Status</th>
+                        <th className="text-center px-5 py-4 font-semibold text-muted-foreground">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {kycSellers.map((seller) => (
+                        <tr key={seller.id} className="border-b border-border/50 hover:bg-muted/20 transition-colors">
+                          <td className="px-5 py-4">
+                            <div className="flex items-center gap-3">
+                              {seller.avatarUrl ? (
+                                <img src={seller.avatarUrl} alt={seller.storeName} className="w-9 h-9 rounded-full object-cover border border-border" />
+                              ) : (
+                                <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
+                                  {seller.storeName[0]}
+                                </div>
+                              )}
+                              <div>
+                                <div className="font-semibold flex items-center gap-1.5">
+                                  {seller.storeName}
+                                  {seller.isVerified && <BadgeCheck className="w-3.5 h-3.5 text-blue-500" />}
+                                </div>
+                                <div className="text-xs text-muted-foreground">{seller.ownerName}</div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-5 py-4">
+                            {seller.kycWhatsapp ? (
+                              <a
+                                href={`https://wa.me/${seller.kycWhatsapp.replace(/\D/g, "")}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-1.5 text-green-700 hover:text-green-800 font-medium"
+                              >
+                                <Phone className="w-3.5 h-3.5" />
+                                {seller.kycWhatsapp}
+                              </a>
+                            ) : (
+                              <span className="text-muted-foreground">—</span>
+                            )}
+                          </td>
+                          <td className="px-5 py-4 text-muted-foreground text-xs">
+                            {seller.kycSubmittedAt ? formatShortDate(seller.kycSubmittedAt) : "—"}
+                          </td>
+                          <td className="px-5 py-4 text-center">
+                            {seller.isVerified ? (
+                              <Badge className="bg-blue-100 text-blue-700 border-transparent gap-1">
+                                <BadgeCheck className="w-3 h-3" /> Verified
+                              </Badge>
+                            ) : seller.kycStatus === "pending" ? (
+                              <Badge className="bg-amber-100 text-amber-700 border-transparent gap-1">
+                                <Clock className="w-3 h-3" /> Pending
+                              </Badge>
+                            ) : (
+                              <Badge className="bg-red-100 text-red-700 border-transparent gap-1">
+                                <XCircle className="w-3 h-3" /> Rejected
+                              </Badge>
+                            )}
+                          </td>
+                          <td className="px-5 py-4">
+                            <div className="flex items-center justify-center gap-2">
+                              {!seller.isVerified && seller.kycStatus === "pending" && (
+                                <>
+                                  <button
+                                    onClick={() => handleVerify(seller.id)}
+                                    disabled={verifySeller.isPending}
+                                    title="Verify seller"
+                                    className="w-9 h-9 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 flex items-center justify-center transition-all"
+                                  >
+                                    <UserCheck className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleRejectKyc(seller.id)}
+                                    disabled={rejectKyc.isPending}
+                                    title="Reject KYC"
+                                    className="w-9 h-9 rounded-full bg-red-50 text-red-400 hover:bg-red-100 hover:text-red-600 flex items-center justify-center transition-all"
+                                  >
+                                    <UserX className="w-4 h-4" />
+                                  </button>
+                                </>
+                              )}
+                              {seller.kycStatus === "rejected" && (
+                                <button
+                                  onClick={() => handleVerify(seller.id)}
+                                  disabled={verifySeller.isPending}
+                                  title="Verify anyway"
+                                  className="w-9 h-9 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 flex items-center justify-center transition-all"
+                                >
+                                  <UserCheck className="w-4 h-4" />
+                                </button>
+                              )}
+                              {seller.isVerified && (
+                                <button
+                                  onClick={() => handleRevokeVerification(seller.id)}
+                                  disabled={revokeVerification.isPending}
+                                  title="Revoke verification"
+                                  className="w-9 h-9 rounded-full bg-slate-100 text-slate-500 hover:bg-red-50 hover:text-red-500 flex items-center justify-center transition-all"
+                                >
+                                  <ShieldOff className="w-4 h-4" />
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>

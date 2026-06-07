@@ -285,3 +285,50 @@ export function useAdminGetVisitorStats() {
     refetchInterval: 60_000,
   });
 }
+
+// ─── KYC ──────────────────────────────────────────────────────────
+
+export function useSubmitKyc() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ sellerId, whatsapp }: { sellerId: number; whatsapp: string }) =>
+      db.submitKycRequest(sellerId, whatsapp),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["sellers"] });
+      qc.invalidateQueries({ queryKey: ["admin", "sellers"] });
+    },
+  });
+}
+
+export function useAdminVerifySeller() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id }: { id: number }) => db.adminVerifySeller(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin", "sellers"] });
+      qc.invalidateQueries({ queryKey: ["sellers"] });
+    },
+  });
+}
+
+export function useAdminRejectKyc() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id }: { id: number }) => db.adminRejectKyc(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin", "sellers"] });
+      qc.invalidateQueries({ queryKey: ["sellers"] });
+    },
+  });
+}
+
+export function useAdminRevokeVerification() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id }: { id: number }) => db.adminRevokeVerification(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin", "sellers"] });
+      qc.invalidateQueries({ queryKey: ["sellers"] });
+    },
+  });
+}

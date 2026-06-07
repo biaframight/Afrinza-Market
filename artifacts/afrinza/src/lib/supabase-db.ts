@@ -18,6 +18,10 @@ export interface Seller {
   reviewCount: number;
   productCount: number;
   joinedAt: string | null;
+  isVerified: boolean;
+  kycStatus: "none" | "pending" | "verified" | "rejected";
+  kycWhatsapp: string | null;
+  kycSubmittedAt: string | null;
 }
 
 export interface Product {
@@ -92,6 +96,10 @@ function mapSeller(r: Record<string, any>): Seller {
     reviewCount: r.review_count ?? 0,
     productCount: r.product_count ?? 0,
     joinedAt: r.joined_at ?? null,
+    isVerified: r.is_verified ?? false,
+    kycStatus: (r.kyc_status ?? "none") as Seller["kycStatus"],
+    kycWhatsapp: r.kyc_whatsapp ?? null,
+    kycSubmittedAt: r.kyc_submitted_at ?? null,
   };
 }
 
@@ -619,6 +627,61 @@ export async function adminDeleteSeller(id: number): Promise<void> {
 export async function adminDeleteProduct(id: number): Promise<void> {
   const { error } = await supabase.from("products").delete().eq("id", id);
   if (error) throw new Error(`[Supabase / adminDeleteProduct] ${error.message}`);
+}
+
+// ─── KYC ──────────────────────────────────────────────────────────
+
+export async function submitKycRequest(sellerId: number, whatsapp: string): Promise<Seller> {
+  const { data, error } = await supabase
+    .from("sellers")
+    .update({
+      kyc_status: "pending",
+      kyc_whatsapp: whatsapp.trim(),
+      kyc_submitted_at: new Date().toISOString(),
+    })
+    .eq("id", sellerId)
+    .select()
+    .single();
+  throwIfError(data, error, "submitKycRequest");
+  return mapSeller(data);
+}
+
+export async function adminVerifySeller(sellerId: number): Promise<Seller> {
+  const { data, error } = await supabase
+    .from("sellers")
+    .update({ is_verified: true, kyc_status: "verified" })
+    .eq("id", sellerId)
+    .select()
+    .single();
+  throwIfError(data, error, "adminVerifySeller");
+  return mapSeller(data);
+}
+
+export async function adminRejectKyc(sellerId: number): Promise<Seller> {
+  const { data, error } = await supabase
+    .from("sellers")
+    .update({ kyc_status: "rejected" })
+    .eq("id", sellerId)
+    .select()
+    .single();
+  throwIfError(data, error, "adminRejectKyc");
+  return mapSeller(data);
+}
+
+export async function adminRevokeVerification(sellerId: number): Promise<Seller> {
+  const { data, error } = await supabase
+    .from("sellers")
+    .update({
+      is_verified: false,
+      kyc_status: "none",
+      kyc_whatsapp: null,
+      kyc_submitted_at: null,
+    })
+    .eq("id", sellerId)
+    .select()
+    .single();
+  throwIfError(data, error, "adminRevokeVerification");
+  return mapSeller(data);
 }
 
 // ─── Admin Orders ─────────────────────────────────────────────────

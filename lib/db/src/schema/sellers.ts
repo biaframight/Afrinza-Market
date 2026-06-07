@@ -17,6 +17,10 @@ export const sellersTable = pgTable("sellers", {
   reviewCount: integer("review_count").notNull().default(0),
   productCount: integer("product_count").notNull().default(0),
   joinedAt: timestamp("joined_at").defaultNow(),
+  isVerified: boolean("is_verified").notNull().default(false),
+  kycStatus: text("kyc_status").notNull().default("none"),
+  kycWhatsapp: text("kyc_whatsapp"),
+  kycSubmittedAt: timestamp("kyc_submitted_at"),
 });
 
 export const insertSellerSchema = createInsertSchema(sellersTable).omit({ id: true, joinedAt: true, rating: true, reviewCount: true, productCount: true });

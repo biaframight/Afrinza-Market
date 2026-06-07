@@ -7,6 +7,7 @@ import {
   useUpdateProduct,
   useDeleteProduct,
   useCreateProduct,
+  useSubmitKyc,
 } from "@/hooks/use-marketplace";
 import { uploadProductImage } from "@/lib/supabase-db";
 import { updateUserProfile } from "@/lib/supabase-auth";
@@ -18,6 +19,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import {
   Store, Package, Plus, Pencil, Trash2, Loader2, ImagePlus,
   X, CheckCircle2, User, DollarSign, ShoppingBag, AlertTriangle, Shield,
+  BadgeCheck, Lock, Phone, Clock, XCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -78,6 +80,11 @@ export default function Dashboard() {
   const updateProduct = useUpdateProduct();
   const deleteProduct = useDeleteProduct();
   const createProduct = useCreateProduct();
+  const submitKyc = useSubmitKyc();
+
+  // KYC modal
+  const [kycModalOpen, setKycModalOpen] = useState(false);
+  const [kycWhatsapp, setKycWhatsapp] = useState("");
 
   // Redirect if not authed
   if (!loading && !isAuthenticated) {
@@ -112,6 +119,21 @@ export default function Dashboard() {
   }
 
   const isSeller = !!sellerProfile;
+
+  const handleKycSubmit = () => {
+    if (!kycWhatsapp.trim() || !sellerProfile) return;
+    submitKyc.mutate(
+      { sellerId: sellerProfile.id, whatsapp: kycWhatsapp },
+      {
+        onSuccess: () => {
+          toast.success("Verification request submitted! Our team will contact you on WhatsApp.");
+          setKycModalOpen(false);
+          setKycWhatsapp("");
+        },
+        onError: () => toast.error("Failed to submit. Please try again."),
+      }
+    );
+  };
 
   const handleSaveStore = () => {
     if (!sellerProfile) return;
@@ -395,7 +417,17 @@ export default function Dashboard() {
                 </div>
                 <div>
                   <label className="text-sm font-semibold block mb-1.5">WhatsApp</label>
-                  <Input value={storeForm.whatsapp} onChange={(e) => setStoreForm((f) => ({ ...f, whatsapp: e.target.value }))} className="h-11 bg-muted/30" />
+                  {sellerProfile.isVerified ? (
+                    <div className="relative">
+                      <Input value={storeForm.whatsapp} readOnly className="h-11 bg-muted/30 pr-10 cursor-not-allowed opacity-70" />
+                      <Lock className="w-4 h-4 text-muted-foreground absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    </div>
+                  ) : (
+                    <Input value={storeForm.whatsapp} onChange={(e) => setStoreForm((f) => ({ ...f, whatsapp: e.target.value }))} className="h-11 bg-muted/30" />
+                  )}
+                  {sellerProfile.isVerified && (
+                    <p className="text-xs text-muted-foreground mt-1">Locked — contact Afrinza support to change your verified number.</p>
+                  )}
                 </div>
               </div>
               <div>
@@ -429,6 +461,119 @@ export default function Dashboard() {
             </div>
           </div>
         )}
+
+        {/* ── STORE TAB: KYC VERIFICATION CARD ─────────────────────── */}
+        {currentTab === "store" && sellerProfile && (
+          <div className="max-w-2xl">
+            {sellerProfile.kycStatus === "none" && (
+              <div className="bg-white rounded-3xl border border-border shadow p-6 md:p-8">
+                <div className="flex items-start gap-4">
+                  <div className="w-11 h-11 rounded-2xl bg-blue-50 flex items-center justify-center shrink-0">
+                    <BadgeCheck className="w-5 h-5 text-blue-500" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-bold text-lg mb-1">Get Verified</h3>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      A verified badge builds buyer trust and makes your store stand out. Our team will contact you on WhatsApp to confirm your identity.
+                    </p>
+                    <Button onClick={() => setKycModalOpen(true)} className="rounded-full gap-2" size="sm">
+                      <BadgeCheck className="w-4 h-4" /> Start Verification
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {sellerProfile.kycStatus === "pending" && (
+              <div className="bg-amber-50 border border-amber-200 rounded-3xl p-6 md:p-8">
+                <div className="flex items-start gap-4">
+                  <div className="w-11 h-11 rounded-2xl bg-amber-100 flex items-center justify-center shrink-0">
+                    <Clock className="w-5 h-5 text-amber-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-lg text-amber-900 mb-1">Verification Pending</h3>
+                    <p className="text-sm text-amber-800 mb-2">
+                      Our team will contact you on WhatsApp at <strong>{sellerProfile.kycWhatsapp}</strong> within 1–2 business days.
+                    </p>
+                    <p className="text-xs text-amber-700">To change your submitted number, please contact Afrinza support.</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {sellerProfile.kycStatus === "verified" && (
+              <div className="bg-blue-50 border border-blue-200 rounded-3xl p-6 md:p-8">
+                <div className="flex items-start gap-4">
+                  <div className="w-11 h-11 rounded-2xl bg-blue-100 flex items-center justify-center shrink-0">
+                    <BadgeCheck className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-lg text-blue-900 mb-1 flex items-center gap-2">
+                      Store Verified <BadgeCheck className="w-5 h-5 text-blue-500" />
+                    </h3>
+                    <p className="text-sm text-blue-800 mb-2">
+                      Your store has a verified badge visible to all buyers on the marketplace.
+                    </p>
+                    <p className="text-xs text-blue-700">To update your verified contact number, please reach out to Afrinza support.</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {sellerProfile.kycStatus === "rejected" && (
+              <div className="bg-red-50 border border-red-200 rounded-3xl p-6 md:p-8">
+                <div className="flex items-start gap-4">
+                  <div className="w-11 h-11 rounded-2xl bg-red-100 flex items-center justify-center shrink-0">
+                    <XCircle className="w-5 h-5 text-red-600" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-bold text-lg text-red-900 mb-1">Verification Unsuccessful</h3>
+                    <p className="text-sm text-red-800 mb-4">
+                      We were unable to verify your store. Please resubmit with a valid WhatsApp number.
+                    </p>
+                    <Button onClick={() => setKycModalOpen(true)} variant="outline" className="rounded-full gap-2 border-red-300 text-red-700 hover:bg-red-100" size="sm">
+                      <Phone className="w-4 h-4" /> Try Again
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* KYC modal */}
+        <Dialog open={kycModalOpen} onOpenChange={setKycModalOpen}>
+          <DialogContent className="max-w-md rounded-3xl">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <BadgeCheck className="w-5 h-5 text-blue-500" /> Request Store Verification
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-2">
+              <p className="text-sm text-muted-foreground">
+                Enter the WhatsApp number our team should use to contact you for identity verification.
+              </p>
+              <div>
+                <label className="text-sm font-semibold block mb-1.5">WhatsApp Number</label>
+                <Input
+                  value={kycWhatsapp}
+                  onChange={(e) => setKycWhatsapp(e.target.value)}
+                  placeholder="e.g. +60123456789"
+                  className="h-11"
+                />
+              </div>
+              <p className="text-xs text-muted-foreground bg-amber-50 border border-amber-200 rounded-xl p-3">
+                ⚠️ Once submitted, this number cannot be changed without contacting Afrinza support.
+              </p>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setKycModalOpen(false)} className="rounded-full">Cancel</Button>
+              <Button onClick={handleKycSubmit} disabled={!kycWhatsapp.trim() || submitKyc.isPending} className="rounded-full gap-2">
+                {submitKyc.isPending ? <><Loader2 className="w-4 h-4 animate-spin" /> Submitting…</> : <><BadgeCheck className="w-4 h-4" /> Submit Request</>}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* ── MY PRODUCTS TAB ──────────────────────────────────────── */}
         {currentTab === "products" && (

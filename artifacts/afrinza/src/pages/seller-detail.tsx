@@ -4,7 +4,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ProductCard } from "@/components/product-card";
-import { MapPin, MessageCircle, Crown, Store, Calendar, Package } from "lucide-react";
+import { MapPin, MessageCircle, Crown, Store, Calendar, Package, BadgeCheck } from "lucide-react";
 import { StarRating } from "@/components/star-rating";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { format } from "date-fns";
@@ -86,6 +86,11 @@ export default function SellerDetail() {
                     {seller.isPremium && (
                       <Badge className="bg-secondary/20 text-secondary hover:bg-secondary/30 border-transparent gap-1 font-semibold">
                         <Crown className="w-3.5 h-3.5 fill-current" /> Premium
+                      </Badge>
+                    )}
+                    {seller.isVerified && (
+                      <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-200 border-transparent gap-1 font-semibold">
+                        <BadgeCheck className="w-3.5 h-3.5" /> Verified
                       </Badge>
                     )}
                   </div>
