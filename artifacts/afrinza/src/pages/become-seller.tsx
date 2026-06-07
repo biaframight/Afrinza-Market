@@ -42,7 +42,12 @@ const storeSchema = z.object({
   storeName: z.string().min(3, "Store name must be at least 3 characters"),
   ownerName: z.string().min(2, "Owner name is required"),
   location: z.string().min(1, "Location is required"),
-  whatsapp: z.string().min(8, "Valid WhatsApp number required"),
+  whatsapp: z.string()
+    .min(1, "WhatsApp number is required")
+    .refine(
+      (v) => /^\+?[0-9]{8,15}$/.test(v.replace(/[\s\-()]/g, "")),
+      "Enter a valid number — digits only, e.g. +60123456789 or 0123456789"
+    ),
   description: z.string().min(10, "Please provide a brief description of what you sell"),
   categories: z.array(z.string()).min(1, "Select at least one category"),
 });

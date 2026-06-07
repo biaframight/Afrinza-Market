@@ -428,6 +428,7 @@ export default function Admin() {
                     <tr className="border-b border-border bg-muted/30">
                       <th className="text-left px-5 py-4 font-semibold text-muted-foreground">Store</th>
                       <th className="text-left px-5 py-4 font-semibold text-muted-foreground">Owner</th>
+                      <th className="text-left px-5 py-4 font-semibold text-muted-foreground">Phone</th>
                       <th className="text-left px-5 py-4 font-semibold text-muted-foreground">Location</th>
                       <th className="text-left px-5 py-4 font-semibold text-muted-foreground">Categories</th>
                       <th className="text-center px-5 py-4 font-semibold text-muted-foreground">Verified</th>
@@ -454,6 +455,21 @@ export default function Admin() {
                           </div>
                         </td>
                         <td className="px-5 py-4 text-muted-foreground">{seller.ownerName}</td>
+                        <td className="px-5 py-4">
+                          {seller.whatsapp ? (
+                            <a
+                              href={`https://wa.me/${seller.whatsapp.replace(/\D/g, "")}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-1.5 text-green-700 hover:text-green-800 text-sm font-medium whitespace-nowrap"
+                            >
+                              <Phone className="w-3.5 h-3.5 shrink-0" />
+                              {seller.whatsapp}
+                            </a>
+                          ) : (
+                            <span className="text-muted-foreground text-sm">—</span>
+                          )}
+                        </td>
                         <td className="px-5 py-4 text-muted-foreground">{seller.location}</td>
                         <td className="px-5 py-4">
                           <div className="flex flex-wrap gap-1">

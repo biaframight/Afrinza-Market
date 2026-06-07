@@ -120,8 +120,15 @@ export default function Dashboard() {
 
   const isSeller = !!sellerProfile;
 
+  const isValidPhone = (v: string) =>
+    /^\+?[0-9]{8,15}$/.test(v.replace(/[\s\-()]/g, ""));
+
   const handleKycSubmit = () => {
     if (!kycWhatsapp.trim() || !sellerProfile) return;
+    if (!isValidPhone(kycWhatsapp)) {
+      toast.error("Enter a valid phone number, e.g. +60123456789 or 0123456789");
+      return;
+    }
     submitKyc.mutate(
       { sellerId: sellerProfile.id, whatsapp: kycWhatsapp },
       {
@@ -137,8 +144,16 @@ export default function Dashboard() {
 
   const handleSaveStore = () => {
     if (!sellerProfile) return;
-    if (!storeForm.storeName.trim() || !storeForm.whatsapp.trim()) {
-      toast.error("Store name and WhatsApp are required.");
+    if (!storeForm.storeName.trim()) {
+      toast.error("Store name is required.");
+      return;
+    }
+    if (!storeForm.whatsapp.trim()) {
+      toast.error("WhatsApp number is required.");
+      return;
+    }
+    if (!isValidPhone(storeForm.whatsapp)) {
+      toast.error("Enter a valid phone number, e.g. +60123456789 or 0123456789");
       return;
     }
     updateSeller.mutate(
