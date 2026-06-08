@@ -238,10 +238,9 @@ export async function getFeaturedSellers(): Promise<{ sellers: Seller[]; total: 
     .from("sellers")
     .select("*")
     .eq("is_premium", true)
-    .eq("is_active", true)
     .limit(8);
   throwIfError(data, error, "getFeaturedSellers");
-  const sellers = data.map(mapSeller);
+  const sellers = data.map(mapSeller).filter((s) => s.isActive);
   return { sellers, total: sellers.length };
 }
 
@@ -249,7 +248,7 @@ export async function getSellers(filters: {
   location?: string;
   category?: string;
 }): Promise<{ sellers: Seller[]; total: number }> {
-  let query = supabase.from("sellers").select("*").eq("is_active", true);
+  let query = supabase.from("sellers").select("*");
   if (filters.location) query = query.ilike("location", `%${filters.location}%`);
 
   query = query
@@ -258,7 +257,7 @@ export async function getSellers(filters: {
 
   const { data, error } = await query;
   throwIfError(data, error, "getSellers");
-  let sellers = data.map(mapSeller);
+  let sellers = data.map(mapSeller).filter((s) => s.isActive);
   if (filters.category) {
     sellers = sellers.filter((s) => s.categories.includes(filters.category!));
   }
