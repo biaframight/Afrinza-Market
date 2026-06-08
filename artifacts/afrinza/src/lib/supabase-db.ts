@@ -841,6 +841,103 @@ export async function getMarketplaceStats(): Promise<{
   };
 }
 
+// ─── Subscription Payments ────────────────────────────────────────
+
+export interface SubscriptionPayment {
+  id: number;
+  sellerId: number;
+  month: string;
+  amount: number;
+  receiptUrl: string | null;
+  status: "pending" | "confirmed" | "rejected";
+  createdAt: string;
+  confirmedAt: string | null;
+  storeName?: string;
+  ownerName?: string;
+}
+
+function mapSubscriptionPayment(r: Record<string, any>): SubscriptionPayment {
+  return {
+    id: r.id,
+    sellerId: r.seller_id,
+    month: r.month,
+    amount: parseFloat(r.amount),
+    receiptUrl: r.receipt_url ?? null,
+    status: r.status as "pending" | "confirmed" | "rejected",
+    createdAt: r.created_at,
+    confirmedAt: r.confirmed_at ?? null,
+    storeName: r.sellers?.store_name,
+    ownerName: r.sellers?.owner_name,
+  };
+}
+
+export async function uploadReceiptImage(file: File): Promise<string> {
+  const ext = file.name.split(".").pop() ?? "jpg";
+  const path = `receipts/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+  const { error } = await supabase.storage
+    .from("product-images")
+    .upload(path, file, { upsert: false });
+  if (error) throw new Error(`[Supabase / uploadReceiptImage] ${error.message}`);
+  const { data } = supabase.storage.from("product-images").getPublicUrl(path);
+  return data.publicUrl;
+}
+
+export async function createSubscriptionPayment(payload: {
+  sellerId: number;
+  month: string;
+  receiptUrl: string;
+}): Promise<SubscriptionPayment> {
+  const { data, error } = await supabase
+    .from("subscription_payments")
+    .upsert(
+      { seller_id: payload.sellerId, month: payload.month, receipt_url: payload.receiptUrl, status: "pending" },
+      { onConflict: "seller_id,month" }
+    )
+    .select()
+    .single();
+  if (error) throw new Error(`[Supabase / createSubscriptionPayment] ${error.message}`);
+  return mapSubscriptionPayment(data);
+}
+
+export async function getSellerCurrentSubscription(
+  sellerId: number,
+  month: string
+): Promise<SubscriptionPayment | null> {
+  const { data, error } = await supabase
+    .from("subscription_payments")
+    .select("*")
+    .eq("seller_id", sellerId)
+    .eq("month", month)
+    .maybeSingle();
+  if (error) throw new Error(`[Supabase / getSellerCurrentSubscription] ${error.message}`);
+  return data ? mapSubscriptionPayment(data) : null;
+}
+
+export async function adminGetAllSubscriptions(): Promise<SubscriptionPayment[]> {
+  const { data, error } = await supabase
+    .from("subscription_payments")
+    .select("*, sellers(store_name, owner_name)")
+    .order("created_at", { ascending: false });
+  if (error) throw new Error(`[Supabase / adminGetAllSubscriptions] ${error.message}`);
+  return (data ?? []).map(mapSubscriptionPayment);
+}
+
+export async function adminConfirmSubscription(id: number): Promise<void> {
+  const { error } = await supabase
+    .from("subscription_payments")
+    .update({ status: "confirmed", confirmed_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) throw new Error(`[Supabase / adminConfirmSubscription] ${error.message}`);
+}
+
+export async function adminRejectSubscription(id: number): Promise<void> {
+  const { error } = await supabase
+    .from("subscription_payments")
+    .update({ status: "rejected" })
+    .eq("id", id);
+  if (error) throw new Error(`[Supabase / adminRejectSubscription] ${error.message}`);
+}
+
 // ─── Room Listings ────────────────────────────────────────────────
 
 export interface RoomListing {

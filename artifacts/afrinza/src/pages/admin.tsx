@@ -13,6 +13,9 @@ import {
   useAdminVerifySeller,
   useAdminRejectKyc,
   useAdminRevokeVerification,
+  useAdminGetSubscriptions,
+  useAdminConfirmSubscription,
+  useAdminRejectSubscription,
 } from "@/hooks/use-marketplace";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -20,7 +23,7 @@ import { toast } from "sonner";
 import {
   Shield, Store, Package, Star, Trash2, Loader2, StarOff, Users, Tag,
   ShoppingBag, TrendingUp, Calendar, ChevronDown, CheckCircle, Clock, XCircle,
-  BadgeCheck, Phone, UserCheck, UserX, ShieldOff,
+  BadgeCheck, Phone, UserCheck, UserX, ShieldOff, CreditCard,
 } from "lucide-react";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -33,7 +36,7 @@ import type { AdminOrder } from "@/lib/supabase-db";
 
 const ADMIN_EMAIL = "alphuplift@gmail.com";
 
-type Tab = "orders" | "sellers" | "products" | "kyc";
+type Tab = "orders" | "sellers" | "products" | "kyc" | "subscriptions";
 type Period = "today" | "week" | "month" | "year" | "all";
 
 const PERIOD_LABELS: Record<Period, string> = {
@@ -126,6 +129,26 @@ export default function Admin() {
   const verifySeller = useAdminVerifySeller();
   const rejectKyc = useAdminRejectKyc();
   const revokeVerification = useAdminRevokeVerification();
+  const allSubs = useAdminGetSubscriptions();
+  const confirmSub = useAdminConfirmSubscription();
+  const rejectSub = useAdminRejectSubscription();
+
+  const subPendingCount = useMemo(() => (allSubs.data ?? []).filter((s) => s.status === "pending").length, [allSubs.data]);
+  const adminCurrentMonth = new Date().toISOString().slice(0, 7);
+
+  const handleConfirmSub = (id: number) => {
+    confirmSub.mutate({ id }, {
+      onSuccess: () => toast.success("Subscription payment confirmed!"),
+      onError: () => toast.error("Failed to confirm — check Supabase policies."),
+    });
+  };
+
+  const handleRejectSub = (id: number) => {
+    rejectSub.mutate({ id }, {
+      onSuccess: () => toast.success("Payment rejected."),
+      onError: () => toast.error("Failed to reject — check Supabase policies."),
+    });
+  };
 
   const sellers = allSellers.data ?? [];
   const products = allProducts.data ?? [];
@@ -267,7 +290,8 @@ export default function Admin() {
             { id: "orders",   icon: <ShoppingBag className="w-4 h-4" />, label: `Orders (${allOrders.length})` },
             { id: "sellers",  icon: <Store       className="w-4 h-4" />, label: `Sellers (${sellers.length})` },
             { id: "products", icon: <Package     className="w-4 h-4" />, label: `Products (${products.length})` },
-            { id: "kyc",      icon: <BadgeCheck  className="w-4 h-4" />, label: `KYC${kycPendingCount > 0 ? ` (${kycPendingCount} pending)` : ""}` },
+            { id: "kyc",           icon: <BadgeCheck  className="w-4 h-4" />, label: `KYC${kycPendingCount > 0 ? ` (${kycPendingCount} pending)` : ""}` },
+            { id: "subscriptions", icon: <CreditCard  className="w-4 h-4" />, label: `Subscriptions${subPendingCount > 0 ? ` (${subPendingCount} pending)` : ""}` },
           ] as const).map(({ id, icon, label }) => (
             <button
               key={id}
@@ -754,6 +778,116 @@ export default function Admin() {
           </div>
         )}
       </div>
+
+      {/* ══════════════════════════════════════════════════════════
+          SUBSCRIPTIONS TAB
+      ══════════════════════════════════════════════════════════ */}
+      {tab === "subscriptions" && (
+        <div className="space-y-5">
+
+          {/* Summary row */}
+          <div className="grid grid-cols-3 gap-4">
+            <div className="bg-amber-50 border border-amber-100 rounded-2xl p-5">
+              <p className="text-xs font-semibold text-amber-700 mb-1">Pending Review</p>
+              <p className="text-3xl font-bold text-amber-800">{subPendingCount}</p>
+            </div>
+            <div className="bg-green-50 border border-green-100 rounded-2xl p-5">
+              <p className="text-xs font-semibold text-green-700 mb-1">Confirmed This Month</p>
+              <p className="text-3xl font-bold text-green-800">
+                {(allSubs.data ?? []).filter((s) => s.status === "confirmed" && s.month === adminCurrentMonth).length}
+              </p>
+            </div>
+            <div className="bg-blue-50 border border-blue-100 rounded-2xl p-5">
+              <p className="text-xs font-semibold text-blue-700 mb-1">Revenue This Month</p>
+              <p className="text-3xl font-bold text-blue-800">
+                RM {((allSubs.data ?? []).filter((s) => s.status === "confirmed" && s.month === adminCurrentMonth).length * 10).toFixed(0)}
+              </p>
+            </div>
+          </div>
+
+          {/* Payments table */}
+          <div className="bg-white rounded-3xl border border-border shadow overflow-hidden">
+            {allSubs.isLoading ? (
+              <div className="flex justify-center py-16"><Loader2 className="w-7 h-7 animate-spin text-primary" /></div>
+            ) : !allSubs.data?.length ? (
+              <div className="py-16 text-center text-muted-foreground">
+                <CreditCard className="w-10 h-10 mx-auto mb-3 opacity-30" />
+                <p className="font-semibold">No subscription payments yet</p>
+                <p className="text-sm mt-1">Payments will appear here once sellers subscribe.</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border bg-muted/30 text-left">
+                      <th className="px-5 py-3 font-semibold text-muted-foreground">Seller</th>
+                      <th className="px-5 py-3 font-semibold text-muted-foreground">Month</th>
+                      <th className="px-5 py-3 font-semibold text-muted-foreground">Amount</th>
+                      <th className="px-5 py-3 font-semibold text-muted-foreground">Submitted</th>
+                      <th className="px-5 py-3 font-semibold text-muted-foreground">Receipt</th>
+                      <th className="px-5 py-3 font-semibold text-muted-foreground">Status</th>
+                      <th className="px-5 py-3 font-semibold text-muted-foreground text-center">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/50">
+                    {allSubs.data.map((sub) => (
+                      <tr key={sub.id} className="hover:bg-muted/20 transition-colors">
+                        <td className="px-5 py-4">
+                          <p className="font-semibold">{sub.storeName ?? `Seller #${sub.sellerId}`}</p>
+                          {sub.ownerName && <p className="text-xs text-muted-foreground">{sub.ownerName}</p>}
+                        </td>
+                        <td className="px-5 py-4 text-muted-foreground font-medium">{sub.month}</td>
+                        <td className="px-5 py-4 font-semibold">RM {sub.amount.toFixed(2)}</td>
+                        <td className="px-5 py-4 text-muted-foreground text-xs">{formatShortDate(sub.createdAt)}</td>
+                        <td className="px-5 py-4">
+                          {sub.receiptUrl ? (
+                            <a href={sub.receiptUrl} target="_blank" rel="noopener noreferrer" className="text-primary text-xs underline hover:opacity-70">
+                              View Receipt
+                            </a>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          )}
+                        </td>
+                        <td className="px-5 py-4">
+                          <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold capitalize ${
+                            sub.status === "confirmed" ? "bg-green-100 text-green-700"
+                            : sub.status === "pending"   ? "bg-amber-100 text-amber-700"
+                            : "bg-red-100 text-red-700"
+                          }`}>
+                            {sub.status}
+                          </span>
+                        </td>
+                        <td className="px-5 py-4">
+                          {sub.status === "pending" && (
+                            <div className="flex items-center justify-center gap-2">
+                              <button
+                                onClick={() => handleConfirmSub(sub.id)}
+                                disabled={confirmSub.isPending}
+                                title="Confirm payment"
+                                className="w-9 h-9 rounded-full bg-green-50 text-green-600 hover:bg-green-100 flex items-center justify-center transition-all"
+                              >
+                                <CheckCircle className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleRejectSub(sub.id)}
+                                disabled={rejectSub.isPending}
+                                title="Reject payment"
+                                className="w-9 h-9 rounded-full bg-red-50 text-red-400 hover:bg-red-100 hover:text-red-600 flex items-center justify-center transition-all"
+                              >
+                                <XCircle className="w-4 h-4" />
+                              </button>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Confirm delete dialog */}
       <AlertDialog open={!!confirmDelete} onOpenChange={(open) => !open && setConfirmDelete(null)}>

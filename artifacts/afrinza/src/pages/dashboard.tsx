@@ -8,8 +8,10 @@ import {
   useDeleteProduct,
   useCreateProduct,
   useSubmitKyc,
+  useGetCurrentSubscription,
+  useCreateSubscriptionPayment,
 } from "@/hooks/use-marketplace";
-import { uploadProductImage } from "@/lib/supabase-db";
+import { uploadProductImage, uploadReceiptImage } from "@/lib/supabase-db";
 import { updateUserProfile } from "@/lib/supabase-auth";
 import type { Product } from "@/lib/supabase-db";
 import { Button } from "@/components/ui/button";
@@ -19,7 +21,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import {
   Store, Package, Plus, Pencil, Trash2, Loader2, ImagePlus,
   X, CheckCircle2, User, DollarSign, ShoppingBag, AlertTriangle, Shield,
-  BadgeCheck, Lock, Phone, Clock, XCircle,
+  BadgeCheck, Lock, Phone, Clock, XCircle, CreditCard, Upload,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -70,6 +72,7 @@ export default function Dashboard() {
   const [addImagePreviews, setAddImagePreviews] = useState<string[]>([]);
   const [addUploading, setAddUploading] = useState(false);
   const addFileRef = useRef<HTMLInputElement>(null);
+  const receiptRef = useRef<HTMLInputElement>(null);
 
   // Profile form
   const [profileForm, setProfileForm] = useState({ fullName: "" });
@@ -81,10 +84,20 @@ export default function Dashboard() {
   const deleteProduct = useDeleteProduct();
   const createProduct = useCreateProduct();
   const submitKyc = useSubmitKyc();
+  const currentMonth = new Date().toISOString().slice(0, 7);
+  const currentSub = useGetCurrentSubscription(sellerProfile?.id, currentMonth);
+  const createSubscription = useCreateSubscriptionPayment();
 
   // KYC modal
   const [kycModalOpen, setKycModalOpen] = useState(false);
   const [kycWhatsapp, setKycWhatsapp] = useState("");
+
+  // Subscribe modal
+  const [subscribeOpen, setSubscribeOpen] = useState(false);
+  const [subscribeStep, setSubscribeStep] = useState<"qr" | "upload">("qr");
+  const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  const [receiptPreview, setReceiptPreview] = useState<string>("");
+  const [subUploading, setSubUploading] = useState(false);
 
   // Redirect if not authed
   if (!loading && !isAuthenticated) {
@@ -122,6 +135,34 @@ export default function Dashboard() {
 
   const isValidPhone = (v: string) =>
     /^\+?[0-9]{8,15}$/.test(v.replace(/[\s\-()]/g, ""));
+
+  const formatMonth = (month: string) => {
+    const [year, m] = month.split("-");
+    const names = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    return `${names[parseInt(m) - 1]} ${year}`;
+  };
+
+  const handleSubmitReceipt = async () => {
+    if (!receiptFile || !sellerProfile) return;
+    setSubUploading(true);
+    try {
+      const url = await uploadReceiptImage(receiptFile);
+      await createSubscription.mutateAsync({
+        sellerId: sellerProfile.id,
+        month: currentMonth,
+        receiptUrl: url,
+      });
+      setSubscribeOpen(false);
+      setSubscribeStep("qr");
+      setReceiptFile(null);
+      setReceiptPreview("");
+      toast.success("Payment submitted! We'll confirm it within 24 hours.");
+    } catch {
+      toast.error("Upload failed. Please try again.");
+    } finally {
+      setSubUploading(false);
+    }
+  };
 
   const handleKycSubmit = () => {
     if (!kycWhatsapp.trim() || !sellerProfile) return;
@@ -556,6 +597,65 @@ export default function Dashboard() {
           </div>
         )}
 
+        {/* ── STORE TAB: SUBSCRIPTION CARD ─────────────────────── */}
+        {currentTab === "store" && sellerProfile && (
+          <div className="max-w-2xl mt-6">
+            {currentSub.data?.status === "confirmed" ? (
+              <div className="bg-green-50 border border-green-200 rounded-3xl p-6 md:p-8">
+                <div className="flex items-start gap-4">
+                  <div className="w-11 h-11 rounded-2xl bg-green-100 flex items-center justify-center shrink-0">
+                    <CheckCircle2 className="w-5 h-5 text-green-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-lg text-green-900 mb-1 flex items-center gap-2">
+                      Subscription Active <CheckCircle2 className="w-4 h-4 text-green-500" />
+                    </h3>
+                    <p className="text-sm text-green-800">
+                      Your RM 10 subscription for <strong>{formatMonth(currentSub.data.month)}</strong> has been confirmed.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) : currentSub.data?.status === "pending" ? (
+              <div className="bg-amber-50 border border-amber-200 rounded-3xl p-6 md:p-8">
+                <div className="flex items-start gap-4">
+                  <div className="w-11 h-11 rounded-2xl bg-amber-100 flex items-center justify-center shrink-0">
+                    <Clock className="w-5 h-5 text-amber-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-lg text-amber-900 mb-1">Payment Pending Confirmation</h3>
+                    <p className="text-sm text-amber-800">Your payment proof has been received. We'll confirm it within 24 hours.</p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-white rounded-3xl border border-border shadow p-6 md:p-8">
+                <div className="flex items-start gap-4">
+                  <div className="w-11 h-11 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0">
+                    <CreditCard className="w-5 h-5 text-primary" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-bold text-lg mb-1">Monthly Subscription</h3>
+                    <p className="text-sm text-muted-foreground mb-1">
+                      Subscribe for <strong>RM 10/month</strong> to keep your seller or service profile active on Afrinza.
+                    </p>
+                    {currentSub.data?.status === "rejected" && (
+                      <p className="text-xs text-red-600 mb-2 mt-1">⚠ Your last payment was rejected. Please resubmit.</p>
+                    )}
+                    <Button
+                      onClick={() => { setSubscribeStep("qr"); setSubscribeOpen(true); }}
+                      className="rounded-full gap-2 mt-3"
+                      size="sm"
+                    >
+                      <CreditCard className="w-4 h-4" /> Subscribe — RM 10 / month
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* KYC modal */}
         <Dialog open={kycModalOpen} onOpenChange={setKycModalOpen}>
           <DialogContent className="max-w-md rounded-3xl">
@@ -587,6 +687,107 @@ export default function Dashboard() {
                 {submitKyc.isPending ? <><Loader2 className="w-4 h-4 animate-spin" /> Submitting…</> : <><BadgeCheck className="w-4 h-4" /> Submit Request</>}
               </Button>
             </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Subscribe modal */}
+        <Dialog
+          open={subscribeOpen}
+          onOpenChange={(open) => {
+            if (!subUploading) {
+              setSubscribeOpen(open);
+              if (!open) { setSubscribeStep("qr"); setReceiptFile(null); setReceiptPreview(""); }
+            }
+          }}
+        >
+          <DialogContent className="max-w-sm rounded-3xl">
+            {subscribeStep === "qr" ? (
+              <>
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <CreditCard className="w-5 h-5 text-primary" /> Subscribe — RM 10 / month
+                  </DialogTitle>
+                </DialogHeader>
+                <div className="py-2 space-y-4">
+                  <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 text-center">
+                    <img src="/tng-qr.jpeg" alt="Touch 'n Go QR Code" className="w-full max-w-[220px] mx-auto rounded-xl" />
+                    <p className="text-xs text-muted-foreground mt-3">Scan with Touch 'n Go eWallet or any banking app</p>
+                    <p className="text-2xl font-bold text-foreground mt-2">RM 10.00</p>
+                    <p className="text-xs text-muted-foreground">Monthly subscription fee</p>
+                  </div>
+                  <p className="text-xs text-center text-muted-foreground">
+                    After paying, take a screenshot of your payment confirmation and tap "I've Paid".
+                  </p>
+                </div>
+                <DialogFooter className="flex-col gap-2 sm:flex-col">
+                  <Button onClick={() => setSubscribeStep("upload")} className="rounded-full gap-2 w-full">
+                    <CheckCircle2 className="w-4 h-4" /> I've Paid — Upload Proof
+                  </Button>
+                  <Button variant="outline" onClick={() => setSubscribeOpen(false)} className="rounded-full w-full">Cancel</Button>
+                </DialogFooter>
+              </>
+            ) : (
+              <>
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <Upload className="w-5 h-5 text-primary" /> Upload Payment Proof
+                  </DialogTitle>
+                </DialogHeader>
+                <div className="py-2 space-y-4">
+                  <p className="text-sm text-muted-foreground">Upload a screenshot of your payment confirmation from Touch 'n Go or your banking app.</p>
+                  <input
+                    ref={receiptRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      setReceiptFile(file);
+                      const reader = new FileReader();
+                      reader.onload = (ev) => setReceiptPreview(ev.target?.result as string);
+                      reader.readAsDataURL(file);
+                    }}
+                  />
+                  {receiptPreview ? (
+                    <div className="relative">
+                      <img src={receiptPreview} alt="Receipt preview" className="w-full rounded-2xl max-h-48 object-contain bg-muted" />
+                      <button
+                        onClick={() => { setReceiptFile(null); setReceiptPreview(""); }}
+                        className="absolute top-2 right-2 bg-black/60 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs"
+                      >✕</button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => receiptRef.current?.click()}
+                      className="w-full border-2 border-dashed border-border rounded-2xl py-8 text-center text-muted-foreground hover:border-primary/40 hover:text-primary transition-colors"
+                    >
+                      <Upload className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                      <p className="text-sm font-medium">Tap to upload screenshot</p>
+                      <p className="text-xs mt-1 opacity-70">JPG, PNG, or WEBP</p>
+                    </button>
+                  )}
+                  <p className="text-xs text-muted-foreground bg-amber-50 border border-amber-200 rounded-xl p-3">
+                    ⏳ Payment will be reviewed and approved within 24 hours.
+                  </p>
+                </div>
+                <DialogFooter className="flex-col gap-2 sm:flex-col">
+                  <Button
+                    onClick={handleSubmitReceipt}
+                    disabled={!receiptFile || subUploading}
+                    className="rounded-full gap-2 w-full"
+                  >
+                    {subUploading
+                      ? <><Loader2 className="w-4 h-4 animate-spin" /> Uploading…</>
+                      : <><Upload className="w-4 h-4" /> Submit Proof</>
+                    }
+                  </Button>
+                  <Button variant="outline" onClick={() => setSubscribeStep("qr")} disabled={subUploading} className="rounded-full w-full">
+                    ← Back
+                  </Button>
+                </DialogFooter>
+              </>
+            )}
           </DialogContent>
         </Dialog>
 

@@ -333,6 +333,47 @@ export function useAdminRevokeVerification() {
   });
 }
 
+// ─── Subscription Payments ─────────────────────────────────────────
+
+export function useGetCurrentSubscription(sellerId: number | undefined, month: string) {
+  return useQuery({
+    queryKey: ["subscription", sellerId, month],
+    queryFn: () => db.getSellerCurrentSubscription(sellerId!, month),
+    enabled: !!sellerId,
+  });
+}
+
+export function useCreateSubscriptionPayment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: db.createSubscriptionPayment,
+    onSuccess: (_, vars) => qc.invalidateQueries({ queryKey: ["subscription", vars.sellerId] }),
+  });
+}
+
+export function useAdminGetSubscriptions() {
+  return useQuery({
+    queryKey: ["admin", "subscriptions"],
+    queryFn: db.adminGetAllSubscriptions,
+  });
+}
+
+export function useAdminConfirmSubscription() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id }: { id: number }) => db.adminConfirmSubscription(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin", "subscriptions"] }),
+  });
+}
+
+export function useAdminRejectSubscription() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id }: { id: number }) => db.adminRejectSubscription(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin", "subscriptions"] }),
+  });
+}
+
 // ─── Room Listings ─────────────────────────────────────────────────
 
 export function useGetRoomListings(location?: string) {
