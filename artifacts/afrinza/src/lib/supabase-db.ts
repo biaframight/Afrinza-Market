@@ -840,3 +840,83 @@ export async function getMarketplaceStats(): Promise<{
     featuredSellers: featuredRes.count ?? 0,
   };
 }
+
+// ─── Room Listings ────────────────────────────────────────────────
+
+export interface RoomListing {
+  id: number;
+  listerName: string;
+  whatsapp: string;
+  location: string;
+  title: string;
+  description: string | null;
+  pricePerMonth: number | null;
+  roomType: string;
+  amenities: string[];
+  availableFrom: string | null;
+  isActive: boolean;
+  createdAt: string;
+}
+
+function mapRoomListing(r: Record<string, any>): RoomListing {
+  return {
+    id: r.id,
+    listerName: r.lister_name,
+    whatsapp: r.whatsapp,
+    location: r.location,
+    title: r.title,
+    description: r.description ?? null,
+    pricePerMonth: r.price_per_month != null ? parseFloat(r.price_per_month) : null,
+    roomType: r.room_type,
+    amenities: r.amenities ?? [],
+    availableFrom: r.available_from ?? null,
+    isActive: r.is_active ?? true,
+    createdAt: r.created_at,
+  };
+}
+
+export async function getRoomListings(location?: string): Promise<RoomListing[]> {
+  let query = supabase
+    .from("room_listings")
+    .select("*")
+    .eq("is_active", true)
+    .order("created_at", { ascending: false });
+
+  if (location && location !== "all") {
+    query = query.eq("location", location);
+  }
+
+  const { data, error } = await query;
+  if (error) throw new Error(`[Supabase / getRoomListings] ${error.message}`);
+  return (data ?? []).map(mapRoomListing);
+}
+
+export async function createRoomListing(payload: {
+  listerName: string;
+  whatsapp: string;
+  location: string;
+  title: string;
+  roomType: string;
+  pricePerMonth: number | null;
+  description: string;
+  amenities: string[];
+  availableFrom: string | null;
+}): Promise<RoomListing> {
+  const { data, error } = await supabase
+    .from("room_listings")
+    .insert({
+      lister_name: payload.listerName,
+      whatsapp: payload.whatsapp,
+      location: payload.location,
+      title: payload.title,
+      room_type: payload.roomType,
+      price_per_month: payload.pricePerMonth,
+      description: payload.description,
+      amenities: payload.amenities,
+      available_from: payload.availableFrom,
+    })
+    .select()
+    .single();
+  if (error) throw new Error(`[Supabase / createRoomListing] ${error.message}`);
+  return mapRoomListing(data);
+}

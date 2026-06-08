@@ -332,3 +332,20 @@ export function useAdminRevokeVerification() {
     },
   });
 }
+
+// ─── Room Listings ─────────────────────────────────────────────────
+
+export function useGetRoomListings(location?: string) {
+  return useQuery({
+    queryKey: ["rooms", location ?? "all"],
+    queryFn: () => db.getRoomListings(location),
+  });
+}
+
+export function useCreateRoomListing() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: db.createRoomListing,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["rooms"] }),
+  });
+}
