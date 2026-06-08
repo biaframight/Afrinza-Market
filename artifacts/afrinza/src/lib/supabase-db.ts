@@ -22,6 +22,7 @@ export interface Seller {
   kycStatus: "none" | "pending" | "verified" | "rejected";
   kycWhatsapp: string | null;
   kycSubmittedAt: string | null;
+  isActive: boolean;
 }
 
 export interface Product {
@@ -100,6 +101,7 @@ function mapSeller(r: Record<string, any>): Seller {
     kycStatus: (r.kyc_status ?? "none") as Seller["kycStatus"],
     kycWhatsapp: r.kyc_whatsapp ?? null,
     kycSubmittedAt: r.kyc_submitted_at ?? null,
+    isActive: r.is_active ?? true,
   };
 }
 
@@ -166,11 +168,15 @@ function throwIfError<T>(data: T | null, error: { message: string; code?: string
 // ─── Products ─────────────────────────────────────────────────────
 
 export async function getFeaturedProducts(): Promise<{ products: Product[]; total: number }> {
-  const { data, error } = await supabase
-    .from("products")
-    .select("*")
-    .eq("is_sponsored", true)
-    .limit(10);
+  const { data: inactiveRows } = await supabase.from("sellers").select("id").eq("is_active", false);
+  const inactiveIds = (inactiveRows ?? []).map((r: any) => r.id as number);
+
+  let query = supabase.from("products").select("*").eq("is_sponsored", true).limit(10);
+  if (inactiveIds.length > 0) {
+    query = query.not("seller_id", "in", `(${inactiveIds.join(",")})`);
+  }
+
+  const { data, error } = await query;
   throwIfError(data, error, "getFeaturedProducts");
   const products = data.map(mapProduct);
   return { products, total: products.length };
@@ -193,6 +199,13 @@ export async function getProducts(filters: {
     query = query.or(
       `title.ilike.%${filters.search}%,description.ilike.%${filters.search}%`
     );
+  }
+
+  // Exclude products belonging to deactivated sellers
+  const { data: inactiveRows } = await supabase.from("sellers").select("id").eq("is_active", false);
+  const inactiveIds = (inactiveRows ?? []).map((r: any) => r.id as number);
+  if (inactiveIds.length > 0) {
+    query = query.not("seller_id", "in", `(${inactiveIds.join(",")})`);
   }
 
   const limit = filters.limit ?? 50;
@@ -225,6 +238,7 @@ export async function getFeaturedSellers(): Promise<{ sellers: Seller[]; total: 
     .from("sellers")
     .select("*")
     .eq("is_premium", true)
+    .eq("is_active", true)
     .limit(8);
   throwIfError(data, error, "getFeaturedSellers");
   const sellers = data.map(mapSeller);
@@ -235,7 +249,7 @@ export async function getSellers(filters: {
   location?: string;
   category?: string;
 }): Promise<{ sellers: Seller[]; total: number }> {
-  let query = supabase.from("sellers").select("*");
+  let query = supabase.from("sellers").select("*").eq("is_active", true);
   if (filters.location) query = query.ilike("location", `%${filters.location}%`);
 
   query = query
@@ -622,6 +636,17 @@ export async function adminDeleteSeller(id: number): Promise<void> {
   await supabase.from("products").delete().eq("seller_id", id);
   const { error } = await supabase.from("sellers").delete().eq("id", id);
   if (error) throw new Error(`[Supabase / adminDeleteSeller] ${error.message}`);
+}
+
+export async function adminToggleSellerActive(id: number, isActive: boolean): Promise<Seller> {
+  const { data, error } = await supabase
+    .from("sellers")
+    .update({ is_active: isActive })
+    .eq("id", id)
+    .select()
+    .single();
+  throwIfError(data, error, "adminToggleSellerActive");
+  return mapSeller(data);
 }
 
 export async function adminDeleteProduct(id: number): Promise<void> {

@@ -16,6 +16,7 @@ import {
   useAdminGetSubscriptions,
   useAdminConfirmSubscription,
   useAdminRejectSubscription,
+  useAdminToggleSellerActive,
 } from "@/hooks/use-marketplace";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -23,7 +24,7 @@ import { toast } from "sonner";
 import {
   Shield, Store, Package, Star, Trash2, Loader2, StarOff, Users, Tag,
   ShoppingBag, TrendingUp, Calendar, ChevronDown, CheckCircle, Clock, XCircle,
-  BadgeCheck, Phone, UserCheck, UserX, ShieldOff, CreditCard,
+  BadgeCheck, Phone, UserCheck, UserX, ShieldOff, CreditCard, Power,
 } from "lucide-react";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -122,6 +123,7 @@ export default function Admin() {
   const allProducts = useAdminGetAllProducts();
   const allOrdersQ = useAdminGetAllOrders();
   const toggleSellerPremium = useAdminToggleSellerPremium();
+  const toggleSellerActive = useAdminToggleSellerActive();
   const toggleProductSponsored = useAdminToggleProductSponsored();
   const deleteSeller = useAdminDeleteSeller();
   const deleteProduct = useAdminDeleteProduct();
@@ -169,6 +171,14 @@ export default function Admin() {
 
   const dayGroups = useMemo(() => groupByDay(filteredOrders), [filteredOrders]);
   const maxRevenue = useMemo(() => Math.max(...dayGroups.map((g) => g.revenue), 1), [dayGroups]);
+
+  const handleToggleActive = (id: number, current: boolean) => {
+    const next = !current;
+    toggleSellerActive.mutate({ id, isActive: next }, {
+      onSuccess: () => toast.success(next ? "Seller activated — they are now visible." : "Seller deactivated — hidden from marketplace."),
+      onError: () => toast.error("Failed to update seller status."),
+    });
+  };
 
   const handleToggleSeller = (id: number, current: boolean) => {
     toggleSellerPremium.mutate({ id, isPremium: !current }, {
@@ -456,13 +466,14 @@ export default function Admin() {
                       <th className="text-left px-5 py-4 font-semibold text-muted-foreground">Location</th>
                       <th className="text-left px-5 py-4 font-semibold text-muted-foreground">Categories</th>
                       <th className="text-center px-5 py-4 font-semibold text-muted-foreground">Verified</th>
+                      <th className="text-center px-5 py-4 font-semibold text-muted-foreground">Active</th>
                       <th className="text-center px-5 py-4 font-semibold text-muted-foreground">Sponsored</th>
                       <th className="text-center px-5 py-4 font-semibold text-muted-foreground">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {sellers.map((seller) => (
-                      <tr key={seller.id} className="border-b border-border/50 hover:bg-muted/20 transition-colors">
+                      <tr key={seller.id} className={`border-b border-border/50 transition-colors ${seller.isActive ? "hover:bg-muted/20" : "bg-red-50/40 hover:bg-red-50/60"}`}>
                         <td className="px-5 py-4">
                           <div className="flex items-center gap-3">
                             {seller.avatarUrl ? (
@@ -473,8 +484,9 @@ export default function Admin() {
                               </div>
                             )}
                             <div>
-                              <div className="font-semibold">{seller.storeName}</div>
+                              <div className={`font-semibold ${!seller.isActive ? "text-muted-foreground line-through" : ""}`}>{seller.storeName}</div>
                               {seller.isPremium && <Badge className="text-[10px] bg-amber-100 text-amber-700 border-amber-200 h-4 px-1.5">Sponsored</Badge>}
+                              {!seller.isActive && <Badge className="text-[10px] bg-red-100 text-red-700 border-red-200 h-4 px-1.5">Inactive</Badge>}
                             </div>
                           </div>
                         </td>
@@ -520,6 +532,22 @@ export default function Admin() {
                             <span className="text-muted-foreground text-xs">—</span>
                           )}
                         </td>
+                        {/* Active toggle */}
+                        <td className="px-5 py-4 text-center">
+                          <button
+                            onClick={() => handleToggleActive(seller.id, seller.isActive)}
+                            disabled={toggleSellerActive.isPending}
+                            title={seller.isActive ? "Deactivate seller" : "Activate seller"}
+                            className={`w-9 h-9 rounded-full flex items-center justify-center mx-auto transition-all ${
+                              seller.isActive
+                                ? "bg-green-100 text-green-600 hover:bg-red-100 hover:text-red-600"
+                                : "bg-red-100 text-red-500 hover:bg-green-100 hover:text-green-600"
+                            }`}
+                          >
+                            <Power className="w-4 h-4" />
+                          </button>
+                        </td>
+                        {/* Sponsored toggle */}
                         <td className="px-5 py-4 text-center">
                           <button
                             onClick={() => handleToggleSeller(seller.id, seller.isPremium)}

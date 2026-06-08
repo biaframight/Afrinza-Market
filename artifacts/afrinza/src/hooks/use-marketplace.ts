@@ -322,6 +322,15 @@ export function useAdminRejectKyc() {
   });
 }
 
+export function useAdminToggleSellerActive() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, isActive }: { id: number; isActive: boolean }) =>
+      db.adminToggleSellerActive(id, isActive),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin", "sellers"] }),
+  });
+}
+
 export function useAdminRevokeVerification() {
   const qc = useQueryClient();
   return useMutation({
