@@ -45,8 +45,11 @@ const storeSchema = z.object({
   whatsapp: z.string()
     .min(1, "WhatsApp number is required")
     .refine(
-      (v) => /^\+?[0-9]{8,15}$/.test(v.replace(/[\s\-()]/g, "")),
-      "Enter a valid number — digits only, e.g. +60123456789 or 0123456789"
+      (v) => {
+        const digits = v.replace(/[\s\-().\/\\+*#]/g, "").replace(/\D/g, "");
+        return digits.length >= 7 && digits.length <= 15;
+      },
+      "Enter a valid WhatsApp number, e.g. +60123456789 or 0123456789"
     ),
   description: z.string().min(10, "Please provide a brief description of what you sell"),
   categories: z.array(z.string()).min(1, "Select at least one category"),

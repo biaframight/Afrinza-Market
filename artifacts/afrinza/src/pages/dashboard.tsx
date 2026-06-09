@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useAuthContext } from "@/contexts/auth-context";
 import {
@@ -100,10 +100,13 @@ export default function Dashboard() {
   const [subUploading, setSubUploading] = useState(false);
 
   // Redirect if not authed
-  if (!loading && !isAuthenticated) {
-    setLocation("/auth");
-    return null;
-  }
+  useEffect(() => {
+    if (!loading && !isAuthenticated) {
+      setLocation("/auth");
+    }
+  }, [loading, isAuthenticated, setLocation]);
+
+  if (!loading && !isAuthenticated) return null;
 
   if (loading || sellerLoading) {
     return (
@@ -303,7 +306,7 @@ export default function Dashboard() {
   };
 
   const handleAddProduct = async () => {
-    if (!sellerProfile) return;
+    if (!sellerProfile) { toast.error("Seller profile not found. Please refresh the page."); return; }
     if (!addForm.title.trim() || !addForm.price || !addForm.category) {
       toast.error("Title, price, and category are required."); return;
     }
