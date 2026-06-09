@@ -116,23 +116,26 @@ export default function Dashboard() {
     );
   }
 
-  // Initialize store form from sellerProfile
-  if (sellerProfile && !storeInitialized) {
-    setStoreForm({
-      storeName: sellerProfile.storeName,
-      ownerName: sellerProfile.ownerName,
-      description: sellerProfile.description ?? "",
-      location: sellerProfile.location,
-      whatsapp: sellerProfile.whatsapp,
-      categories: sellerProfile.categories,
-    });
-    setStoreInitialized(true);
-    if (!profileForm.fullName) {
-      setProfileForm({ fullName: user?.user_metadata?.full_name ?? "" });
+  // Initialize store form from sellerProfile (useEffect — must not call setState during render)
+  useEffect(() => {
+    if (sellerProfile && !storeInitialized) {
+      setStoreForm({
+        storeName: sellerProfile.storeName,
+        ownerName: sellerProfile.ownerName,
+        description: sellerProfile.description ?? "",
+        location: sellerProfile.location,
+        whatsapp: sellerProfile.whatsapp,
+        categories: sellerProfile.categories,
+      });
+      setStoreInitialized(true);
     }
-  } else if (!profileForm.fullName && user?.user_metadata?.full_name) {
-    setProfileForm({ fullName: user.user_metadata.full_name });
-  }
+  }, [sellerProfile, storeInitialized]);
+
+  useEffect(() => {
+    if (user?.user_metadata?.full_name) {
+      setProfileForm({ fullName: user.user_metadata.full_name });
+    }
+  }, [user?.id]);
 
   const isSeller = !!sellerProfile;
 

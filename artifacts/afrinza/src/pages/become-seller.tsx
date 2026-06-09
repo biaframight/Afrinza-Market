@@ -294,7 +294,7 @@ export default function BecomeSeller() {
             {/* ════════════════ STEP 1: STORE DETAILS ════════════════ */}
             {step === 1 && (
               <Form {...storeForm}>
-                <form onSubmit={storeForm.handleSubmit(onStoreSubmit)} className="space-y-8">
+                <form onSubmit={storeForm.handleSubmit(onStoreSubmit, () => toast.error("Please fill in all required fields before continuing."))} className="space-y-8">
 
                   {/* Login account — shown only when not signed in */}
                   {!isAuthenticated && (
@@ -471,7 +471,7 @@ export default function BecomeSeller() {
             {/* ════════════════ STEP 2: FIRST PRODUCT ════════════════ */}
             {step === 2 && (
               <Form {...productForm}>
-                <form onSubmit={productForm.handleSubmit(onProductSubmit)} className="space-y-8">
+                <form onSubmit={productForm.handleSubmit(onProductSubmit, () => toast.error("Please fill in all required product details."))} className="space-y-8">
 
                   {/* Product image upload */}
                   <div>
