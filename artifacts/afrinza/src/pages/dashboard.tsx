@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import { useAuthContext } from "@/contexts/auth-context";
 import {
   useUpdateSeller,
@@ -632,7 +632,7 @@ export default function Dashboard() {
 
         {/* ── ADMIN SHORTCUT (Kizito only) ─────────────────────────── */}
         {user?.email === "alphuplift@gmail.com" && (
-          <a
+          <Link
             href="/admin"
             className="flex items-center gap-4 bg-gradient-to-r from-primary to-primary/80 text-white rounded-2xl p-5 mb-6 shadow-lg hover:opacity-95 transition-opacity"
           >
@@ -644,7 +644,20 @@ export default function Dashboard() {
               <p className="text-white/80 text-sm mt-0.5">Manage sellers, products & sponsored listings</p>
             </div>
             <span className="text-white/60 text-2xl font-light">›</span>
-          </a>
+          </Link>
+        )}
+
+        {/* ── MY STORE TAB: no profile fallback ────────────────────── */}
+        {currentTab === "store" && !sellerProfile && (
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center mb-4">
+              <Store className="w-8 h-8 text-muted-foreground" />
+            </div>
+            <h3 className="text-lg font-semibold mb-2">No Store Profile Found</h3>
+            <p className="text-muted-foreground text-sm max-w-xs">
+              We couldn't load your store information. Please refresh the page or contact support.
+            </p>
+          </div>
         )}
 
         {/* ── MY STORE TAB ─────────────────────────────────────────── */}
