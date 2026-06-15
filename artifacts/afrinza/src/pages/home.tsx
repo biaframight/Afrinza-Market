@@ -3,7 +3,7 @@ import { ProductCard } from "@/components/product-card";
 import { SellerCard } from "@/components/seller-card";
 import { HeroSlider } from "@/components/hero-slider";
 import { Button } from "@/components/ui/button";
-import { Search, MapPin, ArrowRight, UtensilsCrossed, Shirt, Sparkles, Store, Send, Users, CheckCircle, Globe, BadgeCheck, Wrench, BedDouble, MessageCircle, Home as HomeIcon, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, MapPin, ArrowRight, UtensilsCrossed, Shirt, Sparkles, Store, Send, Users, CheckCircle, Globe, BadgeCheck, Wrench, BedDouble, MessageCircle, Home as HomeIcon, ChevronLeft, ChevronRight, Eye } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useState, useRef, useEffect } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -321,8 +321,8 @@ export default function Home() {
         <div className="flex items-center justify-between mb-8">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <BadgeCheck className="w-5 h-5 text-emerald-500" />
-              <span className="text-xs font-bold uppercase tracking-widest text-emerald-600">Verified</span>
+              <BadgeCheck className="w-5 h-5 text-blue-500" />
+              <span className="text-xs font-bold uppercase tracking-widest text-blue-600">Verified</span>
             </div>
             <h2 className="text-3xl font-bold text-foreground font-serif">Trusted Service Providers</h2>
             <p className="text-muted-foreground mt-1">Identity-verified professionals ready to help you</p>
@@ -365,8 +365,8 @@ export default function Home() {
                   {sp.photos[0] ? (
                     <img src={sp.photos[0]} alt={sp.providerName} className="w-full h-full object-cover" />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-emerald-50 to-emerald-100">
-                      <Wrench className="w-10 h-10 text-emerald-300" />
+                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100">
+                      <Wrench className="w-10 h-10 text-blue-300" />
                     </div>
                   )}
                 </div>
@@ -386,7 +386,7 @@ export default function Home() {
 
                   <div className="flex flex-wrap gap-1">
                     {sp.serviceTypes.slice(0, 3).map((t) => (
-                      <span key={t} className="text-[11px] bg-emerald-50 text-emerald-700 border border-emerald-100 px-2 py-0.5 rounded-full font-medium">{t}</span>
+                      <span key={t} className="text-[11px] bg-blue-50 text-blue-700 border border-blue-100 px-2 py-0.5 rounded-full font-medium">{t}</span>
                     ))}
                     {sp.serviceTypes.length > 3 && (
                       <span className="text-[11px] text-muted-foreground px-1">+{sp.serviceTypes.length - 3}</span>
@@ -397,14 +397,22 @@ export default function Home() {
                     <p className="text-xs text-muted-foreground line-clamp-2 flex-1">{sp.description}</p>
                   )}
 
-                  <a
-                    href={`https://wa.me/${sp.whatsapp.replace(/[^0-9]/g, "")}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-1 flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#1ebe5c] text-white text-sm font-semibold py-2 rounded-xl transition-colors"
-                  >
-                    <MessageCircle className="w-4 h-4" /> WhatsApp
-                  </a>
+                  <div className="mt-1 flex gap-2">
+                    <button
+                      onClick={() => setLocation(`/services?provider=${sp.id}`)}
+                      className="flex-1 flex items-center justify-center gap-1.5 bg-primary/10 hover:bg-primary/20 text-primary text-sm font-semibold py-2 rounded-xl transition-colors"
+                    >
+                      <Eye className="w-4 h-4" /> View Details
+                    </button>
+                    <a
+                      href={`https://wa.me/${sp.whatsapp.replace(/[^0-9]/g, "")}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1 flex items-center justify-center gap-1.5 bg-[#25D366] hover:bg-[#1ebe5c] text-white text-sm font-semibold py-2 rounded-xl transition-colors"
+                    >
+                      <MessageCircle className="w-4 h-4" /> WhatsApp
+                    </a>
+                  </div>
                 </div>
               </motion.div>
             ))}
@@ -510,14 +518,22 @@ export default function Home() {
                       </p>
                     )}
 
-                    <a
-                      href={`https://wa.me/${room.whatsapp.replace(/[^0-9]/g, "")}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-1 flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#1ebe5c] text-white text-sm font-semibold py-2 rounded-xl transition-colors"
-                    >
-                      <MessageCircle className="w-4 h-4" /> WhatsApp
-                    </a>
+                    <div className="mt-1 flex gap-2">
+                      <button
+                        onClick={() => setLocation(`/services?tab=rooms&room=${room.id}`)}
+                        className="flex-1 flex items-center justify-center gap-1.5 bg-primary/10 hover:bg-primary/20 text-primary text-sm font-semibold py-2 rounded-xl transition-colors"
+                      >
+                        <Eye className="w-4 h-4" /> View Details
+                      </button>
+                      <a
+                        href={`https://wa.me/${room.whatsapp.replace(/[^0-9]/g, "")}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-1 flex items-center justify-center gap-1.5 bg-[#25D366] hover:bg-[#1ebe5c] text-white text-sm font-semibold py-2 rounded-xl transition-colors"
+                      >
+                        <MessageCircle className="w-4 h-4" /> WhatsApp
+                      </a>
+                    </div>
                   </div>
                 </motion.div>
               ))}

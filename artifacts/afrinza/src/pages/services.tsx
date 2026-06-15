@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -139,6 +139,8 @@ export default function Services() {
   // Detail views
   const [selectedProvider, setSelectedProvider] = useState<ServiceProvider | null>(null);
   const [selectedRoom, setSelectedRoom] = useState<RoomListing | null>(null);
+  const [activeProviderPhotoIdx, setActiveProviderPhotoIdx] = useState(0);
+  const [activeRoomPhotoIdx, setActiveRoomPhotoIdx] = useState(0);
 
   // Auth
   const [authEmail, setAuthEmail] = useState("");
@@ -162,6 +164,25 @@ export default function Services() {
   const createServiceProvider = useCreateServiceProvider();
   const roomListings = useGetRoomListings(searchedLocation);
   const createRoomListing = useCreateRoomListing();
+
+  // Reset photo index when opening a new detail
+  useEffect(() => { setActiveProviderPhotoIdx(0); }, [selectedProvider?.id]);
+  useEffect(() => { setActiveRoomPhotoIdx(0); }, [selectedRoom?.id]);
+
+  // Auto-open detail from URL params (?provider=ID or ?room=ID)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const providerId = params.get("provider");
+    const roomId = params.get("room");
+    if (providerId && serviceProviders.data) {
+      const match = serviceProviders.data.find((p) => String(p.id) === providerId);
+      if (match) setSelectedProvider(match);
+    }
+    if (roomId && roomListings.data) {
+      const match = roomListings.data.find((r) => String(r.id) === roomId);
+      if (match) { setSelectedRoom(match); setMainTab("rooms"); }
+    }
+  }, [serviceProviders.data, roomListings.data]);
 
   // Forms
   const serviceForm = useForm<ServiceFormValues>({
@@ -1278,14 +1299,22 @@ export default function Services() {
               {selectedProvider.photos.length > 0 ? (
                 <div className="relative">
                   <div className="h-56 overflow-hidden bg-muted">
-                    <img src={selectedProvider.photos[0]} alt={selectedProvider.providerName} className="w-full h-full object-cover" />
+                    <img
+                      src={selectedProvider.photos[activeProviderPhotoIdx] ?? selectedProvider.photos[0]}
+                      alt={selectedProvider.providerName}
+                      className="w-full h-full object-cover"
+                    />
                   </div>
                   {selectedProvider.photos.length > 1 && (
                     <div className="flex gap-2 px-5 py-3 bg-white border-b border-border overflow-x-auto">
-                      {selectedProvider.photos.slice(1).map((photo, i) => (
-                        <div key={i} className="w-16 h-16 rounded-xl overflow-hidden shrink-0 border border-border">
+                      {selectedProvider.photos.map((photo, i) => (
+                        <button
+                          key={i}
+                          onClick={() => setActiveProviderPhotoIdx(i)}
+                          className={`w-16 h-16 rounded-xl overflow-hidden shrink-0 border-2 transition-colors ${activeProviderPhotoIdx === i ? "border-primary" : "border-border hover:border-primary/50"}`}
+                        >
                           <img src={photo} alt="" className="w-full h-full object-cover" />
-                        </div>
+                        </button>
                       ))}
                     </div>
                   )}
@@ -1366,14 +1395,22 @@ export default function Services() {
               {selectedRoom.images && selectedRoom.images.length > 0 ? (
                 <div className="relative">
                   <div className="h-56 overflow-hidden bg-muted">
-                    <img src={selectedRoom.images[0]} alt={selectedRoom.title} className="w-full h-full object-cover" />
+                    <img
+                      src={selectedRoom.images[activeRoomPhotoIdx] ?? selectedRoom.images[0]}
+                      alt={selectedRoom.title}
+                      className="w-full h-full object-cover"
+                    />
                   </div>
                   {selectedRoom.images.length > 1 && (
                     <div className="flex gap-2 px-5 py-3 bg-white border-b border-border overflow-x-auto">
-                      {selectedRoom.images.slice(1).map((img, i) => (
-                        <div key={i} className="w-16 h-16 rounded-xl overflow-hidden shrink-0 border border-border">
+                      {selectedRoom.images.map((img, i) => (
+                        <button
+                          key={i}
+                          onClick={() => setActiveRoomPhotoIdx(i)}
+                          className={`w-16 h-16 rounded-xl overflow-hidden shrink-0 border-2 transition-colors ${activeRoomPhotoIdx === i ? "border-primary" : "border-border hover:border-primary/50"}`}
+                        >
                           <img src={img} alt="" className="w-full h-full object-cover" />
-                        </div>
+                        </button>
                       ))}
                     </div>
                   )}
