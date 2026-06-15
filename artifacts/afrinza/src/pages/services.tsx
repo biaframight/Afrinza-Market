@@ -123,6 +123,10 @@ export default function Services() {
   // Service provider filter
   const [spLocation, setSpLocation] = useState<string>("");
   const [filteredSpLocation, setFilteredSpLocation] = useState<string | undefined>(undefined);
+  const [spSearch, setSpSearch] = useState<string>(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("search") ?? "";
+  });
 
   // Room search
   const [selectedLocation, setSelectedLocation] = useState<string>("");
@@ -715,33 +719,57 @@ export default function Services() {
             /* ── PROVIDER DIRECTORY ──────────────────────────── */
             <div className="max-w-6xl mx-auto">
               {/* Filter + CTA bar */}
-              <div className="flex flex-col sm:flex-row items-center gap-3 mb-8">
-                <div className="flex gap-2 flex-1 w-full">
-                  <Select value={spLocation} onValueChange={setSpLocation}>
-                    <SelectTrigger className="h-11 bg-white border-border flex-1">
-                      <SelectValue placeholder="Filter by location…" />
-                    </SelectTrigger>
-                    <SelectContent className="max-h-64">
-                      <SelectItem value="all">All Locations</SelectItem>
-                      {MALAYSIA_LOCATIONS.map((loc) => (
-                        <SelectItem key={loc.value} value={loc.value}>{loc.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+              <div className="flex flex-col gap-3 mb-8">
+                {/* Keyword search row */}
+                <div className="flex gap-2 w-full">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                    <input
+                      type="text"
+                      placeholder="Search by service type, name or keyword…"
+                      value={spSearch}
+                      onChange={(e) => setSpSearch(e.target.value)}
+                      className="w-full h-11 pl-9 pr-3 rounded-xl border border-border bg-white text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                    />
+                    {spSearch && (
+                      <button
+                        onClick={() => setSpSearch("")}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+                {/* Location + CTA row */}
+                <div className="flex flex-col sm:flex-row items-center gap-3 w-full">
+                  <div className="flex gap-2 flex-1 w-full">
+                    <Select value={spLocation} onValueChange={setSpLocation}>
+                      <SelectTrigger className="h-11 bg-white border-border flex-1">
+                        <SelectValue placeholder="Filter by location…" />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-64">
+                        <SelectItem value="all">All Locations</SelectItem>
+                        {MALAYSIA_LOCATIONS.map((loc) => (
+                          <SelectItem key={loc.value} value={loc.value}>{loc.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      variant="outline"
+                      className="h-11 px-4 rounded-xl"
+                      onClick={() => setFilteredSpLocation(spLocation === "all" ? undefined : spLocation || undefined)}
+                    >
+                      <Search className="w-4 h-4" />
+                    </Button>
+                  </div>
                   <Button
-                    variant="outline"
-                    className="h-11 px-4 rounded-xl"
-                    onClick={() => setFilteredSpLocation(spLocation === "all" ? undefined : spLocation || undefined)}
+                    className="h-11 rounded-xl gap-2 whitespace-nowrap w-full sm:w-auto"
+                    onClick={() => { setShowRegisterForm(true); window.scrollTo(0, 0); }}
                   >
-                    <Search className="w-4 h-4" />
+                    <Wrench className="w-4 h-4" /> List Your Services
                   </Button>
                 </div>
-                <Button
-                  className="h-11 rounded-xl gap-2 whitespace-nowrap w-full sm:w-auto"
-                  onClick={() => { setShowRegisterForm(true); window.scrollTo(0, 0); }}
-                >
-                  <Wrench className="w-4 h-4" /> List Your Services
-                </Button>
               </div>
 
               {/* Provider grid */}
@@ -775,14 +803,35 @@ export default function Services() {
                     <Wrench className="w-4 h-4" /> List My Services
                   </Button>
                 </div>
-              ) : (
+              ) : (() => {
+                const q = spSearch.toLowerCase().trim();
+                const filtered = q
+                  ? serviceProviders.data!.filter((p) =>
+                      p.providerName.toLowerCase().includes(q) ||
+                      (p.businessName ?? "").toLowerCase().includes(q) ||
+                      (p.description ?? "").toLowerCase().includes(q) ||
+                      p.serviceTypes.some((t) => t.toLowerCase().includes(q)) ||
+                      (p.customServiceType ?? "").toLowerCase().includes(q)
+                    )
+                  : serviceProviders.data!;
+
+                return filtered.length === 0 ? (
+                  <div className="text-center py-20 text-muted-foreground bg-white rounded-3xl border border-border shadow-sm">
+                    <Search className="w-14 h-14 mx-auto mb-4 opacity-20" />
+                    <p className="font-bold text-lg mb-2">No results for "{spSearch}"</p>
+                    <p className="text-sm mb-4">Try a different keyword or browse all providers below.</p>
+                    <Button variant="outline" className="rounded-full gap-2" onClick={() => setSpSearch("")}>
+                      Clear Search
+                    </Button>
+                  </div>
+                ) : (
                 <>
                   <p className="text-sm text-muted-foreground mb-4 font-medium">
-                    {serviceProviders.data.length} provider{serviceProviders.data.length !== 1 ? "s" : ""}
-                    {filteredSpLocation ? ` in ${filteredSpLocation}` : " across Malaysia"}
+                    {filtered.length} provider{filtered.length !== 1 ? "s" : ""}
+                    {q ? ` matching "${spSearch}"` : filteredSpLocation ? ` in ${filteredSpLocation}` : " across Malaysia"}
                   </p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                    {serviceProviders.data.map((provider) => (
+                    {filtered.map((provider) => (
                       <div key={provider.id} className="bg-white rounded-2xl border border-border shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col group cursor-pointer" onClick={() => setSelectedProvider(provider)}>
                         {provider.photos.length > 0 ? (
                           <div className="h-44 bg-white relative flex items-center justify-center border-b border-border/40">
@@ -843,14 +892,15 @@ export default function Services() {
                     <Wrench className="w-8 h-8 text-primary mx-auto mb-3" />
                     <p className="font-bold text-lg mb-1">Offer a service?</p>
                     <p className="text-sm text-muted-foreground mb-4">
-                      Join {serviceProviders.data.length} provider{serviceProviders.data.length !== 1 ? "s" : ""} already listed on Afrinza.
+                      Join {filtered.length} provider{filtered.length !== 1 ? "s" : ""} already listed on Afrinza.
                     </p>
                     <Button className="rounded-full gap-2" onClick={() => { setShowRegisterForm(true); window.scrollTo(0, 0); }}>
                       <Wrench className="w-4 h-4" /> List My Services
                     </Button>
                   </div>
                 </>
-              )}
+                );
+              })()}
             </div>
           )}
         </div>

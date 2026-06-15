@@ -5,7 +5,7 @@ import { HeroSlider } from "@/components/hero-slider";
 import { Button } from "@/components/ui/button";
 import { Search, MapPin, ArrowRight, UtensilsCrossed, Shirt, Sparkles, Store, Send, Users, CheckCircle, Globe, BadgeCheck, Wrench, BedDouble, MessageCircle, Home as HomeIcon, ChevronLeft, ChevronRight } from "lucide-react";
 import { Link, useLocation } from "wouter";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { motion } from "framer-motion";
 
@@ -53,12 +53,36 @@ export default function Home() {
   const providersRef = useRef<HTMLDivElement>(null);
   const roomsRef = useRef<HTMLDivElement>(null);
 
+  // ── Auto-slideshow: advance each carousel every 3.5 s ─────────
+  useEffect(() => {
+    const carousels = [
+      { ref: productsRef, step: 192 },   // w-44 (176) + gap-4 (16)
+      { ref: sellersRef, step: 276 },    // w-64 (256) + gap-5 (20)
+      { ref: providersRef, step: 308 },  // w-72 (288) + gap-5 (20)
+      { ref: roomsRef, step: 308 },
+    ];
+    const timers = carousels.map(({ ref, step }) =>
+      setInterval(() => {
+        const el = ref.current;
+        if (!el) return;
+        const atEnd = el.scrollLeft + el.clientWidth >= el.scrollWidth - 8;
+        if (atEnd) {
+          el.scrollTo({ left: 0, behavior: "smooth" });
+        } else {
+          el.scrollBy({ left: step, behavior: "smooth" });
+        }
+      }, 3500)
+    );
+    return () => timers.forEach(clearInterval);
+  }, []);
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     const params = new URLSearchParams();
     if (searchQuery) params.append("search", searchQuery);
     if (location) params.append("location", location);
-    setLocation(`/products?${params.toString()}`);
+    // Route to services when the query looks like a service, otherwise products
+    setLocation(`/services?${params.toString()}`);
   };
 
   return (
@@ -353,7 +377,7 @@ export default function Home() {
                       <p className="font-bold text-foreground leading-tight truncate">{sp.businessName || sp.providerName}</p>
                       {sp.businessName && <p className="text-xs text-muted-foreground truncate">{sp.providerName}</p>}
                     </div>
-                    <BadgeCheck className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
+                    <BadgeCheck className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
                   </div>
 
                   <div className="flex items-center gap-1 text-xs text-muted-foreground">
