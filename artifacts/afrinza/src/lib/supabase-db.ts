@@ -1121,18 +1121,21 @@ export async function updateRoomListing(id: number, updates: {
   location?: string;
   amenities?: string[];
   availableFrom?: string | null;
+  images?: string[];
 }): Promise<RoomListing> {
+  const patch: Record<string, unknown> = {
+    title: updates.title,
+    description: updates.description,
+    price_per_month: updates.pricePerMonth,
+    room_type: updates.roomType,
+    location: updates.location,
+    amenities: updates.amenities,
+    available_from: updates.availableFrom ?? null,
+  };
+  if (updates.images !== undefined) patch.images = updates.images;
   const { data, error } = await supabase
     .from("room_listings")
-    .update({
-      title: updates.title,
-      description: updates.description,
-      price_per_month: updates.pricePerMonth,
-      room_type: updates.roomType,
-      location: updates.location,
-      amenities: updates.amenities,
-      available_from: updates.availableFrom ?? null,
-    })
+    .update(patch)
     .eq("id", id)
     .select()
     .single();

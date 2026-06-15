@@ -313,13 +313,8 @@ export default function Services() {
         images: imageUrls,
       });
 
-      const waNumber = "60166088141";
-      const msg = encodeURIComponent(
-        `*New Room Listing — Afrinza*\n\n*Name:* ${data.listerName}\n*Title:* ${data.title}\n*Type:* ${data.roomType}\n*Location:* ${data.location}\n*Price:* ${data.pricePerMonth ? `RM ${data.pricePerMonth}/month` : "Negotiable"}\n*WhatsApp:* ${data.whatsapp}\n*Photos:* ${imageUrls.length}`
-      );
       setIsRoomSuccess(true);
       window.scrollTo(0, 0);
-      setTimeout(() => window.open(`https://wa.me/${waNumber}?text=${msg}`, "_blank"), 800);
     } catch {
       toast.error("Failed to submit. Please try again.");
     } finally {

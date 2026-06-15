@@ -7,7 +7,7 @@ import {
   ShoppingCart, Search, Menu, Store, Home, PackageSearch,
   MessageCircleQuestion, Sparkles, Info, HelpCircle,
   LayoutDashboard, LogOut, UserCircle, Shield, Wrench, KeyRound,
-  CreditCard, BadgeCheck, AlertTriangle, X, Bell,
+  CreditCard, BadgeCheck, AlertTriangle, X, Bell, ChevronDown,
 } from "lucide-react";
 import { useGetCart, useGetCurrentSubscription, useGetServiceProviderByUser, useGetServiceProviderSub } from "@/hooks/use-marketplace";
 import { getSessionId } from "@/lib/session";
@@ -287,8 +287,26 @@ export function Layout({ children }: LayoutProps) {
             <Link href="/products" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors whitespace-nowrap">Products</Link>
             <Link href="/sellers" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors whitespace-nowrap">Sellers</Link>
             <Link href="/services" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors whitespace-nowrap">Services</Link>
-            <Link href="/about" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors whitespace-nowrap">About</Link>
-            <Link href="/how-it-works" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors whitespace-nowrap">How it Works</Link>
+            <Link href="/services?tab=rooms" className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary border border-primary/30 bg-primary/5 hover:bg-primary/10 rounded-full px-3 py-1 transition-colors whitespace-nowrap">
+              <KeyRound className="w-3.5 h-3.5" /> Rent a Room
+            </Link>
+            <DropdownMenu>
+              <DropdownMenuTrigger className="flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-primary transition-colors whitespace-nowrap outline-none">
+                More <ChevronDown className="w-3.5 h-3.5" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                <DropdownMenuItem asChild>
+                  <Link href="/about" className="flex items-center gap-2 cursor-pointer">
+                    <Info className="w-4 h-4" /> About
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/how-it-works" className="flex items-center gap-2 cursor-pointer">
+                    <HelpCircle className="w-4 h-4" /> How it Works
+                  </Link>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </nav>
 
           {/* Search */}

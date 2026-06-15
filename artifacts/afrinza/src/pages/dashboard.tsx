@@ -19,7 +19,7 @@ import {
   useUpdateRoomListing,
   useDeleteRoomListing,
 } from "@/hooks/use-marketplace";
-import { uploadProductImage, uploadReceiptImage, uploadServiceProviderReceipt, uploadServicePhoto } from "@/lib/supabase-db";
+import { uploadProductImage, uploadReceiptImage, uploadServiceProviderReceipt, uploadServicePhoto, uploadRoomPhoto } from "@/lib/supabase-db";
 import { updateUserProfile } from "@/lib/supabase-auth";
 import type { Product, RoomListing } from "@/lib/supabase-db";
 import { Button } from "@/components/ui/button";
@@ -97,8 +97,10 @@ export default function Dashboard() {
   const currentMonth = new Date().toISOString().slice(0, 7);
   const currentSub = useGetCurrentSubscription(sellerProfile?.id, currentMonth);
   const createSubscription = useCreateSubscriptionPayment();
-  const myRooms = useGetRoomListingsByWhatsapp(sellerProfile?.whatsapp);
   const myServiceProvider = useGetServiceProviderByUser(user?.id);
+  const myRooms = useGetRoomListingsByWhatsapp(
+    sellerProfile?.whatsapp || myServiceProvider.data?.whatsapp
+  );
   const submitSpKyc = useSubmitServiceProviderKyc();
   const currentSpSub = useGetServiceProviderSub(myServiceProvider.data?.id, currentMonth);
   const createSpSub = useCreateServiceProviderSub();
@@ -140,7 +142,12 @@ export default function Dashboard() {
   const [editingRoom, setEditingRoom] = useState<RoomListing | null>(null);
   const [roomEditForm, setRoomEditForm] = useState({
     title: "", description: "", pricePerMonth: "", roomType: "", location: "", amenities: [] as string[], availableFrom: "",
+    images: [] as string[],
   });
+  const [roomEditNewFiles, setRoomEditNewFiles] = useState<File[]>([]);
+  const [roomEditNewPreviews, setRoomEditNewPreviews] = useState<string[]>([]);
+  const [roomPhotoUploading, setRoomPhotoUploading] = useState(false);
+  const roomEditPhotoRef = useRef<HTMLInputElement>(null);
   const [deletingRoomId, setDeletingRoomId] = useState<number | null>(null);
 
   // Auto-switch tab from URL param ?tab=X and auto-open modals via ?action=X
@@ -458,12 +465,28 @@ export default function Dashboard() {
       location: room.location,
       amenities: room.amenities,
       availableFrom: room.availableFrom ?? "",
+      images: room.images ?? [],
     });
+    setRoomEditNewFiles([]);
+    setRoomEditNewPreviews([]);
   };
 
-  const handleSaveRoomEdit = () => {
+  const handleSaveRoomEdit = async () => {
     if (!editingRoom) return;
     if (!roomEditForm.title.trim()) { toast.error("Title is required."); return; }
+    setRoomPhotoUploading(true);
+    let finalImages = [...roomEditForm.images];
+    try {
+      if (roomEditNewFiles.length > 0) {
+        const uploaded = await Promise.all(roomEditNewFiles.map((f) => uploadRoomPhoto(f)));
+        finalImages = [...finalImages, ...uploaded.filter((u): u is string => u !== null)];
+      }
+    } catch {
+      toast.error("Photo upload failed. Please try again.");
+      setRoomPhotoUploading(false);
+      return;
+    }
+    setRoomPhotoUploading(false);
     updateRoom.mutate(
       {
         id: editingRoom.id,
@@ -475,6 +498,7 @@ export default function Dashboard() {
           location: roomEditForm.location,
           amenities: roomEditForm.amenities,
           availableFrom: roomEditForm.availableFrom || null,
+          images: finalImages,
         },
       },
       {
@@ -1821,11 +1845,69 @@ export default function Dashboard() {
                 ))}
               </div>
             </div>
+
+            {/* Photos */}
+            <div>
+              <label className="text-sm font-semibold block mb-2">Photos</label>
+              {roomEditForm.images.length === 0 && roomEditNewPreviews.length === 0 && (
+                <p className="text-xs text-muted-foreground mb-2">No photos yet.</p>
+              )}
+              <div className="flex flex-wrap gap-2 mb-3">
+                {roomEditForm.images.map((url, i) => (
+                  <div key={url} className="relative w-20 h-20 rounded-xl overflow-hidden border border-border group">
+                    <img src={url} alt={`photo-${i}`} className="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => setRoomEditForm((f) => ({ ...f, images: f.images.filter((_, idx) => idx !== i) }))}
+                      className="absolute top-0.5 right-0.5 bg-black/60 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+                {roomEditNewPreviews.map((src, i) => (
+                  <div key={`new-${i}`} className="relative w-20 h-20 rounded-xl overflow-hidden border border-primary/40 group">
+                    <img src={src} alt={`new-${i}`} className="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setRoomEditNewFiles((f) => f.filter((_, idx) => idx !== i));
+                        setRoomEditNewPreviews((p) => p.filter((_, idx) => idx !== i));
+                      }}
+                      className="absolute top-0.5 right-0.5 bg-black/60 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                    <span className="absolute bottom-0 left-0 right-0 text-[9px] bg-primary/80 text-white text-center py-0.5">New</span>
+                  </div>
+                ))}
+              </div>
+              <input
+                ref={roomEditPhotoRef}
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={(e) => {
+                  const files = Array.from(e.target.files ?? []);
+                  e.target.value = "";
+                  setRoomEditNewFiles((prev) => [...prev, ...files]);
+                  files.forEach((f) => {
+                    const reader = new FileReader();
+                    reader.onload = (ev) => setRoomEditNewPreviews((prev) => [...prev, ev.target?.result as string]);
+                    reader.readAsDataURL(f);
+                  });
+                }}
+              />
+              <Button type="button" variant="outline" size="sm" className="rounded-full gap-1.5" onClick={() => roomEditPhotoRef.current?.click()}>
+                <ImagePlus className="w-4 h-4" /> Add Photos
+              </Button>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" className="rounded-full" onClick={() => setEditingRoom(null)}>Cancel</Button>
-            <Button className="rounded-full" onClick={handleSaveRoomEdit} disabled={updateRoom.isPending}>
-              {updateRoom.isPending ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Saving…</> : <><CheckCircle2 className="w-4 h-4 mr-2" />Save Changes</>}
+            <Button className="rounded-full" onClick={handleSaveRoomEdit} disabled={updateRoom.isPending || roomPhotoUploading}>
+              {(updateRoom.isPending || roomPhotoUploading) ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />{roomPhotoUploading ? "Uploading…" : "Saving…"}</> : <><CheckCircle2 className="w-4 h-4 mr-2" />Save Changes</>}
             </Button>
           </DialogFooter>
         </DialogContent>
