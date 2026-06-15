@@ -249,6 +249,24 @@ export function useAdminDeleteProduct() {
   });
 }
 
+export function useAdminGetAllServiceProviders() {
+  return useQuery({
+    queryKey: ["admin", "serviceproviders"],
+    queryFn: () => db.adminGetAllServiceProviders(),
+  });
+}
+
+export function useAdminDeleteServiceProvider() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id }: { id: number }) => db.adminDeleteServiceProvider(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin", "serviceproviders"] });
+      qc.invalidateQueries({ queryKey: ["serviceproviders"] });
+    },
+  });
+}
+
 // ─── Admin Orders ─────────────────────────────────────────────────
 
 export function useAdminGetAllOrders() {

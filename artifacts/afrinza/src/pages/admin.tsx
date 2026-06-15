@@ -17,6 +17,8 @@ import {
   useAdminConfirmSubscription,
   useAdminRejectSubscription,
   useAdminToggleSellerActive,
+  useAdminGetAllServiceProviders,
+  useAdminDeleteServiceProvider,
 } from "@/hooks/use-marketplace";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -37,7 +39,7 @@ import type { AdminOrder } from "@/lib/supabase-db";
 
 const ADMIN_EMAIL = "alphuplift@gmail.com";
 
-type Tab = "orders" | "sellers" | "products" | "kyc" | "subscriptions";
+type Tab = "orders" | "sellers" | "products" | "kyc" | "subscriptions" | "serviceproviders";
 type Period = "today" | "week" | "month" | "year" | "all";
 
 const PERIOD_LABELS: Record<Period, string> = {
@@ -116,7 +118,7 @@ export default function Admin() {
   const { user, isAuthenticated, loading: authLoading } = useAuthContext();
   const [tab, setTab] = useState<Tab>("orders");
   const [period, setPeriod] = useState<Period>("month");
-  const [confirmDelete, setConfirmDelete] = useState<{ type: "seller" | "product"; id: number; name: string } | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<{ type: "seller" | "product" | "serviceProvider"; id: number; name: string } | null>(null);
   const [updatingOrderId, setUpdatingOrderId] = useState<number | null>(null);
 
   const allSellers = useAdminGetAllSellers();
@@ -134,6 +136,8 @@ export default function Admin() {
   const allSubs = useAdminGetSubscriptions();
   const confirmSub = useAdminConfirmSubscription();
   const rejectSub = useAdminRejectSubscription();
+  const allServiceProviders = useAdminGetAllServiceProviders();
+  const deleteServiceProvider = useAdminDeleteServiceProvider();
 
   const subPendingCount = useMemo(() => (allSubs.data ?? []).filter((s) => s.status === "pending").length, [allSubs.data]);
   const adminCurrentMonth = new Date().toISOString().slice(0, 7);
@@ -219,7 +223,12 @@ export default function Admin() {
     if (!confirmDelete) return;
     if (confirmDelete.type === "seller") {
       deleteSeller.mutate({ id: confirmDelete.id }, {
-        onSuccess: () => { toast.success(`Store "${confirmDelete.name}" deleted.`); setConfirmDelete(null); },
+        onSuccess: () => { toast.success(`Store "${confirmDelete.name}" and all linked data deleted.`); setConfirmDelete(null); },
+        onError: () => toast.error("Delete failed — check Supabase admin policy."),
+      });
+    } else if (confirmDelete.type === "serviceProvider") {
+      deleteServiceProvider.mutate({ id: confirmDelete.id }, {
+        onSuccess: () => { toast.success(`Service provider "${confirmDelete.name}" deleted.`); setConfirmDelete(null); },
         onError: () => toast.error("Delete failed — check Supabase admin policy."),
       });
     } else {
@@ -302,6 +311,7 @@ export default function Admin() {
             { id: "products", icon: <Package     className="w-4 h-4" />, label: `Products (${products.length})` },
             { id: "kyc",           icon: <BadgeCheck  className="w-4 h-4" />, label: `KYC${kycPendingCount > 0 ? ` (${kycPendingCount} pending)` : ""}` },
             { id: "subscriptions", icon: <CreditCard  className="w-4 h-4" />, label: `Subscriptions${subPendingCount > 0 ? ` (${subPendingCount} pending)` : ""}` },
+            { id: "serviceproviders", icon: <Users className="w-4 h-4" />, label: `Service Providers (${(allServiceProviders.data ?? []).length})` },
           ] as const).map(({ id, icon, label }) => (
             <button
               key={id}
@@ -917,14 +927,106 @@ export default function Admin() {
         </div>
       )}
 
+      {/* ══════════════════════════════════════════════════════════
+          SERVICE PROVIDERS TAB
+      ══════════════════════════════════════════════════════════ */}
+      {tab === "serviceproviders" && (
+        <div className="bg-white rounded-2xl border border-border shadow-sm overflow-hidden">
+          <div className="px-6 py-4 border-b border-border">
+            <h2 className="font-semibold text-base">Service Providers</h2>
+            <p className="text-xs text-muted-foreground mt-0.5">Deleting a provider removes their profile, SP subscriptions, and room listings.</p>
+          </div>
+          {allServiceProviders.isLoading ? (
+            <div className="flex items-center justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
+          ) : (allServiceProviders.data ?? []).length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 text-muted-foreground gap-2">
+              <Users className="w-8 h-8 opacity-30" />
+              <p className="text-sm">No service providers yet.</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border bg-muted/30 text-xs text-muted-foreground uppercase tracking-wide">
+                    <th className="px-5 py-3 text-left">Provider</th>
+                    <th className="px-5 py-3 text-left">Location</th>
+                    <th className="px-5 py-3 text-left">WhatsApp</th>
+                    <th className="px-5 py-3 text-left">Services</th>
+                    <th className="px-5 py-3 text-center">Status</th>
+                    <th className="px-5 py-3 text-center">Delete</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {(allServiceProviders.data ?? []).map((sp) => (
+                    <tr key={sp.id} className="hover:bg-muted/20 transition-colors">
+                      <td className="px-5 py-4">
+                        <p className="font-medium text-foreground">{sp.providerName}</p>
+                        {sp.businessName && <p className="text-xs text-muted-foreground">{sp.businessName}</p>}
+                      </td>
+                      <td className="px-5 py-4 text-muted-foreground">{sp.location}</td>
+                      <td className="px-5 py-4">
+                        <a
+                          href={`https://wa.me/${sp.whatsapp.replace(/\D/g, "")}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1.5 text-green-700 hover:text-green-800 text-sm font-medium whitespace-nowrap"
+                        >
+                          <Phone className="w-3.5 h-3.5 shrink-0" />
+                          {sp.whatsapp}
+                        </a>
+                      </td>
+                      <td className="px-5 py-4">
+                        <div className="flex flex-wrap gap-1">
+                          {sp.serviceTypes.slice(0, 2).map((s) => (
+                            <Badge key={s} variant="outline" className="text-[10px] h-5">{s}</Badge>
+                          ))}
+                          {sp.serviceTypes.length > 2 && (
+                            <Badge variant="outline" className="text-[10px] h-5">+{sp.serviceTypes.length - 2}</Badge>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-5 py-4 text-center">
+                        {sp.isVerified ? (
+                          <Badge className="bg-blue-100 text-blue-700 border-transparent gap-1 text-[10px] h-5">
+                            <BadgeCheck className="w-3 h-3" /> Verified
+                          </Badge>
+                        ) : sp.isActive ? (
+                          <Badge className="bg-green-100 text-green-700 border-transparent gap-1 text-[10px] h-5">
+                            <CheckCircle className="w-3 h-3" /> Active
+                          </Badge>
+                        ) : (
+                          <Badge className="bg-muted text-muted-foreground border-transparent text-[10px] h-5">Inactive</Badge>
+                        )}
+                      </td>
+                      <td className="px-5 py-4 text-center">
+                        <button
+                          onClick={() => setConfirmDelete({ type: "serviceProvider", id: sp.id, name: sp.providerName })}
+                          className="w-9 h-9 rounded-full bg-red-50 text-red-400 hover:bg-red-100 hover:text-red-600 flex items-center justify-center mx-auto transition-all"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Confirm delete dialog */}
       <AlertDialog open={!!confirmDelete} onOpenChange={(open) => !open && setConfirmDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete {confirmDelete?.type === "seller" ? "Store" : "Product"}?</AlertDialogTitle>
+            <AlertDialogTitle>
+              {confirmDelete?.type === "seller" ? "Delete Store?" : confirmDelete?.type === "serviceProvider" ? "Delete Service Provider?" : "Delete Product?"}
+            </AlertDialogTitle>
             <AlertDialogDescription>
               This will permanently delete <strong>"{confirmDelete?.name}"</strong>
-              {confirmDelete?.type === "seller" && " and all of its products"}. This cannot be undone.
+              {confirmDelete?.type === "seller" && " along with all products, reviews, subscriptions, service provider profile, and room listings"}
+              {confirmDelete?.type === "serviceProvider" && " along with their SP subscriptions and room listings"}
+              . This cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -932,9 +1034,9 @@ export default function Admin() {
             <AlertDialogAction
               onClick={handleDelete}
               className="bg-red-600 hover:bg-red-700 text-white"
-              disabled={deleteSeller.isPending || deleteProduct.isPending}
+              disabled={deleteSeller.isPending || deleteProduct.isPending || deleteServiceProvider.isPending}
             >
-              {(deleteSeller.isPending || deleteProduct.isPending) ? (
+              {(deleteSeller.isPending || deleteProduct.isPending || deleteServiceProvider.isPending) ? (
                 <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Deleting…</>
               ) : "Yes, Delete"}
             </AlertDialogAction>

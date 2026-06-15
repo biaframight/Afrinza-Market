@@ -632,9 +632,66 @@ export async function adminToggleProductSponsored(id: number, isSponsored: boole
 }
 
 export async function adminDeleteSeller(id: number): Promise<void> {
+  // 1. Get seller record to find user_id
+  const { data: sellerRow } = await supabase
+    .from("sellers").select("id, user_id").eq("id", id).maybeSingle();
+  const userId = (sellerRow as any)?.user_id ?? null;
+
+  // 2. Get product IDs so we can clean cart_items
+  const { data: productRows } = await supabase
+    .from("products").select("id").eq("seller_id", id);
+  const productIds = ((productRows ?? []) as any[]).map((p) => p.id as number);
+  if (productIds.length > 0) {
+    await supabase.from("cart_items").delete().in("product_id", productIds);
+  }
+
+  // 3. Delete seller-linked data
+  await supabase.from("reviews").delete().eq("seller_id", id);
+  await supabase.from("subscription_payments").delete().eq("seller_id", id);
   await supabase.from("products").delete().eq("seller_id", id);
+
+  // 4. If user_id exists: clean up SP profile, SP subscriptions, room listings
+  if (userId) {
+    const { data: spRow } = await supabase
+      .from("service_providers").select("id").eq("user_id", userId).maybeSingle();
+    if (spRow) {
+      await supabase.from("service_provider_subscriptions").delete().eq("provider_id", (spRow as any).id);
+      await supabase.from("service_providers").delete().eq("id", (spRow as any).id);
+    }
+    await supabase.from("room_listings").delete().eq("user_id", userId);
+  }
+
+  // 5. Finally delete the seller record itself
   const { error } = await supabase.from("sellers").delete().eq("id", id);
   if (error) throw new Error(`[Supabase / adminDeleteSeller] ${error.message}`);
+}
+
+export async function adminGetAllServiceProviders(): Promise<ServiceProvider[]> {
+  const { data, error } = await supabase
+    .from("service_providers")
+    .select("*")
+    .order("created_at", { ascending: false });
+  if (error) throw new Error(`[Supabase / adminGetAllServiceProviders] ${error.message}`);
+  return ((data ?? []) as any[]).map(mapServiceProvider);
+}
+
+export async function adminDeleteServiceProvider(id: number): Promise<void> {
+  // 1. Get SP record to find user_id
+  const { data: spRow } = await supabase
+    .from("service_providers").select("id, user_id").eq("id", id).maybeSingle();
+  const userId = (spRow as any)?.user_id ?? null;
+
+  // 2. Delete SP subscriptions
+  await supabase.from("service_provider_subscriptions").delete().eq("provider_id", id);
+
+  // 3. Delete room listings linked to this user
+  if (userId) {
+    await supabase.from("room_listings").delete().eq("user_id", userId);
+  }
+
+  // 4. Delete service provider record
+  const { error } = await supabase.from("service_providers").delete().eq("id", id);
+  if (error) throw new Error(`[Supabase / adminDeleteServiceProvider] ${error.message}`);
 }
 
 export async function adminToggleSellerActive(id: number, isActive: boolean): Promise<Seller> {
