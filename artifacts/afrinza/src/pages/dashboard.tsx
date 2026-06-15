@@ -15,10 +15,13 @@ import {
   useGetServiceProviderSub,
   useCreateServiceProviderSub,
   useSubmitServiceProviderKyc,
+  useUpdateServiceProvider,
+  useUpdateRoomListing,
+  useDeleteRoomListing,
 } from "@/hooks/use-marketplace";
 import { uploadProductImage, uploadReceiptImage, uploadServiceProviderReceipt } from "@/lib/supabase-db";
 import { updateUserProfile } from "@/lib/supabase-auth";
-import type { Product } from "@/lib/supabase-db";
+import type { Product, RoomListing } from "@/lib/supabase-db";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -99,6 +102,9 @@ export default function Dashboard() {
   const submitSpKyc = useSubmitServiceProviderKyc();
   const currentSpSub = useGetServiceProviderSub(myServiceProvider.data?.id, currentMonth);
   const createSpSub = useCreateServiceProviderSub();
+  const updateSp = useUpdateServiceProvider();
+  const updateRoom = useUpdateRoomListing();
+  const deleteRoom = useDeleteRoomListing();
 
   // KYC modal
   const [kycModalOpen, setKycModalOpen] = useState(false);
@@ -122,6 +128,28 @@ export default function Dashboard() {
   // SP KYC modal
   const [spKycOpen, setSpKycOpen] = useState(false);
   const [spKycWhatsapp, setSpKycWhatsapp] = useState("");
+
+  // SP edit dialog
+  const [spEditOpen, setSpEditOpen] = useState(false);
+  const [spEditForm, setSpEditForm] = useState({
+    providerName: "", businessName: "", location: "", description: "", experience: "", serviceTypes: [] as string[], customServiceType: "",
+  });
+
+  // Room edit / delete
+  const [editingRoom, setEditingRoom] = useState<RoomListing | null>(null);
+  const [roomEditForm, setRoomEditForm] = useState({
+    title: "", description: "", pricePerMonth: "", roomType: "", location: "", amenities: [] as string[], availableFrom: "",
+  });
+  const [deletingRoomId, setDeletingRoomId] = useState<number | null>(null);
+
+  // Auto-switch tab from URL param ?tab=X
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get("tab") as Tab | null;
+    const validTabs: Tab[] = ["store", "products", "add-product", "services", "rooms", "profile"];
+    if (tab && validTabs.includes(tab)) setActiveTab(tab);
+    if (params.get("action") === "verify-sp") setSpKycOpen(true);
+  }, []);
 
   // Redirect if not authed
   useEffect(() => {
@@ -167,6 +195,11 @@ export default function Dashboard() {
 
   const isSeller = !!sellerProfile;
   const serviceProducts = (products ?? []).filter((p) => p.category === "Services");
+
+  // One subscription covers all roles — seller sub and SP sub are interchangeable
+  const anySubConfirmed = currentSub.data?.status === "confirmed" || currentSpSub.data?.status === "confirmed";
+  const anySubPending = !anySubConfirmed && (currentSub.data?.status === "pending" || currentSpSub.data?.status === "pending");
+  const anySubRejected = !anySubConfirmed && !anySubPending && (currentSub.data?.status === "rejected" || currentSpSub.data?.status === "rejected");
 
   const isValidPhone = (v: string) =>
     /^\+?[0-9]{8,15}$/.test(v.replace(/[\s\-()]/g, ""));
@@ -354,6 +387,90 @@ export default function Dashboard() {
       {
         onSuccess: () => { toast.success("Product deleted."); setDeletingId(null); },
         onError: (e) => toast.error(e instanceof Error ? e.message : "Delete failed"),
+      }
+    );
+  };
+
+  const handleOpenSpEdit = () => {
+    if (!myServiceProvider.data) return;
+    setSpEditForm({
+      providerName: myServiceProvider.data.providerName,
+      businessName: myServiceProvider.data.businessName ?? "",
+      location: myServiceProvider.data.location,
+      description: myServiceProvider.data.description ?? "",
+      experience: myServiceProvider.data.experience ?? "",
+      serviceTypes: myServiceProvider.data.serviceTypes,
+      customServiceType: myServiceProvider.data.customServiceType ?? "",
+    });
+    setSpEditOpen(true);
+  };
+
+  const handleSaveSpEdit = () => {
+    if (!myServiceProvider.data) return;
+    if (!spEditForm.providerName.trim()) { toast.error("Provider name is required."); return; }
+    updateSp.mutate(
+      {
+        id: myServiceProvider.data.id,
+        updates: {
+          providerName: spEditForm.providerName,
+          businessName: spEditForm.businessName,
+          location: spEditForm.location,
+          description: spEditForm.description,
+          experience: spEditForm.experience,
+          serviceTypes: spEditForm.serviceTypes,
+          customServiceType: spEditForm.customServiceType || null,
+        },
+      },
+      {
+        onSuccess: () => { toast.success("Service profile updated!"); setSpEditOpen(false); myServiceProvider.refetch(); },
+        onError: () => toast.error("Update failed. Please try again."),
+      }
+    );
+  };
+
+  const handleOpenRoomEdit = (room: RoomListing) => {
+    setEditingRoom(room);
+    setRoomEditForm({
+      title: room.title,
+      description: room.description ?? "",
+      pricePerMonth: room.pricePerMonth != null ? String(room.pricePerMonth) : "",
+      roomType: room.roomType,
+      location: room.location,
+      amenities: room.amenities,
+      availableFrom: room.availableFrom ?? "",
+    });
+  };
+
+  const handleSaveRoomEdit = () => {
+    if (!editingRoom) return;
+    if (!roomEditForm.title.trim()) { toast.error("Title is required."); return; }
+    updateRoom.mutate(
+      {
+        id: editingRoom.id,
+        updates: {
+          title: roomEditForm.title,
+          description: roomEditForm.description,
+          pricePerMonth: roomEditForm.pricePerMonth ? parseFloat(roomEditForm.pricePerMonth) : null,
+          roomType: roomEditForm.roomType,
+          location: roomEditForm.location,
+          amenities: roomEditForm.amenities,
+          availableFrom: roomEditForm.availableFrom || null,
+        },
+      },
+      {
+        onSuccess: () => { toast.success("Room listing updated!"); setEditingRoom(null); },
+        onError: () => toast.error("Update failed. Please try again."),
+      }
+    );
+  };
+
+  const handleDeleteRoom = () => {
+    if (!deletingRoomId) return;
+    deleteRoom.mutate(
+      { id: deletingRoomId },
+      {
+        onSuccess: () => { toast.success("Room listing removed."); setDeletingRoomId(null); },
+        onError: () => toast.error("Delete failed. Please try again."),
       }
     );
   };
@@ -681,7 +798,7 @@ export default function Dashboard() {
         {/* ── STORE TAB: SUBSCRIPTION CARD ─────────────────────── */}
         {currentTab === "store" && sellerProfile && (
           <div className="max-w-2xl mt-6">
-            {currentSub.data?.status === "confirmed" ? (
+            {anySubConfirmed ? (
               <div className="bg-green-50 border border-green-200 rounded-3xl p-6 md:p-8">
                 <div className="flex items-start gap-4">
                   <div className="w-11 h-11 rounded-2xl bg-green-100 flex items-center justify-center shrink-0">
@@ -692,12 +809,12 @@ export default function Dashboard() {
                       Subscription Active <CheckCircle2 className="w-4 h-4 text-green-500" />
                     </h3>
                     <p className="text-sm text-green-800">
-                      Your RM 10 subscription for <strong>{formatMonth(currentSub.data.month)}</strong> has been confirmed.
+                      Your RM 10 subscription for <strong>{formatMonth(currentMonth)}</strong> is confirmed — covers your store, services, and room listings.
                     </p>
                   </div>
                 </div>
               </div>
-            ) : currentSub.data?.status === "pending" ? (
+            ) : anySubPending ? (
               <div className="bg-amber-50 border border-amber-200 rounded-3xl p-6 md:p-8">
                 <div className="flex items-start gap-4">
                   <div className="w-11 h-11 rounded-2xl bg-amber-100 flex items-center justify-center shrink-0">
@@ -718,9 +835,9 @@ export default function Dashboard() {
                   <div className="flex-1">
                     <h3 className="font-bold text-lg mb-1">Monthly Subscription</h3>
                     <p className="text-sm text-muted-foreground mb-1">
-                      Subscribe for <strong>RM 10/month</strong> to keep your seller or service profile active on Afrinza.
+                      One <strong>RM 10/month</strong> subscription keeps your store, services, and room listings all active.
                     </p>
-                    {currentSub.data?.status === "rejected" && (
+                    {anySubRejected && (
                       <p className="text-xs text-red-600 mb-2 mt-1">⚠ Your last payment was rejected. Please resubmit.</p>
                     )}
                     <Button
@@ -1010,33 +1127,59 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                {/* Subscription card */}
-                <div className="bg-white rounded-3xl border border-border shadow p-6">
-                  <div className="flex items-start gap-4">
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${currentSpSub.data?.status === "confirmed" ? "bg-green-50" : currentSpSub.data?.status === "pending" ? "bg-amber-50" : "bg-muted"}`}>
-                      <CreditCard className={`w-5 h-5 ${currentSpSub.data?.status === "confirmed" ? "text-green-500" : currentSpSub.data?.status === "pending" ? "text-amber-500" : "text-muted-foreground"}`} />
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-semibold text-sm mb-0.5">Monthly Subscription · {formatMonth(currentMonth)}</p>
-                      {currentSpSub.isLoading ? (
-                        <p className="text-xs text-muted-foreground">Checking status…</p>
-                      ) : currentSpSub.data?.status === "confirmed" ? (
-                        <p className="text-xs text-green-600 font-medium">Active — RM 10 paid and confirmed ✓</p>
-                      ) : currentSpSub.data?.status === "pending" ? (
-                        <p className="text-xs text-amber-600">Receipt submitted — awaiting admin confirmation.</p>
-                      ) : (
-                        <>
-                          <p className="text-xs text-muted-foreground mb-3">Pay RM 10/month to keep your listing active and visible to clients.</p>
-                          <Button size="sm" className="rounded-full gap-1.5" onClick={() => { setSpSubStep("qr"); setSpSubOpen(true); }}>
-                            <CreditCard className="w-3.5 h-3.5" /> Pay RM 10 Subscription
-                          </Button>
-                        </>
-                      )}
+                {/* Subscription card — shared with seller subscription */}
+                {!anySubConfirmed && !anySubPending && (
+                  <div className="bg-white rounded-3xl border border-border shadow p-6">
+                    <div className="flex items-start gap-4">
+                      <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-muted">
+                        <CreditCard className="w-5 h-5 text-muted-foreground" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-semibold text-sm mb-0.5">Monthly Subscription · {formatMonth(currentMonth)}</p>
+                        {anySubRejected && (
+                          <p className="text-xs text-red-600 mb-1">⚠ Last payment rejected — please resubmit.</p>
+                        )}
+                        <p className="text-xs text-muted-foreground mb-3">
+                          One RM 10/month subscription covers your store, services, and room listings.
+                        </p>
+                        <Button size="sm" className="rounded-full gap-1.5" onClick={() => { setSpSubStep("qr"); setSpSubOpen(true); }}>
+                          <CreditCard className="w-3.5 h-3.5" /> Pay RM 10 Subscription
+                        </Button>
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
+                {anySubConfirmed && (
+                  <div className="bg-green-50 border border-green-200 rounded-3xl p-6">
+                    <div className="flex items-start gap-4">
+                      <div className="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center shrink-0">
+                        <CheckCircle2 className="w-5 h-5 text-green-600" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-semibold text-sm mb-0.5 text-green-900">Subscription Active · {formatMonth(currentMonth)}</p>
+                        <p className="text-xs text-green-700">RM 10 confirmed — covers your store, services &amp; room listings ✓</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {anySubPending && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-3xl p-6">
+                    <div className="flex items-start gap-4">
+                      <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
+                        <Clock className="w-5 h-5 text-amber-600" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-semibold text-sm mb-0.5 text-amber-900">Payment Pending · {formatMonth(currentMonth)}</p>
+                        <p className="text-xs text-amber-700">Receipt submitted — admin will confirm within 24 hours.</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
+                  <Button variant="outline" size="sm" className="rounded-full gap-1.5" onClick={handleOpenSpEdit}>
+                    <Pencil className="w-3.5 h-3.5" /> Edit Profile
+                  </Button>
                   <Button variant="outline" size="sm" className="rounded-full gap-1.5" onClick={() => setLocation("/services")}>
                     <ExternalLink className="w-3.5 h-3.5" /> View Public Profile
                   </Button>
@@ -1112,6 +1255,14 @@ export default function Dashboard() {
                     {room.availableFrom && (
                       <p className="text-xs text-muted-foreground mt-1">Available: {room.availableFrom}</p>
                     )}
+                    <div className="flex gap-2 mt-4">
+                      <Button variant="outline" size="sm" className="flex-1 rounded-full gap-1.5" onClick={() => handleOpenRoomEdit(room)}>
+                        <Pencil className="w-3.5 h-3.5" /> Edit
+                      </Button>
+                      <Button variant="outline" size="sm" className="rounded-full text-destructive border-destructive/30 hover:bg-destructive/5" onClick={() => setDeletingRoomId(room.id)}>
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -1444,7 +1595,7 @@ export default function Dashboard() {
         </DialogContent>
       </Dialog>
 
-      {/* ── DELETE CONFIRM ──────────────────────────────────────── */}
+      {/* ── DELETE PRODUCT CONFIRM ──────────────────────────────── */}
       <AlertDialog open={!!deletingId} onOpenChange={(open) => { if (!open) setDeletingId(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -1455,6 +1606,159 @@ export default function Dashboard() {
             <AlertDialogCancel className="rounded-full">Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteProduct} className="rounded-full bg-destructive hover:bg-destructive/90" disabled={deleteProduct.isPending}>
               {deleteProduct.isPending ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Deleting…</> : "Delete Product"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* ── SP EDIT DIALOG ──────────────────────────────────────── */}
+      <Dialog open={spEditOpen} onOpenChange={setSpEditOpen}>
+        <DialogContent className="max-w-lg rounded-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><Pencil className="w-4 h-4" /> Edit Service Profile</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="col-span-2">
+                <label className="text-sm font-semibold block mb-1.5">Provider / Your Name</label>
+                <Input value={spEditForm.providerName} onChange={(e) => setSpEditForm((f) => ({ ...f, providerName: e.target.value }))} className="h-11 bg-muted/30" />
+              </div>
+              <div className="col-span-2">
+                <label className="text-sm font-semibold block mb-1.5">Business Name <span className="font-normal text-muted-foreground">(optional)</span></label>
+                <Input value={spEditForm.businessName} onChange={(e) => setSpEditForm((f) => ({ ...f, businessName: e.target.value }))} className="h-11 bg-muted/30" placeholder="e.g. Kwame Rides" />
+              </div>
+              <div className="col-span-2">
+                <label className="text-sm font-semibold block mb-1.5">Location</label>
+                <Select value={spEditForm.location} onValueChange={(v) => setSpEditForm((f) => ({ ...f, location: v }))}>
+                  <SelectTrigger className="h-11 bg-muted/30"><SelectValue /></SelectTrigger>
+                  <SelectContent className="max-h-60">
+                    {MALAYSIA_LOCATIONS.map((l) => <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="col-span-2">
+                <label className="text-sm font-semibold block mb-1.5">Description</label>
+                <Textarea value={spEditForm.description} onChange={(e) => setSpEditForm((f) => ({ ...f, description: e.target.value }))} className="min-h-[80px] bg-muted/30 resize-none" placeholder="Tell clients about your services…" />
+              </div>
+              <div className="col-span-2">
+                <label className="text-sm font-semibold block mb-1.5">Experience <span className="font-normal text-muted-foreground">(optional)</span></label>
+                <Input value={spEditForm.experience} onChange={(e) => setSpEditForm((f) => ({ ...f, experience: e.target.value }))} className="h-11 bg-muted/30" placeholder="e.g. 3 years" />
+              </div>
+            </div>
+            <div>
+              <label className="text-sm font-semibold block mb-2">Service Types</label>
+              <div className="grid grid-cols-2 gap-2">
+                {["Afrinza Rider","Delivery","Plumbing","Electrical","Hair Braiding","Cargo","Cleaning","Catering","Tailoring","Car Repair","Other"].map((svc) => (
+                  <label key={svc} className="flex items-center gap-2 cursor-pointer text-sm">
+                    <Checkbox
+                      checked={spEditForm.serviceTypes.includes(svc)}
+                      onCheckedChange={(c) => setSpEditForm((f) => ({
+                        ...f,
+                        serviceTypes: c ? [...f.serviceTypes, svc] : f.serviceTypes.filter((v) => v !== svc),
+                      }))}
+                    />
+                    {svc}
+                  </label>
+                ))}
+              </div>
+            </div>
+            {spEditForm.serviceTypes.includes("Other") && (
+              <div>
+                <label className="text-sm font-semibold block mb-1.5">Custom Service Type</label>
+                <Input value={spEditForm.customServiceType} onChange={(e) => setSpEditForm((f) => ({ ...f, customServiceType: e.target.value }))} className="h-11 bg-muted/30" placeholder="Describe your service" />
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" className="rounded-full" onClick={() => setSpEditOpen(false)}>Cancel</Button>
+            <Button className="rounded-full" onClick={handleSaveSpEdit} disabled={updateSp.isPending}>
+              {updateSp.isPending ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Saving…</> : <><CheckCircle2 className="w-4 h-4 mr-2" />Save Changes</>}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── ROOM EDIT DIALOG ────────────────────────────────────── */}
+      <Dialog open={!!editingRoom} onOpenChange={(open) => { if (!open) setEditingRoom(null); }}>
+        <DialogContent className="max-w-lg rounded-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><Pencil className="w-4 h-4" /> Edit Room Listing</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div>
+              <label className="text-sm font-semibold block mb-1.5">Title</label>
+              <Input value={roomEditForm.title} onChange={(e) => setRoomEditForm((f) => ({ ...f, title: e.target.value }))} className="h-11 bg-muted/30" />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-semibold block mb-1.5">Room Type</label>
+                <Select value={roomEditForm.roomType} onValueChange={(v) => setRoomEditForm((f) => ({ ...f, roomType: v }))}>
+                  <SelectTrigger className="h-11 bg-muted/30"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {["Single Room","Master Room","Suite / Studio","Shared Room"].map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-semibold block mb-1.5">Price / month (RM)</label>
+                <Input type="number" min="0" value={roomEditForm.pricePerMonth} onChange={(e) => setRoomEditForm((f) => ({ ...f, pricePerMonth: e.target.value }))} className="h-11 bg-muted/30" placeholder="0" />
+              </div>
+              <div className="col-span-2">
+                <label className="text-sm font-semibold block mb-1.5">Location</label>
+                <Select value={roomEditForm.location} onValueChange={(v) => setRoomEditForm((f) => ({ ...f, location: v }))}>
+                  <SelectTrigger className="h-11 bg-muted/30"><SelectValue /></SelectTrigger>
+                  <SelectContent className="max-h-60">
+                    {MALAYSIA_LOCATIONS.map((l) => <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="col-span-2">
+                <label className="text-sm font-semibold block mb-1.5">Available From <span className="font-normal text-muted-foreground">(optional)</span></label>
+                <Input type="date" value={roomEditForm.availableFrom} onChange={(e) => setRoomEditForm((f) => ({ ...f, availableFrom: e.target.value }))} className="h-11 bg-muted/30" />
+              </div>
+              <div className="col-span-2">
+                <label className="text-sm font-semibold block mb-1.5">Description <span className="font-normal text-muted-foreground">(optional)</span></label>
+                <Textarea value={roomEditForm.description} onChange={(e) => setRoomEditForm((f) => ({ ...f, description: e.target.value }))} className="min-h-[80px] bg-muted/30 resize-none" />
+              </div>
+            </div>
+            <div>
+              <label className="text-sm font-semibold block mb-2">Amenities</label>
+              <div className="grid grid-cols-2 gap-2">
+                {["WiFi","Air Conditioning","Water Heater","Parking","Washing Machine","Kitchen Access","Private Bathroom","Fully Furnished"].map((a) => (
+                  <label key={a} className="flex items-center gap-2 cursor-pointer text-sm">
+                    <Checkbox
+                      checked={roomEditForm.amenities.includes(a)}
+                      onCheckedChange={(c) => setRoomEditForm((f) => ({
+                        ...f,
+                        amenities: c ? [...f.amenities, a] : f.amenities.filter((v) => v !== a),
+                      }))}
+                    />
+                    {a}
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" className="rounded-full" onClick={() => setEditingRoom(null)}>Cancel</Button>
+            <Button className="rounded-full" onClick={handleSaveRoomEdit} disabled={updateRoom.isPending}>
+              {updateRoom.isPending ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Saving…</> : <><CheckCircle2 className="w-4 h-4 mr-2" />Save Changes</>}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── DELETE ROOM CONFIRM ──────────────────────────────────── */}
+      <AlertDialog open={!!deletingRoomId} onOpenChange={(open) => { if (!open) setDeletingRoomId(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2"><AlertTriangle className="w-5 h-5 text-destructive" /> Remove Room Listing?</AlertDialogTitle>
+            <AlertDialogDescription>This will permanently remove the room listing. It will no longer appear to potential renters.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-full">Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteRoom} className="rounded-full bg-destructive hover:bg-destructive/90" disabled={deleteRoom.isPending}>
+              {deleteRoom.isPending ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Removing…</> : "Remove Listing"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

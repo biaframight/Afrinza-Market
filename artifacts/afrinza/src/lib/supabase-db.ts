@@ -1113,6 +1113,38 @@ export async function getRoomListingsByWhatsapp(whatsapp: string): Promise<RoomL
   return (data ?? []).map(mapRoomListing);
 }
 
+export async function updateRoomListing(id: number, updates: {
+  title?: string;
+  description?: string;
+  pricePerMonth?: number | null;
+  roomType?: string;
+  location?: string;
+  amenities?: string[];
+  availableFrom?: string | null;
+}): Promise<RoomListing> {
+  const { data, error } = await supabase
+    .from("room_listings")
+    .update({
+      title: updates.title,
+      description: updates.description,
+      price_per_month: updates.pricePerMonth,
+      room_type: updates.roomType,
+      location: updates.location,
+      amenities: updates.amenities,
+      available_from: updates.availableFrom ?? null,
+    })
+    .eq("id", id)
+    .select()
+    .single();
+  if (error) throw new Error(`[Supabase / updateRoomListing] ${error.message}`);
+  return mapRoomListing(data);
+}
+
+export async function deleteRoomListing(id: number): Promise<void> {
+  const { error } = await supabase.from("room_listings").delete().eq("id", id);
+  if (error) throw new Error(`[Supabase / deleteRoomListing] ${error.message}`);
+}
+
 // ─── Service Providers ─────────────────────────────────────────────
 
 export interface ServiceProvider {
@@ -1208,6 +1240,33 @@ export async function createServiceProvider(payload: {
     .select()
     .single();
   if (error) throw new Error(`[Supabase / createServiceProvider] ${error.message}`);
+  return mapServiceProvider(data);
+}
+
+export async function updateServiceProvider(id: number, updates: {
+  providerName?: string;
+  businessName?: string;
+  location?: string;
+  description?: string;
+  experience?: string;
+  serviceTypes?: string[];
+  customServiceType?: string | null;
+}): Promise<ServiceProvider> {
+  const { data, error } = await supabase
+    .from("service_providers")
+    .update({
+      provider_name: updates.providerName,
+      business_name: updates.businessName,
+      location: updates.location,
+      description: updates.description,
+      experience: updates.experience,
+      service_types: updates.serviceTypes,
+      custom_service_type: updates.customServiceType ?? null,
+    })
+    .eq("id", id)
+    .select()
+    .single();
+  if (error) throw new Error(`[Supabase / updateServiceProvider] ${error.message}`);
   return mapServiceProvider(data);
 }
 

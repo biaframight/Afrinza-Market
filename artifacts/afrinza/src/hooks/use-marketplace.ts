@@ -426,6 +426,23 @@ export function useCreateRoomListing() {
   });
 }
 
+export function useUpdateRoomListing() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, updates }: { id: number; updates: Parameters<typeof db.updateRoomListing>[1] }) =>
+      db.updateRoomListing(id, updates),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["rooms"] }),
+  });
+}
+
+export function useDeleteRoomListing() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id }: { id: number }) => db.deleteRoomListing(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["rooms"] }),
+  });
+}
+
 // ─── Service Providers ──────────────────────────────────────────────
 
 export function useGetServiceProviders(location?: string) {
@@ -471,5 +488,17 @@ export function useCreateServiceProviderSub() {
   return useMutation({
     mutationFn: db.createServiceProviderSub,
     onSuccess: (_, vars) => qc.invalidateQueries({ queryKey: ["sp-sub", vars.providerId] }),
+  });
+}
+
+export function useUpdateServiceProvider() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, updates }: { id: number; updates: Parameters<typeof db.updateServiceProvider>[1] }) =>
+      db.updateServiceProvider(id, updates),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["service-providers"] });
+      qc.invalidateQueries({ queryKey: ["service-provider"] });
+    },
   });
 }
