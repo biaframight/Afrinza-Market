@@ -241,7 +241,7 @@ export function Layout({ children }: LayoutProps) {
                           </Link>
                         </>
                       )}
-                      <button onClick={() => { signOut(); setMobileMenuOpen(false); }} className="flex items-center gap-3 px-3 py-2 text-base rounded-md hover:bg-muted font-medium text-left text-muted-foreground">
+                      <button onClick={async () => { setMobileMenuOpen(false); await signOut(); setLocation("/"); }} className="flex items-center gap-3 px-3 py-2 text-base rounded-md hover:bg-muted font-medium text-left text-muted-foreground">
                         <LogOut className="h-5 w-5" /> Sign Out
                       </button>
                     </>
@@ -410,7 +410,7 @@ export function Layout({ children }: LayoutProps) {
                     )}
 
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={signOut} className="text-muted-foreground flex items-center gap-2 cursor-pointer">
+                    <DropdownMenuItem onClick={async () => { await signOut(); setLocation("/"); }} className="text-muted-foreground flex items-center gap-2 cursor-pointer">
                       <LogOut className="w-4 h-4" /> Sign Out
                     </DropdownMenuItem>
                   </DropdownMenuContent>

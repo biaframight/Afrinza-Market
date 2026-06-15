@@ -108,27 +108,33 @@ export default function AuthPage() {
   const [checkEmail, setCheckEmail] = useState("");
   const [pendingRole, setPendingRole] = useState<"buyer" | "seller">("buyer");
 
-  /* ── Listen for Supabase PASSWORD_RECOVERY event ── */
+  /* ── Listen for Supabase auth events ── */
   useEffect(() => {
-    const { data: { subscription } } = onAuthStateChange(async (event) => {
-      if (event !== "PASSWORD_RECOVERY") return;
+    const { data: { subscription } } = onAuthStateChange(async (event, session) => {
+      if (event === "SIGNED_IN" && session) {
+        /* Auth state is fully updated before this fires — safe to navigate */
+        setLocation("/dashboard");
+        return;
+      }
 
-      const stored = sessionStorage.getItem(PENDING_PW_KEY);
-      if (stored) {
-        /* User set a new password on the forgot-password form — apply it automatically */
-        sessionStorage.removeItem(PENDING_PW_KEY);
-        setTab("applying");
-        const { error } = await updatePassword(stored);
-        if (error) {
-          toast.error("Couldn't update password: " + error.message);
-          setTab("set-password");
+      if (event === "PASSWORD_RECOVERY") {
+        const stored = sessionStorage.getItem(PENDING_PW_KEY);
+        if (stored) {
+          /* User set a new password on the forgot-password form — apply it automatically */
+          sessionStorage.removeItem(PENDING_PW_KEY);
+          setTab("applying");
+          const { error } = await updatePassword(stored);
+          if (error) {
+            toast.error("Couldn't update password: " + error.message);
+            setTab("set-password");
+          } else {
+            toast.success("Password updated! You're now signed in.");
+            setLocation("/dashboard");
+          }
         } else {
-          toast.success("Password updated! You're now signed in.");
-          setLocation("/dashboard");
+          /* No stored password (different device / cleared session) — ask them to type it */
+          setTab("set-password");
         }
-      } else {
-        /* No stored password (different device / cleared session) — ask them to type it */
-        setTab("set-password");
       }
     });
     return () => subscription.unsubscribe();
@@ -160,7 +166,7 @@ export default function AuthPage() {
     setLoading(false);
     if (error) { toast.error(error.message); return; }
     toast.success("Welcome back!");
-    setLocation("/dashboard");
+    /* Navigation is handled by the SIGNED_IN auth event above — state is guaranteed ready */
   };
 
   const onSignUp = async (data: SignUpValues) => {
