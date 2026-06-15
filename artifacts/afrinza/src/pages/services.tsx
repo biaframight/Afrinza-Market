@@ -337,8 +337,8 @@ export default function Services() {
 
       setIsRoomSuccess(true);
       window.scrollTo(0, 0);
-    } catch {
-      toast.error("Failed to submit. Please try again.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to submit. Please try again.");
     } finally {
       setUploading(false);
     }

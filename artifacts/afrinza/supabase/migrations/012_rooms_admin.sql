@@ -3,7 +3,8 @@
 -- Run in: Supabase Dashboard → SQL Editor → New Query
 -- ═══════════════════════════════════════════════════════════════
 
--- 1. Add user_id for ownership tracking (nullable for backward compat)
+-- 1. Add missing columns
+ALTER TABLE room_listings ADD COLUMN IF NOT EXISTS images TEXT[] NOT NULL DEFAULT '{}';
 ALTER TABLE room_listings ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL;
 
 -- 2. New listings should default to NOT active (requires admin approval)
