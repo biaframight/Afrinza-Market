@@ -432,16 +432,16 @@ export default function Services() {
               </p>
             </div>
           </div>
-          <div className="inline-flex bg-muted rounded-xl p-1 gap-1 shrink-0">
+          <div className="inline-flex gap-2 shrink-0">
             <button
               onClick={() => { setMainTab("services"); setShowRegisterForm(false); }}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${mainTab === "services" ? "bg-white text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold transition-all ${mainTab === "services" ? "bg-primary text-white shadow-sm" : "bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/80"}`}
             >
               <Wrench className="w-3.5 h-3.5" /> Services
             </button>
             <button
               onClick={() => setMainTab("rooms")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${mainTab === "rooms" ? "bg-white text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold transition-all ${mainTab === "rooms" ? "bg-primary text-white shadow-sm" : "bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/80"}`}
             >
               <Home className="w-3.5 h-3.5" /> Rooms
             </button>
@@ -463,6 +463,20 @@ export default function Services() {
               >
                 <ChevronLeft className="w-4 h-4" /> Back to Directory
               </button>
+
+              {/* Feature cards shown above registration form */}
+              <div className="mb-6">
+                <p className="text-sm font-semibold text-muted-foreground mb-3">What can you offer?</p>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {FEATURES.map((f) => (
+                    <div key={f.title} className="bg-white rounded-2xl p-4 shadow border border-border/50 text-center">
+                      <div className="flex justify-center mb-2">{f.icon}</div>
+                      <p className="font-bold text-xs text-foreground mb-1">{f.title}</p>
+                      <p className="text-[11px] text-muted-foreground leading-snug">{f.desc}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
 
               <div className="bg-white rounded-3xl border border-border shadow-xl overflow-hidden">
                 <div className="p-6 md:p-10">
@@ -698,17 +712,6 @@ export default function Services() {
           ) : (
             /* ── PROVIDER DIRECTORY ──────────────────────────── */
             <div className="max-w-6xl mx-auto">
-              {/* Feature cards */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
-                {FEATURES.map((f) => (
-                  <div key={f.title} className="bg-white rounded-2xl p-5 shadow-lg border border-border/50 text-center">
-                    <div className="flex justify-center mb-3">{f.icon}</div>
-                    <p className="font-bold text-sm text-foreground mb-1">{f.title}</p>
-                    <p className="text-xs text-muted-foreground leading-snug">{f.desc}</p>
-                  </div>
-                ))}
-              </div>
-
               {/* Filter + CTA bar */}
               <div className="flex flex-col sm:flex-row items-center gap-3 mb-8">
                 <div className="flex gap-2 flex-1 w-full">
@@ -780,14 +783,14 @@ export default function Services() {
                     {serviceProviders.data.map((provider) => (
                       <div key={provider.id} className="bg-white rounded-2xl border border-border shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col group cursor-pointer" onClick={() => setSelectedProvider(provider)}>
                         {provider.photos.length > 0 ? (
-                          <div className="h-44 overflow-hidden bg-muted relative">
-                            <img src={provider.photos[0]} alt={provider.providerName} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                          <div className="h-44 bg-white relative flex items-center justify-center border-b border-border/40">
+                            <img src={provider.photos[0]} alt={provider.providerName} className="w-full h-full object-contain" />
                             {provider.photos.length > 1 && (
                               <span className="absolute bottom-2 right-2 bg-black/50 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full backdrop-blur-sm">+{provider.photos.length - 1} more</span>
                             )}
                           </div>
                         ) : (
-                          <div className="h-44 bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center">
+                          <div className="h-44 bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center border-b border-border/40">
                             <Wrench className="w-10 h-10 text-primary/30" />
                           </div>
                         )}
@@ -946,14 +949,14 @@ export default function Services() {
                     {roomListings.data.map((room) => (
                       <div key={room.id} className="bg-white rounded-2xl border border-border shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col group cursor-pointer" onClick={() => setSelectedRoom(room)}>
                         {room.images && room.images.length > 0 ? (
-                          <div className="h-44 overflow-hidden bg-muted relative">
-                            <img src={room.images[0]} alt={room.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                          <div className="h-44 bg-white relative flex items-center justify-center border-b border-border/40">
+                            <img src={room.images[0]} alt={room.title} className="w-full h-full object-contain" />
                             {room.images.length > 1 && (
                               <span className="absolute bottom-2 right-2 bg-black/50 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full backdrop-blur-sm">+{room.images.length - 1} more</span>
                             )}
                           </div>
                         ) : (
-                          <div className="h-44 bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center">
+                          <div className="h-44 bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center border-b border-border/40">
                             <Home className="w-10 h-10 text-primary/30" />
                           </div>
                         )}
