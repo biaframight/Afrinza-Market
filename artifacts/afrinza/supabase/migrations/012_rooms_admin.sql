@@ -23,24 +23,18 @@ CREATE POLICY "rooms_owner_read" ON room_listings
 
 -- Admin: can see everything
 CREATE POLICY "rooms_admin_read" ON room_listings
-  FOR SELECT USING (
-    auth.uid() IN (SELECT id FROM auth.users WHERE email = 'alphuplift@gmail.com')
-  );
+  FOR SELECT USING (auth.email() = 'alphuplift@gmail.com');
 
 -- 4. UPDATE policies (were completely missing)
 CREATE POLICY "rooms_owner_update" ON room_listings
   FOR UPDATE USING (auth.uid() IS NOT NULL AND auth.uid() = user_id);
 
 CREATE POLICY "rooms_admin_update" ON room_listings
-  FOR UPDATE USING (
-    auth.uid() IN (SELECT id FROM auth.users WHERE email = 'alphuplift@gmail.com')
-  );
+  FOR UPDATE USING (auth.email() = 'alphuplift@gmail.com');
 
 -- 5. DELETE policies (were completely missing)
 CREATE POLICY "rooms_owner_delete" ON room_listings
   FOR DELETE USING (auth.uid() IS NOT NULL AND auth.uid() = user_id);
 
 CREATE POLICY "rooms_admin_delete" ON room_listings
-  FOR DELETE USING (
-    auth.uid() IN (SELECT id FROM auth.users WHERE email = 'alphuplift@gmail.com')
-  );
+  FOR DELETE USING (auth.email() = 'alphuplift@gmail.com');
