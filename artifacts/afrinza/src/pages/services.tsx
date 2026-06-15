@@ -5,12 +5,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import {
   CheckCircle2, Wrench, Truck, Scissors, Package, Zap, Droplets,
   Star, ArrowRight, Mail, Lock, Loader2, Bike,
   Home, Search, MapPin, Calendar, Phone, Wifi, Wind, Car, Utensils,
-  ImagePlus, X, ChevronLeft,
+  ImagePlus, X, ChevronLeft, Eye, ChevronRight,
 } from "lucide-react";
+import type { ServiceProvider, RoomListing } from "@/lib/supabase-db";
 import { VerifiedBadge } from "@/components/verified-badge";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -127,6 +129,10 @@ export default function Services() {
   // Success state
   const [isServiceSuccess, setIsServiceSuccess] = useState(false);
   const [isRoomSuccess, setIsRoomSuccess] = useState(false);
+
+  // Detail views
+  const [selectedProvider, setSelectedProvider] = useState<ServiceProvider | null>(null);
+  const [selectedRoom, setSelectedRoom] = useState<RoomListing | null>(null);
 
   // Auth
   const [authEmail, setAuthEmail] = useState("");
@@ -410,53 +416,36 @@ export default function Services() {
   return (
     <div className="bg-muted/10 min-h-screen pb-20">
 
-      {/* ── Hero ─────────────────────────────────────────────────── */}
-      <div className="bg-gradient-to-br from-primary via-primary/90 to-amber-600 pt-16 pb-32 relative overflow-hidden text-white">
-        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-20 mix-blend-overlay" />
-        <div className="container mx-auto px-4 relative z-10 text-center max-w-4xl">
-          {mainTab === "services" ? (
-            <>
-              <Badge className="mb-6 bg-white/20 text-white border-white/30 backdrop-blur-sm px-4 py-1.5 text-sm font-medium">
-                For African Service Providers
-              </Badge>
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold font-serif mb-6 leading-tight">
-                List Your Services on Afrinza
-              </h1>
-              <p className="text-primary-foreground/90 text-lg md:text-xl max-w-2xl mx-auto">
-                Whether you're an Afrinza Rider, plumber, hair braider, or cargo transporter — reach thousands of Africans across Malaysia who need your skills.
+      {/* ── Compact header + tab switcher ────────────────────────── */}
+      <div className="bg-white border-b border-border sticky top-0 z-30 shadow-sm">
+        <div className="container mx-auto px-4 py-3 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+              {mainTab === "services" ? <Wrench className="w-4 h-4 text-primary" /> : <Home className="w-4 h-4 text-primary" />}
+            </div>
+            <div className="min-w-0">
+              <p className="font-bold text-sm leading-tight truncate">
+                {mainTab === "services" ? "Service Providers" : "Rooms for Rent"}
               </p>
-            </>
-          ) : (
-            <>
-              <Badge className="mb-6 bg-white/20 text-white border-white/30 backdrop-blur-sm px-4 py-1.5 text-sm font-medium">
-                Rooms for Rent
-              </Badge>
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold font-serif mb-6 leading-tight">
-                Find or List a Room
-              </h1>
-              <p className="text-primary-foreground/90 text-lg md:text-xl max-w-2xl mx-auto">
-                Search for available rooms across Malaysia by location, or list your room and connect directly with potential tenants.
+              <p className="text-xs text-muted-foreground truncate">
+                {mainTab === "services" ? "Find African service pros across Malaysia" : "Search or list rooms across Malaysia"}
               </p>
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* ── Main tab switcher ─────────────────────────────────────── */}
-      <div className="container mx-auto px-4 -mt-7 relative z-30 flex justify-center mb-4">
-        <div className="inline-flex bg-white rounded-2xl border border-border shadow-lg p-1.5 gap-1">
-          <button
-            onClick={() => { setMainTab("services"); setShowRegisterForm(false); }}
-            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold transition-all ${mainTab === "services" ? "bg-primary text-white shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
-          >
-            <Wrench className="w-4 h-4" /> Service Providers
-          </button>
-          <button
-            onClick={() => setMainTab("rooms")}
-            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold transition-all ${mainTab === "rooms" ? "bg-primary text-white shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
-          >
-            <Home className="w-4 h-4" /> Rooms for Rent
-          </button>
+            </div>
+          </div>
+          <div className="inline-flex bg-muted rounded-xl p-1 gap-1 shrink-0">
+            <button
+              onClick={() => { setMainTab("services"); setShowRegisterForm(false); }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${mainTab === "services" ? "bg-white text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              <Wrench className="w-3.5 h-3.5" /> Services
+            </button>
+            <button
+              onClick={() => setMainTab("rooms")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${mainTab === "rooms" ? "bg-white text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              <Home className="w-3.5 h-3.5" /> Rooms
+            </button>
+          </div>
         </div>
       </div>
 
@@ -789,13 +778,16 @@ export default function Services() {
                   </p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                     {serviceProviders.data.map((provider) => (
-                      <div key={provider.id} className="bg-white rounded-2xl border border-border shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col">
+                      <div key={provider.id} className="bg-white rounded-2xl border border-border shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col group cursor-pointer" onClick={() => setSelectedProvider(provider)}>
                         {provider.photos.length > 0 ? (
-                          <div className="h-40 overflow-hidden bg-muted">
-                            <img src={provider.photos[0]} alt={provider.providerName} className="w-full h-full object-cover" />
+                          <div className="h-44 overflow-hidden bg-muted relative">
+                            <img src={provider.photos[0]} alt={provider.providerName} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                            {provider.photos.length > 1 && (
+                              <span className="absolute bottom-2 right-2 bg-black/50 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full backdrop-blur-sm">+{provider.photos.length - 1} more</span>
+                            )}
                           </div>
                         ) : (
-                          <div className="h-40 bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center">
+                          <div className="h-44 bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center">
                             <Wrench className="w-10 h-10 text-primary/30" />
                           </div>
                         )}
@@ -805,12 +797,12 @@ export default function Services() {
                             {provider.isVerified && <VerifiedBadge size="md" />}
                           </div>
                           {provider.businessName && (
-                            <p className="text-xs text-muted-foreground mb-2">{provider.businessName}</p>
+                            <p className="text-xs text-muted-foreground mb-1">{provider.businessName}</p>
                           )}
-                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-3">
+                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-2">
                             <MapPin className="w-3.5 h-3.5 shrink-0" /> {provider.location}
                           </div>
-                          <div className="flex flex-wrap gap-1 mb-4 flex-1">
+                          <div className="flex flex-wrap gap-1 mb-3">
                             {provider.serviceTypes.map((t) => (
                               <span key={t} className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">{t}</span>
                             ))}
@@ -818,14 +810,25 @@ export default function Services() {
                               <span className="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">{provider.customServiceType}</span>
                             )}
                           </div>
-                          <a
-                            href={`https://wa.me/${provider.whatsapp.replace(/\D/g, "")}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center justify-center gap-2 w-full bg-green-600 hover:bg-green-700 text-white rounded-full py-2.5 text-sm font-semibold transition-colors mt-auto"
-                          >
-                            <Phone className="w-4 h-4" /> Contact on WhatsApp
-                          </a>
+                          {provider.description && (
+                            <p className="text-xs text-muted-foreground line-clamp-2 mb-3 flex-1">{provider.description}</p>
+                          )}
+                          <div className="flex gap-2 mt-auto" onClick={(e) => e.stopPropagation()}>
+                            <button
+                              onClick={() => setSelectedProvider(provider)}
+                              className="flex items-center justify-center gap-1.5 flex-1 border border-border rounded-full py-2 text-xs font-semibold text-foreground hover:bg-muted/50 transition-colors"
+                            >
+                              <Eye className="w-3.5 h-3.5" /> View Details
+                            </button>
+                            <a
+                              href={`https://wa.me/${provider.whatsapp.replace(/\D/g, "")}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center justify-center gap-1.5 flex-1 bg-green-600 hover:bg-green-700 text-white rounded-full py-2 text-xs font-semibold transition-colors"
+                            >
+                              <Phone className="w-3.5 h-3.5" /> WhatsApp
+                            </a>
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -941,10 +944,13 @@ export default function Services() {
                   </p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                     {roomListings.data.map((room) => (
-                      <div key={room.id} className="bg-white rounded-2xl border border-border shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col">
+                      <div key={room.id} className="bg-white rounded-2xl border border-border shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col group cursor-pointer" onClick={() => setSelectedRoom(room)}>
                         {room.images && room.images.length > 0 ? (
-                          <div className="h-44 overflow-hidden bg-muted">
-                            <img src={room.images[0]} alt={room.title} className="w-full h-full object-cover" />
+                          <div className="h-44 overflow-hidden bg-muted relative">
+                            <img src={room.images[0]} alt={room.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                            {room.images.length > 1 && (
+                              <span className="absolute bottom-2 right-2 bg-black/50 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full backdrop-blur-sm">+{room.images.length - 1} more</span>
+                            )}
                           </div>
                         ) : (
                           <div className="h-44 bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center">
@@ -952,44 +958,49 @@ export default function Services() {
                           </div>
                         )}
                         <div className="p-5 flex flex-col flex-1">
-                          <div className="flex items-start gap-2 mb-2">
+                          <div className="flex items-start gap-2 mb-1">
                             <h3 className="font-bold text-foreground leading-tight flex-1">{room.title}</h3>
                             <Badge className="shrink-0 bg-primary/10 text-primary border-transparent text-[10px]">{room.roomType}</Badge>
                           </div>
-                          <div className="flex items-center gap-1.5 text-sm text-muted-foreground mb-3">
+                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-2">
                             <MapPin className="w-3.5 h-3.5 shrink-0" /> {room.location}
                           </div>
                           {room.pricePerMonth ? (
-                            <div className="text-xl font-bold text-foreground mb-3">
-                              RM {room.pricePerMonth.toFixed(0)}<span className="text-sm font-normal text-muted-foreground">/month</span>
+                            <div className="text-lg font-bold text-foreground mb-2">
+                              RM {room.pricePerMonth.toFixed(0)}<span className="text-xs font-normal text-muted-foreground">/month</span>
                             </div>
                           ) : (
-                            <div className="text-sm font-semibold text-muted-foreground mb-3 italic">Price negotiable</div>
+                            <div className="text-xs font-semibold text-muted-foreground mb-2 italic">Price negotiable</div>
                           )}
                           {room.amenities.length > 0 && (
-                            <div className="flex flex-wrap gap-1 mb-3">
-                              {room.amenities.map((a) => (
+                            <div className="flex flex-wrap gap-1 mb-2">
+                              {room.amenities.slice(0, 4).map((a) => (
                                 <span key={a} className="text-[10px] bg-muted px-2 py-0.5 rounded-full text-muted-foreground font-medium">{a}</span>
                               ))}
-                            </div>
-                          )}
-                          {room.availableFrom && (
-                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-3">
-                              <Calendar className="w-3.5 h-3.5 shrink-0" />
-                              Available from {new Date(room.availableFrom).toLocaleDateString("en-MY", { day: "2-digit", month: "short", year: "numeric" })}
+                              {room.amenities.length > 4 && (
+                                <span className="text-[10px] bg-muted px-2 py-0.5 rounded-full text-muted-foreground font-medium">+{room.amenities.length - 4}</span>
+                              )}
                             </div>
                           )}
                           {room.description && (
-                            <p className="text-sm text-muted-foreground mb-4 line-clamp-2 flex-1">{room.description}</p>
+                            <p className="text-xs text-muted-foreground line-clamp-2 mb-3 flex-1">{room.description}</p>
                           )}
-                          <a
-                            href={`https://wa.me/${room.whatsapp.replace(/\D/g, "")}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center justify-center gap-2 w-full bg-green-600 hover:bg-green-700 text-white rounded-full py-2.5 text-sm font-semibold transition-colors mt-auto"
-                          >
-                            <Phone className="w-4 h-4" /> Contact on WhatsApp
-                          </a>
+                          <div className="flex gap-2 mt-auto" onClick={(e) => e.stopPropagation()}>
+                            <button
+                              onClick={() => setSelectedRoom(room)}
+                              className="flex items-center justify-center gap-1.5 flex-1 border border-border rounded-full py-2 text-xs font-semibold text-foreground hover:bg-muted/50 transition-colors"
+                            >
+                              <Eye className="w-3.5 h-3.5" /> View Details
+                            </button>
+                            <a
+                              href={`https://wa.me/${room.whatsapp.replace(/\D/g, "")}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center justify-center gap-1.5 flex-1 bg-green-600 hover:bg-green-700 text-white rounded-full py-2 text-xs font-semibold transition-colors"
+                            >
+                              <Phone className="w-3.5 h-3.5" /> WhatsApp
+                            </a>
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -1208,6 +1219,189 @@ export default function Services() {
           )}
         </div>
       )}
+      {/* ── SERVICE PROVIDER DETAIL SHEET ───────────────────────── */}
+      <Sheet open={!!selectedProvider} onOpenChange={(open) => { if (!open) setSelectedProvider(null); }}>
+        <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto p-0">
+          {selectedProvider && (
+            <>
+              {/* Photo gallery */}
+              {selectedProvider.photos.length > 0 ? (
+                <div className="relative">
+                  <div className="h-56 overflow-hidden bg-muted">
+                    <img src={selectedProvider.photos[0]} alt={selectedProvider.providerName} className="w-full h-full object-cover" />
+                  </div>
+                  {selectedProvider.photos.length > 1 && (
+                    <div className="flex gap-2 px-5 py-3 bg-white border-b border-border overflow-x-auto">
+                      {selectedProvider.photos.slice(1).map((photo, i) => (
+                        <div key={i} className="w-16 h-16 rounded-xl overflow-hidden shrink-0 border border-border">
+                          <img src={photo} alt="" className="w-full h-full object-cover" />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="h-32 bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center">
+                  <Wrench className="w-12 h-12 text-primary/20" />
+                </div>
+              )}
+
+              <div className="p-6 space-y-5">
+                {/* Name + verified */}
+                <div>
+                  <div className="flex items-start gap-2 mb-1">
+                    <SheetTitle className="text-xl font-bold leading-tight flex-1">{selectedProvider.providerName}</SheetTitle>
+                    {selectedProvider.isVerified && <VerifiedBadge size="md" />}
+                  </div>
+                  {selectedProvider.businessName && (
+                    <p className="text-sm text-muted-foreground">{selectedProvider.businessName}</p>
+                  )}
+                  <div className="flex items-center gap-1.5 text-sm text-muted-foreground mt-1">
+                    <MapPin className="w-4 h-4 shrink-0" /> {selectedProvider.location}
+                  </div>
+                </div>
+
+                {/* Service types */}
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Services Offered</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {selectedProvider.serviceTypes.map((t) => (
+                      <span key={t} className="text-xs bg-primary/10 text-primary px-3 py-1 rounded-full font-medium">{t}</span>
+                    ))}
+                    {selectedProvider.customServiceType && (
+                      <span className="text-xs bg-amber-100 text-amber-700 px-3 py-1 rounded-full font-medium">{selectedProvider.customServiceType}</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Experience */}
+                {selectedProvider.experience && (
+                  <div>
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Experience</p>
+                    <p className="text-sm text-foreground">{selectedProvider.experience}</p>
+                  </div>
+                )}
+
+                {/* Description */}
+                {selectedProvider.description && (
+                  <div>
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">About</p>
+                    <p className="text-sm text-foreground leading-relaxed whitespace-pre-line">{selectedProvider.description}</p>
+                  </div>
+                )}
+
+                {/* CTA */}
+                <div className="pt-2">
+                  <a
+                    href={`https://wa.me/${selectedProvider.whatsapp.replace(/\D/g, "")}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2 w-full bg-green-600 hover:bg-green-700 text-white rounded-full py-3 text-sm font-semibold transition-colors"
+                  >
+                    <Phone className="w-4 h-4" /> Contact on WhatsApp
+                  </a>
+                </div>
+              </div>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
+
+      {/* ── ROOM DETAIL SHEET ────────────────────────────────────── */}
+      <Sheet open={!!selectedRoom} onOpenChange={(open) => { if (!open) setSelectedRoom(null); }}>
+        <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto p-0">
+          {selectedRoom && (
+            <>
+              {/* Photo gallery */}
+              {selectedRoom.images && selectedRoom.images.length > 0 ? (
+                <div className="relative">
+                  <div className="h-56 overflow-hidden bg-muted">
+                    <img src={selectedRoom.images[0]} alt={selectedRoom.title} className="w-full h-full object-cover" />
+                  </div>
+                  {selectedRoom.images.length > 1 && (
+                    <div className="flex gap-2 px-5 py-3 bg-white border-b border-border overflow-x-auto">
+                      {selectedRoom.images.slice(1).map((img, i) => (
+                        <div key={i} className="w-16 h-16 rounded-xl overflow-hidden shrink-0 border border-border">
+                          <img src={img} alt="" className="w-full h-full object-cover" />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="h-32 bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center">
+                  <Home className="w-12 h-12 text-primary/20" />
+                </div>
+              )}
+
+              <div className="p-6 space-y-5">
+                {/* Title + type */}
+                <div>
+                  <div className="flex items-start gap-2 mb-1">
+                    <SheetTitle className="text-xl font-bold leading-tight flex-1">{selectedRoom.title}</SheetTitle>
+                    <Badge className="shrink-0 bg-primary/10 text-primary border-transparent text-xs">{selectedRoom.roomType}</Badge>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-sm text-muted-foreground mt-1">
+                    <MapPin className="w-4 h-4 shrink-0" /> {selectedRoom.location}
+                  </div>
+                </div>
+
+                {/* Price */}
+                <div className="bg-muted/40 rounded-2xl p-4">
+                  {selectedRoom.pricePerMonth ? (
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-0.5">Monthly Rent</p>
+                      <p className="text-2xl font-bold text-foreground">RM {selectedRoom.pricePerMonth.toFixed(0)}<span className="text-sm font-normal text-muted-foreground">/month</span></p>
+                    </div>
+                  ) : (
+                    <p className="text-sm font-semibold text-muted-foreground italic">Price negotiable — contact for details</p>
+                  )}
+                </div>
+
+                {/* Amenities */}
+                {selectedRoom.amenities.length > 0 && (
+                  <div>
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Amenities</p>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedRoom.amenities.map((a) => (
+                        <span key={a} className="text-xs bg-muted px-3 py-1 rounded-full text-foreground font-medium">{a}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Availability */}
+                {selectedRoom.availableFrom && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Calendar className="w-4 h-4 shrink-0 text-primary" />
+                    Available from <strong>{new Date(selectedRoom.availableFrom).toLocaleDateString("en-MY", { day: "2-digit", month: "long", year: "numeric" })}</strong>
+                  </div>
+                )}
+
+                {/* Description */}
+                {selectedRoom.description && (
+                  <div>
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Description</p>
+                    <p className="text-sm text-foreground leading-relaxed whitespace-pre-line">{selectedRoom.description}</p>
+                  </div>
+                )}
+
+                {/* CTA */}
+                <div className="pt-2">
+                  <a
+                    href={`https://wa.me/${selectedRoom.whatsapp.replace(/\D/g, "")}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2 w-full bg-green-600 hover:bg-green-700 text-white rounded-full py-3 text-sm font-semibold transition-colors"
+                  >
+                    <Phone className="w-4 h-4" /> Contact on WhatsApp
+                  </a>
+                </div>
+              </div>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
