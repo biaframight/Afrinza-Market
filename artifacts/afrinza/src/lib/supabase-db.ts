@@ -1278,6 +1278,39 @@ export async function submitServiceProviderKyc(providerId: number, whatsapp: str
   if (error) throw new Error(`[Supabase / submitServiceProviderKyc] ${error.message}`);
 }
 
+export async function adminVerifyServiceProvider(providerId: number): Promise<ServiceProvider> {
+  const { data, error } = await supabase
+    .from("service_providers")
+    .update({ is_verified: true, kyc_status: "verified" })
+    .eq("id", providerId)
+    .select()
+    .single();
+  if (error) throw new Error(`[Supabase / adminVerifyServiceProvider] ${error.message}`);
+  return mapServiceProvider(data);
+}
+
+export async function adminRejectSpKyc(providerId: number): Promise<ServiceProvider> {
+  const { data, error } = await supabase
+    .from("service_providers")
+    .update({ kyc_status: "rejected" })
+    .eq("id", providerId)
+    .select()
+    .single();
+  if (error) throw new Error(`[Supabase / adminRejectSpKyc] ${error.message}`);
+  return mapServiceProvider(data);
+}
+
+export async function adminRevokeSpVerification(providerId: number): Promise<ServiceProvider> {
+  const { data, error } = await supabase
+    .from("service_providers")
+    .update({ is_verified: false, kyc_status: "none", kyc_whatsapp: null })
+    .eq("id", providerId)
+    .select()
+    .single();
+  if (error) throw new Error(`[Supabase / adminRevokeSpVerification] ${error.message}`);
+  return mapServiceProvider(data);
+}
+
 export async function uploadServicePhoto(file: File): Promise<string | null> {
   const ext = file.name.split(".").pop() ?? "jpg";
   const path = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;

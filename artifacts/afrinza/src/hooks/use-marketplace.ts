@@ -249,6 +249,30 @@ export function useAdminDeleteProduct() {
   });
 }
 
+export function useAdminVerifyServiceProvider() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id }: { id: number }) => db.adminVerifyServiceProvider(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin", "serviceProviders"] }),
+  });
+}
+
+export function useAdminRejectSpKyc() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id }: { id: number }) => db.adminRejectSpKyc(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin", "serviceProviders"] }),
+  });
+}
+
+export function useAdminRevokeSpVerification() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id }: { id: number }) => db.adminRevokeSpVerification(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin", "serviceProviders"] }),
+  });
+}
+
 export function useAdminGetAllServiceProviders() {
   return useQuery({
     queryKey: ["admin", "serviceproviders"],

@@ -19,6 +19,9 @@ import {
   useAdminToggleSellerActive,
   useAdminGetAllServiceProviders,
   useAdminDeleteServiceProvider,
+  useAdminVerifyServiceProvider,
+  useAdminRejectSpKyc,
+  useAdminRevokeSpVerification,
 } from "@/hooks/use-marketplace";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -138,8 +141,12 @@ export default function Admin() {
   const rejectSub = useAdminRejectSubscription();
   const allServiceProviders = useAdminGetAllServiceProviders();
   const deleteServiceProvider = useAdminDeleteServiceProvider();
+  const verifyServiceProvider = useAdminVerifyServiceProvider();
+  const rejectSpKyc = useAdminRejectSpKyc();
+  const revokeSpVerification = useAdminRevokeSpVerification();
 
   const subPendingCount = useMemo(() => (allSubs.data ?? []).filter((s) => s.status === "pending").length, [allSubs.data]);
+  const spPendingCount = useMemo(() => (allServiceProviders.data ?? []).filter((sp) => sp.kycStatus === "pending").length, [allServiceProviders.data]);
   const adminCurrentMonth = new Date().toISOString().slice(0, 7);
 
   const handleConfirmSub = (id: number) => {
@@ -311,7 +318,7 @@ export default function Admin() {
             { id: "products", icon: <Package     className="w-4 h-4" />, label: `Products (${products.length})` },
             { id: "kyc",           icon: <BadgeCheck  className="w-4 h-4" />, label: `KYC${kycPendingCount > 0 ? ` (${kycPendingCount} pending)` : ""}` },
             { id: "subscriptions", icon: <CreditCard  className="w-4 h-4" />, label: `Subscriptions${subPendingCount > 0 ? ` (${subPendingCount} pending)` : ""}` },
-            { id: "serviceproviders", icon: <Users className="w-4 h-4" />, label: `Service Providers (${(allServiceProviders.data ?? []).length})` },
+            { id: "serviceproviders", icon: <Users className="w-4 h-4" />, label: `Service Providers${spPendingCount > 0 ? ` (${spPendingCount} pending)` : ` (${(allServiceProviders.data ?? []).length})`}` },
           ] as const).map(({ id, icon, label }) => (
             <button
               key={id}
@@ -931,87 +938,194 @@ export default function Admin() {
           SERVICE PROVIDERS TAB
       ══════════════════════════════════════════════════════════ */}
       {tab === "serviceproviders" && (
-        <div className="bg-white rounded-2xl border border-border shadow-sm overflow-hidden">
-          <div className="px-6 py-4 border-b border-border">
-            <h2 className="font-semibold text-base">Service Providers</h2>
-            <p className="text-xs text-muted-foreground mt-0.5">Deleting a provider removes their profile, SP subscriptions, and room listings.</p>
-          </div>
-          {allServiceProviders.isLoading ? (
-            <div className="flex items-center justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
-          ) : (allServiceProviders.data ?? []).length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 text-muted-foreground gap-2">
-              <Users className="w-8 h-8 opacity-30" />
-              <p className="text-sm">No service providers yet.</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border bg-muted/30 text-xs text-muted-foreground uppercase tracking-wide">
-                    <th className="px-5 py-3 text-left">Provider</th>
-                    <th className="px-5 py-3 text-left">Location</th>
-                    <th className="px-5 py-3 text-left">WhatsApp</th>
-                    <th className="px-5 py-3 text-left">Services</th>
-                    <th className="px-5 py-3 text-center">Status</th>
-                    <th className="px-5 py-3 text-center">Delete</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {(allServiceProviders.data ?? []).map((sp) => (
-                    <tr key={sp.id} className="hover:bg-muted/20 transition-colors">
-                      <td className="px-5 py-4">
-                        <p className="font-medium text-foreground">{sp.providerName}</p>
-                        {sp.businessName && <p className="text-xs text-muted-foreground">{sp.businessName}</p>}
-                      </td>
-                      <td className="px-5 py-4 text-muted-foreground">{sp.location}</td>
-                      <td className="px-5 py-4">
-                        <a
-                          href={`https://wa.me/${sp.whatsapp.replace(/\D/g, "")}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-1.5 text-green-700 hover:text-green-800 text-sm font-medium whitespace-nowrap"
-                        >
-                          <Phone className="w-3.5 h-3.5 shrink-0" />
-                          {sp.whatsapp}
-                        </a>
-                      </td>
-                      <td className="px-5 py-4">
-                        <div className="flex flex-wrap gap-1">
-                          {sp.serviceTypes.slice(0, 2).map((s) => (
-                            <Badge key={s} variant="outline" className="text-[10px] h-5">{s}</Badge>
-                          ))}
-                          {sp.serviceTypes.length > 2 && (
-                            <Badge variant="outline" className="text-[10px] h-5">+{sp.serviceTypes.length - 2}</Badge>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-5 py-4 text-center">
-                        {sp.isVerified ? (
-                          <Badge className="bg-blue-100 text-blue-700 border-transparent gap-1 text-[10px] h-5">
-                            <BadgeCheck className="w-3 h-3" /> Verified
-                          </Badge>
-                        ) : sp.isActive ? (
-                          <Badge className="bg-green-100 text-green-700 border-transparent gap-1 text-[10px] h-5">
-                            <CheckCircle className="w-3 h-3" /> Active
-                          </Badge>
-                        ) : (
-                          <Badge className="bg-muted text-muted-foreground border-transparent text-[10px] h-5">Inactive</Badge>
-                        )}
-                      </td>
-                      <td className="px-5 py-4 text-center">
-                        <button
-                          onClick={() => setConfirmDelete({ type: "serviceProvider", id: sp.id, name: sp.providerName })}
-                          className="w-9 h-9 rounded-full bg-red-50 text-red-400 hover:bg-red-100 hover:text-red-600 flex items-center justify-center mx-auto transition-all"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </td>
+        <div className="space-y-6">
+          {/* Pending KYC requests */}
+          {(allServiceProviders.data ?? []).some((sp) => sp.kycStatus === "pending") && (
+            <div className="bg-white rounded-2xl border border-amber-200 shadow-sm overflow-hidden">
+              <div className="px-6 py-4 border-b border-amber-100 bg-amber-50 flex items-center gap-3">
+                <Clock className="w-4 h-4 text-amber-600" />
+                <div>
+                  <h2 className="font-semibold text-base text-amber-900">Pending KYC Verification Requests</h2>
+                  <p className="text-xs text-amber-700 mt-0.5">Review each request and contact the provider on WhatsApp before approving.</p>
+                </div>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-amber-100 bg-amber-50/50 text-xs text-muted-foreground uppercase tracking-wide">
+                      <th className="px-5 py-3 text-left">Provider</th>
+                      <th className="px-5 py-3 text-left">Services</th>
+                      <th className="px-5 py-3 text-left">KYC WhatsApp</th>
+                      <th className="px-5 py-3 text-center">Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-amber-100">
+                    {(allServiceProviders.data ?? []).filter((sp) => sp.kycStatus === "pending").map((sp) => (
+                      <tr key={sp.id} className="hover:bg-amber-50/40 transition-colors">
+                        <td className="px-5 py-4">
+                          <p className="font-medium text-foreground">{sp.providerName}</p>
+                          {sp.businessName && <p className="text-xs text-muted-foreground">{sp.businessName}</p>}
+                          <p className="text-xs text-muted-foreground">{sp.location}</p>
+                        </td>
+                        <td className="px-5 py-4">
+                          <div className="flex flex-wrap gap-1">
+                            {sp.serviceTypes.slice(0, 2).map((s) => (
+                              <Badge key={s} variant="outline" className="text-[10px] h-5">{s}</Badge>
+                            ))}
+                            {sp.serviceTypes.length > 2 && (
+                              <Badge variant="outline" className="text-[10px] h-5">+{sp.serviceTypes.length - 2}</Badge>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-5 py-4">
+                          {sp.kycWhatsapp ? (
+                            <a
+                              href={`https://wa.me/${sp.kycWhatsapp.replace(/\D/g, "")}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-1.5 text-green-700 hover:text-green-800 text-sm font-medium whitespace-nowrap"
+                            >
+                              <Phone className="w-3.5 h-3.5 shrink-0" />
+                              {sp.kycWhatsapp}
+                            </a>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          )}
+                        </td>
+                        <td className="px-5 py-4">
+                          <div className="flex items-center justify-center gap-2">
+                            <button
+                              onClick={() => verifyServiceProvider.mutate({ id: sp.id }, {
+                                onSuccess: () => toast.success(`${sp.providerName} verified!`),
+                                onError: () => toast.error("Failed to verify — check Supabase policies."),
+                              })}
+                              disabled={verifyServiceProvider.isPending}
+                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 disabled:opacity-50 transition-all"
+                            >
+                              <UserCheck className="w-3.5 h-3.5" /> Approve
+                            </button>
+                            <button
+                              onClick={() => rejectSpKyc.mutate({ id: sp.id }, {
+                                onSuccess: () => toast.success("KYC request rejected."),
+                                onError: () => toast.error("Failed to reject — check Supabase policies."),
+                              })}
+                              disabled={rejectSpKyc.isPending}
+                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-50 text-red-600 text-xs font-semibold hover:bg-red-100 disabled:opacity-50 transition-all border border-red-200"
+                            >
+                              <UserX className="w-3.5 h-3.5" /> Reject
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
+
+          {/* All service providers */}
+          <div className="bg-white rounded-2xl border border-border shadow-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-border">
+              <h2 className="font-semibold text-base">All Service Providers</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">Deleting a provider removes their profile, SP subscriptions, and room listings.</p>
+            </div>
+            {allServiceProviders.isLoading ? (
+              <div className="flex items-center justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
+            ) : (allServiceProviders.data ?? []).length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 text-muted-foreground gap-2">
+                <Users className="w-8 h-8 opacity-30" />
+                <p className="text-sm">No service providers yet.</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border bg-muted/30 text-xs text-muted-foreground uppercase tracking-wide">
+                      <th className="px-5 py-3 text-left">Provider</th>
+                      <th className="px-5 py-3 text-left">Location</th>
+                      <th className="px-5 py-3 text-left">WhatsApp</th>
+                      <th className="px-5 py-3 text-left">Services</th>
+                      <th className="px-5 py-3 text-center">KYC Status</th>
+                      <th className="px-5 py-3 text-center">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {(allServiceProviders.data ?? []).map((sp) => (
+                      <tr key={sp.id} className="hover:bg-muted/20 transition-colors">
+                        <td className="px-5 py-4">
+                          <p className="font-medium text-foreground">{sp.providerName}</p>
+                          {sp.businessName && <p className="text-xs text-muted-foreground">{sp.businessName}</p>}
+                        </td>
+                        <td className="px-5 py-4 text-muted-foreground">{sp.location}</td>
+                        <td className="px-5 py-4">
+                          <a
+                            href={`https://wa.me/${sp.whatsapp.replace(/\D/g, "")}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1.5 text-green-700 hover:text-green-800 text-sm font-medium whitespace-nowrap"
+                          >
+                            <Phone className="w-3.5 h-3.5 shrink-0" />
+                            {sp.whatsapp}
+                          </a>
+                        </td>
+                        <td className="px-5 py-4">
+                          <div className="flex flex-wrap gap-1">
+                            {sp.serviceTypes.slice(0, 2).map((s) => (
+                              <Badge key={s} variant="outline" className="text-[10px] h-5">{s}</Badge>
+                            ))}
+                            {sp.serviceTypes.length > 2 && (
+                              <Badge variant="outline" className="text-[10px] h-5">+{sp.serviceTypes.length - 2}</Badge>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-5 py-4 text-center">
+                          {sp.kycStatus === "verified" ? (
+                            <Badge className="bg-blue-100 text-blue-700 border-transparent gap-1 text-[10px] h-5">
+                              <BadgeCheck className="w-3 h-3" /> Verified
+                            </Badge>
+                          ) : sp.kycStatus === "pending" ? (
+                            <Badge className="bg-amber-100 text-amber-700 border-transparent gap-1 text-[10px] h-5">
+                              <Clock className="w-3 h-3" /> Pending
+                            </Badge>
+                          ) : sp.kycStatus === "rejected" ? (
+                            <Badge className="bg-red-100 text-red-700 border-transparent gap-1 text-[10px] h-5">
+                              <XCircle className="w-3 h-3" /> Rejected
+                            </Badge>
+                          ) : (
+                            <Badge className="bg-muted text-muted-foreground border-transparent text-[10px] h-5">No KYC</Badge>
+                          )}
+                        </td>
+                        <td className="px-5 py-4 text-center">
+                          <div className="flex items-center justify-center gap-1.5">
+                            {sp.kycStatus === "verified" && (
+                              <button
+                                onClick={() => revokeSpVerification.mutate({ id: sp.id }, {
+                                  onSuccess: () => toast.success("Verification revoked."),
+                                  onError: () => toast.error("Failed — check Supabase policies."),
+                                })}
+                                disabled={revokeSpVerification.isPending}
+                                title="Revoke verification"
+                                className="w-8 h-8 rounded-full bg-orange-50 text-orange-500 hover:bg-orange-100 hover:text-orange-700 flex items-center justify-center transition-all disabled:opacity-50"
+                              >
+                                <ShieldOff className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                            <button
+                              onClick={() => setConfirmDelete({ type: "serviceProvider", id: sp.id, name: sp.providerName })}
+                              className="w-8 h-8 rounded-full bg-red-50 text-red-400 hover:bg-red-100 hover:text-red-600 flex items-center justify-center transition-all"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
