@@ -46,10 +46,17 @@ export function Layout({ children }: LayoutProps) {
   const { data: cartData } = useGetCart({ sessionId });
 
   // ── Compute pending actions ─────────────────────────────────────
+  // One subscription covers ALL roles — if either seller or SP sub is confirmed, both are satisfied
+  const anySubConfirmed = currentSub.data?.status === "confirmed" || currentSpSub.data?.status === "confirmed";
+  const subsLoaded = !currentSub.isLoading && !currentSpSub.isLoading;
+  const isBothSellerAndSp = !!sellerProfile && !!myServiceProvider.data;
+
   const sellerNeedsKyc = !!sellerProfile && sellerProfile.kycStatus === "none";
-  const sellerNeedsSubscription = !!sellerProfile && !currentSub.isLoading && currentSub.data?.status !== "confirmed";
+  // For dual-role users, show a single sub prompt (not two separate ones)
+  const sellerNeedsSubscription = !!sellerProfile && subsLoaded && !anySubConfirmed;
   const spNeedsKyc = !!myServiceProvider.data && !myServiceProvider.data.isVerified && myServiceProvider.data.kycStatus === "none";
-  const spNeedsSubscription = !!myServiceProvider.data && !currentSpSub.isLoading && currentSpSub.data?.status !== "confirmed";
+  // SP sub prompt only shown if they're NOT already a seller (seller sub covers them)
+  const spNeedsSubscription = !!myServiceProvider.data && !isBothSellerAndSp && subsLoaded && !anySubConfirmed;
   const hasUrgentActions = isAuthenticated && (sellerNeedsKyc || sellerNeedsSubscription || spNeedsKyc || spNeedsSubscription);
 
   const notifications: { msg: string; tab: string }[] = [
@@ -185,7 +192,7 @@ export function Layout({ children }: LayoutProps) {
                           </p>
                           {sellerNeedsSubscription && (
                             <Link
-                              href="/dashboard?tab=store"
+                              href="/dashboard?tab=store&action=subscribe"
                               onClick={() => setMobileMenuOpen(false)}
                               className="flex items-center gap-3 px-3 py-2.5 text-sm rounded-md bg-amber-50 border border-amber-200 text-amber-800 hover:bg-amber-100 font-medium"
                             >
@@ -205,7 +212,7 @@ export function Layout({ children }: LayoutProps) {
                           )}
                           {spNeedsSubscription && (
                             <Link
-                              href="/dashboard?tab=services"
+                              href="/dashboard?tab=services&action=subscribe-sp"
                               onClick={() => setMobileMenuOpen(false)}
                               className="flex items-center gap-3 px-3 py-2.5 text-sm rounded-md bg-amber-50 border border-amber-200 text-amber-800 hover:bg-amber-100 font-medium"
                             >
@@ -358,7 +365,7 @@ export function Layout({ children }: LayoutProps) {
                         </div>
                         {sellerNeedsSubscription && (
                           <DropdownMenuItem asChild>
-                            <Link href="/dashboard?tab=store" className="flex items-center gap-2 cursor-pointer text-amber-700 bg-amber-50 hover:bg-amber-100 font-medium">
+                            <Link href="/dashboard?tab=store&action=subscribe" className="flex items-center gap-2 cursor-pointer text-amber-700 bg-amber-50 hover:bg-amber-100 font-medium">
                               <CreditCard className="w-4 h-4 shrink-0" /> Pay Seller Sub · RM 10
                             </Link>
                           </DropdownMenuItem>
@@ -372,7 +379,7 @@ export function Layout({ children }: LayoutProps) {
                         )}
                         {spNeedsSubscription && (
                           <DropdownMenuItem asChild>
-                            <Link href="/dashboard?tab=services" className="flex items-center gap-2 cursor-pointer text-amber-700 bg-amber-50 hover:bg-amber-100 font-medium">
+                            <Link href="/dashboard?tab=services&action=subscribe-sp" className="flex items-center gap-2 cursor-pointer text-amber-700 bg-amber-50 hover:bg-amber-100 font-medium">
                               <CreditCard className="w-4 h-4 shrink-0" /> Pay Service Sub · RM 10
                             </Link>
                           </DropdownMenuItem>

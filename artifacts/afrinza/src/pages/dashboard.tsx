@@ -142,13 +142,16 @@ export default function Dashboard() {
   });
   const [deletingRoomId, setDeletingRoomId] = useState<number | null>(null);
 
-  // Auto-switch tab from URL param ?tab=X
+  // Auto-switch tab from URL param ?tab=X and auto-open modals via ?action=X
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const tab = params.get("tab") as Tab | null;
+    const action = params.get("action");
     const validTabs: Tab[] = ["store", "products", "add-product", "services", "rooms", "profile"];
     if (tab && validTabs.includes(tab)) setActiveTab(tab);
-    if (params.get("action") === "verify-sp") setSpKycOpen(true);
+    if (action === "verify-sp") setSpKycOpen(true);
+    if (action === "subscribe") { setSubscribeStep("qr"); setSubscribeOpen(true); }
+    if (action === "subscribe-sp") { setSpSubStep("qr"); setSpSubOpen(true); }
   }, []);
 
   // Redirect if not authed
@@ -1142,9 +1145,17 @@ export default function Dashboard() {
                         <p className="text-xs text-muted-foreground mb-3">
                           One RM 10/month subscription covers your store, services, and room listings.
                         </p>
-                        <Button size="sm" className="rounded-full gap-1.5" onClick={() => { setSpSubStep("qr"); setSpSubOpen(true); }}>
-                          <CreditCard className="w-3.5 h-3.5" /> Pay RM 10 Subscription
-                        </Button>
+                        {isSeller ? (
+                          // Dual-role user: one payment goes through the seller sub (covers all roles)
+                          <Button size="sm" className="rounded-full gap-1.5" onClick={() => { setSubscribeStep("qr"); setSubscribeOpen(true); }}>
+                            <CreditCard className="w-3.5 h-3.5" /> Pay RM 10 Subscription
+                          </Button>
+                        ) : (
+                          // SP-only user: use SP sub modal
+                          <Button size="sm" className="rounded-full gap-1.5" onClick={() => { setSpSubStep("qr"); setSpSubOpen(true); }}>
+                            <CreditCard className="w-3.5 h-3.5" /> Pay RM 10 Subscription
+                          </Button>
+                        )}
                       </div>
                     </div>
                   </div>
