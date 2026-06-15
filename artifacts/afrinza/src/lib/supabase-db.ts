@@ -1023,6 +1023,7 @@ export async function adminRejectSubscription(id: number): Promise<void> {
 
 export interface RoomListing {
   id: number;
+  userId: string | null;
   listerName: string;
   whatsapp: string;
   location: string;
@@ -1040,6 +1041,7 @@ export interface RoomListing {
 function mapRoomListing(r: Record<string, any>): RoomListing {
   return {
     id: r.id,
+    userId: r.user_id ?? null,
     listerName: r.lister_name,
     whatsapp: r.whatsapp,
     location: r.location,
@@ -1050,7 +1052,7 @@ function mapRoomListing(r: Record<string, any>): RoomListing {
     amenities: r.amenities ?? [],
     availableFrom: r.available_from ?? null,
     images: r.images ?? [],
-    isActive: r.is_active ?? true,
+    isActive: r.is_active ?? false,
     createdAt: r.created_at,
   };
 }
@@ -1072,6 +1074,7 @@ export async function getRoomListings(location?: string): Promise<RoomListing[]>
 }
 
 export async function createRoomListing(payload: {
+  userId?: string | null;
   listerName: string;
   whatsapp: string;
   location: string;
@@ -1086,6 +1089,7 @@ export async function createRoomListing(payload: {
   const { data, error } = await supabase
     .from("room_listings")
     .insert({
+      user_id: payload.userId ?? null,
       lister_name: payload.listerName,
       whatsapp: payload.whatsapp,
       location: payload.location,
@@ -1096,6 +1100,7 @@ export async function createRoomListing(payload: {
       amenities: payload.amenities,
       available_from: payload.availableFrom,
       images: payload.images ?? [],
+      is_active: false,
     })
     .select()
     .single();
@@ -1146,6 +1151,82 @@ export async function updateRoomListing(id: number, updates: {
 export async function deleteRoomListing(id: number): Promise<void> {
   const { error } = await supabase.from("room_listings").delete().eq("id", id);
   if (error) throw new Error(`[Supabase / deleteRoomListing] ${error.message}`);
+}
+
+export async function getMyRoomListings(userId: string, whatsapp?: string): Promise<RoomListing[]> {
+  let rows: Record<string, any>[] = [];
+
+  const { data: byUser, error: e1 } = await supabase
+    .from("room_listings")
+    .select("*")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false });
+  if (e1) throw new Error(`[Supabase / getMyRoomListings] ${e1.message}`);
+  rows = byUser ?? [];
+
+  if (whatsapp) {
+    const { data: byWa } = await supabase
+      .from("room_listings")
+      .select("*")
+      .eq("whatsapp", whatsapp)
+      .is("user_id", null)
+      .order("created_at", { ascending: false });
+    if (byWa) rows = [...rows, ...byWa];
+  }
+
+  const seen = new Set<number>();
+  return rows.filter((r) => !seen.has(r.id) && seen.add(r.id)).map(mapRoomListing);
+}
+
+// ─── Admin room listing functions ─────────────────────────────────
+
+export async function adminGetAllRoomListings(): Promise<RoomListing[]> {
+  const { data, error } = await supabase
+    .from("room_listings")
+    .select("*")
+    .order("created_at", { ascending: false });
+  if (error) throw new Error(`[Supabase / adminGetAllRoomListings] ${error.message}`);
+  return (data ?? []).map(mapRoomListing);
+}
+
+export async function adminApproveRoomListing(id: number, approve: boolean): Promise<void> {
+  const { error } = await supabase
+    .from("room_listings")
+    .update({ is_active: approve })
+    .eq("id", id);
+  if (error) throw new Error(`[Supabase / adminApproveRoomListing] ${error.message}`);
+}
+
+export async function adminUpdateRoomListing(id: number, updates: {
+  title?: string;
+  description?: string;
+  pricePerMonth?: number | null;
+  roomType?: string;
+  location?: string;
+  amenities?: string[];
+  availableFrom?: string | null;
+}): Promise<RoomListing> {
+  const { data, error } = await supabase
+    .from("room_listings")
+    .update({
+      title: updates.title,
+      description: updates.description,
+      price_per_month: updates.pricePerMonth,
+      room_type: updates.roomType,
+      location: updates.location,
+      amenities: updates.amenities,
+      available_from: updates.availableFrom ?? null,
+    })
+    .eq("id", id)
+    .select()
+    .single();
+  if (error) throw new Error(`[Supabase / adminUpdateRoomListing] ${error.message}`);
+  return mapRoomListing(data);
+}
+
+export async function adminDeleteRoomListing(id: number): Promise<void> {
+  const { error } = await supabase.from("room_listings").delete().eq("id", id);
+  if (error) throw new Error(`[Supabase / adminDeleteRoomListing] ${error.message}`);
 }
 
 // ─── Service Providers ─────────────────────────────────────────────

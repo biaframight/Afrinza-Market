@@ -467,6 +467,56 @@ export function useDeleteRoomListing() {
   });
 }
 
+export function useGetMyRoomListings(userId?: string, whatsapp?: string) {
+  return useQuery({
+    queryKey: ["rooms", "mine", userId ?? "", whatsapp ?? ""],
+    queryFn: () => db.getMyRoomListings(userId!, whatsapp),
+    enabled: !!userId,
+  });
+}
+
+export function useAdminGetAllRoomListings() {
+  return useQuery({
+    queryKey: ["admin-rooms"],
+    queryFn: () => db.adminGetAllRoomListings(),
+  });
+}
+
+export function useAdminApproveRoomListing() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, approve }: { id: number; approve: boolean }) =>
+      db.adminApproveRoomListing(id, approve),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin-rooms"] });
+      qc.invalidateQueries({ queryKey: ["rooms"] });
+    },
+  });
+}
+
+export function useAdminUpdateRoomListing() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, updates }: { id: number; updates: Parameters<typeof db.adminUpdateRoomListing>[1] }) =>
+      db.adminUpdateRoomListing(id, updates),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin-rooms"] });
+      qc.invalidateQueries({ queryKey: ["rooms"] });
+    },
+  });
+}
+
+export function useAdminDeleteRoomListing() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id }: { id: number }) => db.adminDeleteRoomListing(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin-rooms"] });
+      qc.invalidateQueries({ queryKey: ["rooms"] });
+    },
+  });
+}
+
 // ─── Service Providers ──────────────────────────────────────────────
 
 export function useGetServiceProviders(location?: string) {

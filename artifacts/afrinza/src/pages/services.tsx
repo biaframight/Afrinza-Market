@@ -322,6 +322,7 @@ export default function Services() {
 
     try {
       await createRoomListing.mutateAsync({
+        userId: user?.id ?? null,
         listerName: data.listerName,
         whatsapp: data.whatsapp,
         location: data.location,

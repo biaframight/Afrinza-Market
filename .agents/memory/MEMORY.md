@@ -1,0 +1,1 @@
+- [Afrinza room listings approval flow](afrinza-rooms.md) — new rooms default to pending (is_active=false); admin approves via admin.tsx Rooms tab; users see their own rooms via getMyRoomListings(userId, whatsapp).

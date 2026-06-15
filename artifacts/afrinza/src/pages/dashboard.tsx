@@ -10,7 +10,7 @@ import {
   useSubmitKyc,
   useGetCurrentSubscription,
   useCreateSubscriptionPayment,
-  useGetRoomListingsByWhatsapp,
+  useGetMyRoomListings,
   useGetServiceProviderByUser,
   useGetServiceProviderSub,
   useCreateServiceProviderSub,
@@ -98,7 +98,8 @@ export default function Dashboard() {
   const currentSub = useGetCurrentSubscription(sellerProfile?.id, currentMonth);
   const createSubscription = useCreateSubscriptionPayment();
   const myServiceProvider = useGetServiceProviderByUser(user?.id);
-  const myRooms = useGetRoomListingsByWhatsapp(
+  const myRooms = useGetMyRoomListings(
+    user?.id,
     sellerProfile?.whatsapp || myServiceProvider.data?.whatsapp
   );
   const submitSpKyc = useSubmitServiceProviderKyc();
@@ -1302,7 +1303,14 @@ export default function Dashboard() {
                       <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center shrink-0">
                         <KeyRound className="w-5 h-5 text-primary" />
                       </div>
-                      <span className="text-xs font-semibold bg-muted px-2 py-1 rounded-full">{room.roomType}</span>
+                      <div className="flex items-center gap-1.5">
+                        {room.isActive ? (
+                          <span className="text-[10px] font-semibold bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Live</span>
+                        ) : (
+                          <span className="text-[10px] font-semibold bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">Pending Approval</span>
+                        )}
+                        <span className="text-xs font-semibold bg-muted px-2 py-1 rounded-full">{room.roomType}</span>
+                      </div>
                     </div>
                     <h3 className="font-semibold text-sm leading-tight mb-1 line-clamp-2">{room.title}</h3>
                     <p className="text-xs text-muted-foreground flex items-center gap-1 mb-2">
