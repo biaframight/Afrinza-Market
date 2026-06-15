@@ -171,7 +171,7 @@ export async function getFeaturedProducts(): Promise<{ products: Product[]; tota
   const { data: inactiveRows } = await supabase.from("sellers").select("id").eq("is_active", false);
   const inactiveIds = (inactiveRows ?? []).map((r: any) => r.id as number);
 
-  let query = supabase.from("products").select("*").eq("is_sponsored", true).limit(10);
+  let query = supabase.from("products").select("*").eq("is_sponsored", true).order("created_at", { ascending: false });
   if (inactiveIds.length > 0) {
     query = query.not("seller_id", "in", `(${inactiveIds.join(",")})`);
   }
@@ -238,7 +238,7 @@ export async function getFeaturedSellers(): Promise<{ sellers: Seller[]; total: 
     .from("sellers")
     .select("*")
     .eq("is_premium", true)
-    .limit(8);
+    .order("joined_at", { ascending: true });
   throwIfError(data, error, "getFeaturedSellers");
   const sellers = data.map(mapSeller).filter((s) => s.isActive);
   return { sellers, total: sellers.length };

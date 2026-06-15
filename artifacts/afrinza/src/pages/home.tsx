@@ -186,7 +186,7 @@ export default function Home() {
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
-            {featuredProducts.products.slice(0, 5).map((product, i) => (
+            {featuredProducts.products.map((product, i) => (
               <ProductCard key={product.id} product={product} index={i} />
             ))}
           </div>
@@ -230,7 +230,7 @@ export default function Home() {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {featuredSellers.sellers.slice(0, 4).map((seller, i) => (
+              {featuredSellers.sellers.map((seller, i) => (
                 <SellerCard key={seller.id} seller={seller} index={i} />
               ))}
             </div>
