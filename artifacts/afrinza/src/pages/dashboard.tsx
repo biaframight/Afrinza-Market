@@ -10,6 +10,7 @@ import {
   useSubmitKyc,
   useGetCurrentSubscription,
   useCreateSubscriptionPayment,
+  useGetRoomListingsByWhatsapp,
 } from "@/hooks/use-marketplace";
 import { uploadProductImage, uploadReceiptImage } from "@/lib/supabase-db";
 import { updateUserProfile } from "@/lib/supabase-auth";
@@ -22,6 +23,7 @@ import {
   Store, Package, Plus, Pencil, Trash2, Loader2, ImagePlus,
   X, CheckCircle2, User, DollarSign, ShoppingBag, AlertTriangle, Shield,
   BadgeCheck, Lock, Phone, Clock, XCircle, CreditCard, Upload,
+  Wrench, KeyRound, MapPin, ExternalLink,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -41,7 +43,7 @@ const CATEGORIES = ["Food", "Fashion", "Services", "Groceries", "Beauty", "Other
 const DELIVERY_OPTIONS = ["Afrinza Rider", "Grab Delivery", "Lalamove", "Self Pickup"];
 const PAYMENT_METHODS = ["Bank Transfer", "Touch n Go", "DuitNow QR", "Cash on Delivery", "Cash"];
 
-type Tab = "store" | "products" | "add-product" | "profile";
+type Tab = "store" | "products" | "add-product" | "services" | "rooms" | "profile";
 
 export default function Dashboard() {
   const [, setLocation] = useLocation();
@@ -87,6 +89,7 @@ export default function Dashboard() {
   const currentMonth = new Date().toISOString().slice(0, 7);
   const currentSub = useGetCurrentSubscription(sellerProfile?.id, currentMonth);
   const createSubscription = useCreateSubscriptionPayment();
+  const myRooms = useGetRoomListingsByWhatsapp(sellerProfile?.whatsapp);
 
   // KYC modal
   const [kycModalOpen, setKycModalOpen] = useState(false);
@@ -138,6 +141,7 @@ export default function Dashboard() {
   }, [user?.id]);
 
   const isSeller = !!sellerProfile;
+  const serviceProducts = (products ?? []).filter((p) => p.category === "Services");
 
   const isValidPhone = (v: string) =>
     /^\+?[0-9]{8,15}$/.test(v.replace(/[\s\-()]/g, ""));
@@ -364,9 +368,11 @@ export default function Dashboard() {
 
   const sellerTabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
     { id: "store", label: "My Store", icon: <Store className="w-4 h-4" /> },
-    { id: "products", label: "My Products", icon: <Package className="w-4 h-4" /> },
-    { id: "add-product", label: "Add Product", icon: <Plus className="w-4 h-4" /> },
-    { id: "profile", label: "My Profile", icon: <User className="w-4 h-4" /> },
+    { id: "products", label: "Products", icon: <Package className="w-4 h-4" /> },
+    { id: "add-product", label: "Add", icon: <Plus className="w-4 h-4" /> },
+    { id: "services", label: "Services", icon: <Wrench className="w-4 h-4" /> },
+    { id: "rooms", label: "Rooms", icon: <KeyRound className="w-4 h-4" /> },
+    { id: "profile", label: "Profile", icon: <User className="w-4 h-4" /> },
   ];
 
   const buyerTabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
@@ -855,6 +861,156 @@ export default function Dashboard() {
           </div>
         )}
 
+        {/* ── MY SERVICES TAB ──────────────────────────────────────── */}
+        {currentTab === "services" && (
+          <div>
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-xl font-bold flex items-center gap-2">
+                <Wrench className="w-5 h-5 text-primary" /> My Services
+              </h2>
+              <Button
+                onClick={() => { setAddForm((f) => ({ ...f, category: "Services" })); setActiveTab("add-product"); }}
+                className="rounded-full gap-2"
+                size="sm"
+              >
+                <Plus className="w-4 h-4" /> Add Service
+              </Button>
+            </div>
+
+            <div className="bg-primary/5 border border-primary/20 rounded-2xl p-5 mb-6 flex items-start gap-4">
+              <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center shrink-0">
+                <Wrench className="w-5 h-5 text-primary" />
+              </div>
+              <div className="flex-1">
+                <p className="font-semibold text-sm mb-1">Register as a Service Provider</p>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Reach Africans across Malaysia — Afrinza Rider, hair braider, plumber, cargo transporter, and more.
+                </p>
+                <Button size="sm" variant="outline" className="rounded-full gap-1.5" onClick={() => setLocation("/services")}>
+                  <ExternalLink className="w-3.5 h-3.5" /> Go to Service Registration
+                </Button>
+              </div>
+            </div>
+
+            {productsLoading ? (
+              <div className="flex justify-center py-16"><Loader2 className="w-7 h-7 animate-spin text-primary" /></div>
+            ) : serviceProducts.length === 0 ? (
+              <div className="bg-white rounded-3xl border border-border shadow p-12 text-center">
+                <Wrench className="w-12 h-12 text-muted-foreground/40 mx-auto mb-4" />
+                <h3 className="font-semibold text-lg mb-2">No services listed yet</h3>
+                <p className="text-muted-foreground text-sm mb-6">
+                  List a service product — delivery, hair braiding, cooking, repairs, or any skill you offer.
+                </p>
+                <Button
+                  onClick={() => { setAddForm((f) => ({ ...f, category: "Services" })); setActiveTab("add-product"); }}
+                  className="rounded-full gap-2"
+                >
+                  <Plus className="w-4 h-4" /> Add Your First Service
+                </Button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {serviceProducts.map((product) => (
+                  <div key={product.id} className="bg-white rounded-2xl border border-border shadow-sm overflow-hidden">
+                    <div className="aspect-square bg-white relative overflow-hidden border-b border-border/40">
+                      {product.imageUrl ? (
+                        <img src={product.imageUrl} alt={product.title} className="w-full h-full object-contain p-2" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-muted-foreground/30">
+                          <Wrench className="w-10 h-10" />
+                        </div>
+                      )}
+                      <span className="absolute top-2 right-2 bg-black/60 text-white text-xs font-bold px-2 py-1 rounded-full">
+                        RM {parseFloat(product.price).toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="p-4">
+                      <h3 className="font-semibold text-sm leading-tight line-clamp-2 mb-1">{product.title}</h3>
+                      <p className="text-xs text-muted-foreground">Service · Stock: {product.stock}</p>
+                      <div className="flex gap-2 mt-4">
+                        <Button variant="outline" size="sm" className="flex-1 rounded-full gap-1.5" onClick={() => openEditDialog(product)}>
+                          <Pencil className="w-3.5 h-3.5" /> Edit
+                        </Button>
+                        <Button variant="outline" size="sm" className="rounded-full text-destructive border-destructive/30 hover:bg-destructive/5" onClick={() => setDeletingId(product.id)}>
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── MY ROOMS TAB ─────────────────────────────────────────── */}
+        {currentTab === "rooms" && (
+          <div>
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-xl font-bold flex items-center gap-2">
+                <KeyRound className="w-5 h-5 text-primary" /> My Room Listings
+              </h2>
+              <Button className="rounded-full gap-2" size="sm" onClick={() => setLocation("/services?tab=rooms")}>
+                <Plus className="w-4 h-4" /> List a New Room
+              </Button>
+            </div>
+
+            {myRooms.isLoading ? (
+              <div className="flex justify-center py-16"><Loader2 className="w-7 h-7 animate-spin text-primary" /></div>
+            ) : !myRooms.data || myRooms.data.length === 0 ? (
+              <div className="bg-white rounded-3xl border border-border shadow p-12 text-center">
+                <KeyRound className="w-12 h-12 text-muted-foreground/40 mx-auto mb-4" />
+                <h3 className="font-semibold text-lg mb-2">No rooms listed yet</h3>
+                <p className="text-muted-foreground text-sm mb-6">
+                  List your room and connect with Africans across Malaysia looking for accommodation.
+                </p>
+                <Button className="rounded-full gap-2" onClick={() => setLocation("/services?tab=rooms")}>
+                  <KeyRound className="w-4 h-4" /> List a Room
+                </Button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {myRooms.data.map((room) => (
+                  <div key={room.id} className="bg-white rounded-2xl border border-border shadow-sm p-5">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center shrink-0">
+                        <KeyRound className="w-5 h-5 text-primary" />
+                      </div>
+                      <span className="text-xs font-semibold bg-muted px-2 py-1 rounded-full">{room.roomType}</span>
+                    </div>
+                    <h3 className="font-semibold text-sm leading-tight mb-1 line-clamp-2">{room.title}</h3>
+                    <p className="text-xs text-muted-foreground flex items-center gap-1 mb-2">
+                      <MapPin className="w-3 h-3" /> {room.location}
+                    </p>
+                    {room.pricePerMonth != null && (
+                      <p className="text-sm font-bold text-primary">
+                        RM {room.pricePerMonth.toFixed(0)}
+                        <span className="text-xs font-normal text-muted-foreground">/mo</span>
+                      </p>
+                    )}
+                    {room.amenities.length > 0 && (
+                      <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{room.amenities.join(" · ")}</p>
+                    )}
+                    {room.availableFrom && (
+                      <p className="text-xs text-muted-foreground mt-1">Available: {room.availableFrom}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {sellerProfile?.whatsapp && (
+              <div className="mt-6 bg-amber-50 border border-amber-200 rounded-2xl p-4 text-sm text-amber-800">
+                <p className="font-semibold mb-1">How room listings are matched</p>
+                <p className="text-xs">
+                  Rooms are matched by your registered WhatsApp number (<strong>{sellerProfile.whatsapp}</strong>).
+                  Use this same number when listing rooms to see them here.
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* ── ADD PRODUCT TAB ──────────────────────────────────────── */}
         {currentTab === "add-product" && sellerProfile && (
           <div className="bg-white rounded-3xl border border-border shadow p-6 md:p-8 max-w-2xl">
@@ -949,12 +1105,49 @@ export default function Dashboard() {
                 <Input value={user?.email ?? ""} disabled className="h-11 bg-muted/20 text-muted-foreground" />
               </div>
               {!isSeller && (
-                <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4">
-                  <p className="text-sm font-semibold text-primary mb-1">Want to sell on Afrinza?</p>
-                  <p className="text-xs text-muted-foreground mb-3">Open a store and reach thousands of customers.</p>
-                  <Button size="sm" className="rounded-full gap-1.5" onClick={() => setLocation("/become-seller")}>
-                    <Store className="w-3.5 h-3.5" /> Open a Store
-                  </Button>
+                <div className="rounded-2xl border border-border bg-muted/30 p-4">
+                  <p className="text-sm font-semibold mb-1">Start listing on Afrinza</p>
+                  <p className="text-xs text-muted-foreground mb-3">
+                    One RM 10/month subscription covers all three — sell products, offer services, and list rooms.
+                  </p>
+                  <div className="space-y-2">
+                    <button
+                      onClick={() => setLocation("/become-seller")}
+                      className="w-full flex items-center gap-3 p-3 rounded-xl bg-white border border-border hover:border-primary/40 hover:bg-primary/5 transition-all text-left"
+                    >
+                      <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center shrink-0">
+                        <Store className="w-4 h-4 text-primary" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold">Open a Store</p>
+                        <p className="text-xs text-muted-foreground">Sell products to Africans across Malaysia</p>
+                      </div>
+                    </button>
+                    <button
+                      onClick={() => setLocation("/services")}
+                      className="w-full flex items-center gap-3 p-3 rounded-xl bg-white border border-border hover:border-primary/40 hover:bg-primary/5 transition-all text-left"
+                    >
+                      <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center shrink-0">
+                        <Wrench className="w-4 h-4 text-amber-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold">Register a Service</p>
+                        <p className="text-xs text-muted-foreground">Offer skills — delivery, hair braiding, repairs &amp; more</p>
+                      </div>
+                    </button>
+                    <button
+                      onClick={() => setLocation("/services?tab=rooms")}
+                      className="w-full flex items-center gap-3 p-3 rounded-xl bg-white border border-border hover:border-primary/40 hover:bg-primary/5 transition-all text-left"
+                    >
+                      <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center shrink-0">
+                        <KeyRound className="w-4 h-4 text-blue-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold">List a Room for Rent</p>
+                        <p className="text-xs text-muted-foreground">Connect with Africans looking for accommodation</p>
+                      </div>
+                    </button>
+                  </div>
                 </div>
               )}
               <Button onClick={handleSaveProfile} className="rounded-full px-8 h-11" disabled={profileSaving}>

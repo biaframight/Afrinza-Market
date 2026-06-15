@@ -6,7 +6,7 @@ import { MarketBanner } from "@/components/market-banner";
 import {
   ShoppingCart, Search, Menu, Store, Home, PackageSearch,
   MessageCircleQuestion, Sparkles, Info, HelpCircle,
-  LayoutDashboard, LogOut, UserCircle, Shield,
+  LayoutDashboard, LogOut, UserCircle, Shield, Wrench, KeyRound,
 } from "lucide-react";
 import { useGetCart } from "@/hooks/use-marketplace";
 import { getSessionId } from "@/lib/session";
@@ -99,9 +99,18 @@ export function Layout({ children }: LayoutProps) {
                         </Link>
                       )}
                       {!sellerProfile && (
-                        <Link href="/become-seller" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 px-3 py-2 text-base rounded-md text-primary bg-primary/5 hover:bg-primary/10 font-medium">
-                          <Store className="h-5 w-5" /> Open a Store
-                        </Link>
+                        <>
+                          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide px-3 pt-1 pb-0.5">List on Afrinza</p>
+                          <Link href="/become-seller" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 px-3 py-2 text-base rounded-md text-primary bg-primary/5 hover:bg-primary/10 font-medium">
+                            <Store className="h-5 w-5" /> Open a Store
+                          </Link>
+                          <Link href="/services" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 px-3 py-2 text-base rounded-md text-primary bg-primary/5 hover:bg-primary/10 font-medium">
+                            <Wrench className="h-5 w-5" /> Register a Service
+                          </Link>
+                          <Link href="/services?tab=rooms" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 px-3 py-2 text-base rounded-md text-primary bg-primary/5 hover:bg-primary/10 font-medium">
+                            <KeyRound className="h-5 w-5" /> List a Room for Rent
+                          </Link>
+                        </>
                       )}
                       <button onClick={() => { signOut(); setMobileMenuOpen(false); }} className="flex items-center gap-3 px-3 py-2 text-base rounded-md hover:bg-muted font-medium text-left text-muted-foreground">
                         <LogOut className="h-5 w-5" /> Sign Out
@@ -112,8 +121,15 @@ export function Layout({ children }: LayoutProps) {
                       <Link href="/auth" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 px-3 py-2 text-base rounded-md hover:bg-muted font-medium">
                         <UserCircle className="h-5 w-5 text-muted-foreground" /> Sign In / Register
                       </Link>
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide px-3 pt-1 pb-0.5">List on Afrinza</p>
                       <Link href="/become-seller" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 px-3 py-2 text-base rounded-md text-primary bg-primary/5 hover:bg-primary/10 font-medium">
-                        <Store className="h-5 w-5" /> Become a Seller
+                        <Store className="h-5 w-5" /> Open a Store
+                      </Link>
+                      <Link href="/services" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 px-3 py-2 text-base rounded-md text-primary bg-primary/5 hover:bg-primary/10 font-medium">
+                        <Wrench className="h-5 w-5" /> Register a Service
+                      </Link>
+                      <Link href="/services?tab=rooms" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 px-3 py-2 text-base rounded-md text-primary bg-primary/5 hover:bg-primary/10 font-medium">
+                        <KeyRound className="h-5 w-5" /> List a Room for Rent
                       </Link>
                     </>
                   )}
@@ -192,11 +208,25 @@ export function Layout({ children }: LayoutProps) {
                       </DropdownMenuItem>
                     )}
                     {!sellerProfile && (
-                      <DropdownMenuItem asChild>
-                        <Link href="/become-seller" className="flex items-center gap-2 cursor-pointer">
-                          <Store className="w-4 h-4" /> Open a Store
-                        </Link>
-                      </DropdownMenuItem>
+                      <>
+                        <DropdownMenuSeparator />
+                        <div className="px-3 py-1 text-xs font-semibold text-muted-foreground">List on Afrinza</div>
+                        <DropdownMenuItem asChild>
+                          <Link href="/become-seller" className="flex items-center gap-2 cursor-pointer">
+                            <Store className="w-4 h-4" /> Open a Store
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link href="/services" className="flex items-center gap-2 cursor-pointer">
+                            <Wrench className="w-4 h-4" /> Register a Service
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link href="/services?tab=rooms" className="flex items-center gap-2 cursor-pointer">
+                            <KeyRound className="w-4 h-4" /> List a Room
+                          </Link>
+                        </DropdownMenuItem>
+                      </>
                     )}
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={signOut} className="text-muted-foreground flex items-center gap-2 cursor-pointer">

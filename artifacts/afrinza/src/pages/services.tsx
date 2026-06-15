@@ -99,7 +99,10 @@ export default function Services() {
   const { user, isAuthenticated } = useAuthContext();
 
   // Main tab: service providers vs rooms
-  const [mainTab, setMainTab] = useState<"services" | "rooms">("services");
+  const [mainTab, setMainTab] = useState<"services" | "rooms">(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("tab") === "rooms" ? "rooms" : "services";
+  });
 
   // Rooms sub-tab: find vs list
   const [roomTab, setRoomTab] = useState<"find" | "list">("find");

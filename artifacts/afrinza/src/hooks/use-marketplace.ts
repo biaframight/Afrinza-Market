@@ -392,6 +392,14 @@ export function useGetRoomListings(location?: string) {
   });
 }
 
+export function useGetRoomListingsByWhatsapp(whatsapp?: string) {
+  return useQuery({
+    queryKey: ["rooms", "by-whatsapp", whatsapp ?? ""],
+    queryFn: () => db.getRoomListingsByWhatsapp(whatsapp!),
+    enabled: !!whatsapp,
+  });
+}
+
 export function useCreateRoomListing() {
   const qc = useQueryClient();
   return useMutation({

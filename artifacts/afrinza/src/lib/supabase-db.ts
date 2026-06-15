@@ -1041,3 +1041,13 @@ export async function createRoomListing(payload: {
   if (error) throw new Error(`[Supabase / createRoomListing] ${error.message}`);
   return mapRoomListing(data);
 }
+
+export async function getRoomListingsByWhatsapp(whatsapp: string): Promise<RoomListing[]> {
+  const { data, error } = await supabase
+    .from("room_listings")
+    .select("*")
+    .eq("whatsapp", whatsapp)
+    .order("created_at", { ascending: false });
+  if (error) throw new Error(`[Supabase / getRoomListingsByWhatsapp] ${error.message}`);
+  return (data ?? []).map(mapRoomListing);
+}
