@@ -162,7 +162,7 @@ export default function Services() {
   // Queries
   const serviceProviders = useGetServiceProviders(filteredSpLocation);
   const createServiceProvider = useCreateServiceProvider();
-  const roomListings = useGetRoomListings(searchedLocation);
+  const roomListings = useGetRoomListings(undefined);
   const createRoomListing = useCreateRoomListing();
 
   // Reset photo index when opening a new detail
@@ -949,37 +949,6 @@ export default function Services() {
           {/* ── FIND A ROOM ───────────────────────────────────────── */}
           {roomTab === "find" && (
             <div className="max-w-5xl mx-auto">
-              <div className="bg-white rounded-3xl border border-border shadow-sm p-5 mb-8">
-                <h2 className="text-lg font-bold mb-3 flex items-center gap-2">
-                  <MapPin className="w-5 h-5 text-primary" /> Search by Location
-                </h2>
-                <div className="flex gap-3">
-                  <Select value={selectedLocation} onValueChange={setSelectedLocation}>
-                    <SelectTrigger className="h-12 bg-muted/30 flex-1">
-                      <SelectValue placeholder="Select a state or city…" />
-                    </SelectTrigger>
-                    <SelectContent className="max-h-64">
-                      <SelectItem value="all">All Locations</SelectItem>
-                      {MALAYSIA_LOCATIONS.map((loc) => (
-                        <SelectItem key={loc.value} value={loc.value}>{loc.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Button
-                    onClick={() => setSearchedLocation(selectedLocation === "all" ? undefined : selectedLocation || undefined)}
-                    className="h-12 px-6 rounded-xl gap-2 shrink-0"
-                  >
-                    <Search className="w-4 h-4" /> Search
-                  </Button>
-                </div>
-                {searchedLocation && (
-                  <p className="text-sm text-muted-foreground mt-2 flex items-center gap-1.5">
-                    <MapPin className="w-3.5 h-3.5" /> Showing rooms in <strong>{searchedLocation}</strong>
-                    <button onClick={() => { setSearchedLocation(undefined); setSelectedLocation(""); }} className="text-primary hover:underline ml-1">Clear</button>
-                  </p>
-                )}
-              </div>
-
               {roomListings.isLoading ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                   {[1, 2, 3].map((i) => (
@@ -1002,7 +971,7 @@ export default function Services() {
                   <Home className="w-14 h-14 mx-auto mb-4 opacity-20" />
                   <p className="font-bold text-lg mb-2">No rooms found</p>
                   <p className="text-sm mb-6">
-                    {searchedLocation ? `No rooms in ${searchedLocation}. Try a different location.` : "No rooms listed yet. Be the first!"}
+                    No rooms listed yet. Be the first!
                   </p>
                   <Button onClick={() => setRoomTab("list")} className="rounded-full gap-2">
                     <Home className="w-4 h-4" /> List a Room
@@ -1012,7 +981,6 @@ export default function Services() {
                 <>
                   <p className="text-sm text-muted-foreground mb-4 font-medium">
                     {roomListings.data.length} room{roomListings.data.length !== 1 ? "s" : ""} available
-                    {searchedLocation ? ` in ${searchedLocation}` : ""}
                   </p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                     {roomListings.data.map((room) => (
