@@ -818,14 +818,10 @@ export default function Services() {
                               <span className="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">{provider.customServiceType}</span>
                             )}
                           </div>
-                          <a
-                            href={`https://wa.me/${provider.whatsapp.replace(/\D/g, "")}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center justify-center gap-2 w-full bg-green-600 hover:bg-green-700 text-white rounded-full py-2.5 text-sm font-semibold transition-colors mt-auto"
-                          >
-                            <Phone className="w-4 h-4" /> Contact on WhatsApp
-                          </a>
+                          <div className="flex items-center gap-2 w-full border border-border bg-muted/30 rounded-full px-4 py-2.5 mt-auto">
+                            <Phone className="w-4 h-4 shrink-0 text-muted-foreground" />
+                            <span className="text-sm font-medium text-foreground truncate">{provider.whatsapp}</span>
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -982,14 +978,10 @@ export default function Services() {
                           {room.description && (
                             <p className="text-sm text-muted-foreground mb-4 line-clamp-2 flex-1">{room.description}</p>
                           )}
-                          <a
-                            href={`https://wa.me/${room.whatsapp.replace(/\D/g, "")}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center justify-center gap-2 w-full bg-green-600 hover:bg-green-700 text-white rounded-full py-2.5 text-sm font-semibold transition-colors mt-auto"
-                          >
-                            <Phone className="w-4 h-4" /> Contact on WhatsApp
-                          </a>
+                          <div className="flex items-center gap-2 w-full border border-border bg-muted/30 rounded-full px-4 py-2.5 mt-auto">
+                            <Phone className="w-4 h-4 shrink-0 text-muted-foreground" />
+                            <span className="text-sm font-medium text-foreground truncate">{room.whatsapp}</span>
+                          </div>
                         </div>
                       </div>
                     ))}

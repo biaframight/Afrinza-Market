@@ -138,10 +138,6 @@ export default function Checkout() {
           setOrderSnapshot({ sellerPhone, items, total, formData: data });
           setIsSuccess(true);
           window.scrollTo(0, 0);
-
-          // Auto-open seller WhatsApp for the buyer
-          const sellerMsg = buildSellerMessage(data, items, total);
-          setTimeout(() => { window.open(`https://wa.me/${sellerPhone}?text=${sellerMsg}`, "_blank"); }, 800);
         },
         onError: () => {
           toast.error("Failed to place order. Please try again.");
@@ -151,11 +147,7 @@ export default function Checkout() {
   };
 
   if (isSuccess && orderSnapshot) {
-    const { sellerPhone, items, total, formData } = orderSnapshot;
-    const sellerMsg = buildSellerMessage(formData, items, total);
-    const adminMsg = buildAdminMessage(formData, items, total, sellerPhone);
-    const sellerUrl = `https://wa.me/${sellerPhone}?text=${sellerMsg}`;
-    const adminUrl  = `https://wa.me/${ADMIN_WHATSAPP}?text=${adminMsg}`;
+    const { sellerPhone, items, total } = orderSnapshot;
 
     return (
       <div className="container mx-auto px-4 py-20 max-w-2xl text-center">
@@ -164,34 +156,30 @@ export default function Checkout() {
         </div>
         <h1 className="text-4xl font-bold font-serif mb-4">Order Placed!</h1>
         <p className="text-lg text-muted-foreground mb-6">
-          Your order is confirmed. A WhatsApp chat with the seller is opening — confirm your details and arrange payment directly with them.
+          Your order has been received. The seller will get in touch with you to confirm payment and delivery.
         </p>
 
-        {/* Primary: seller WhatsApp */}
-        <a
-          href={sellerUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 bg-[#25D366] hover:bg-[#1ebe59] text-white font-bold px-8 py-4 rounded-full text-base shadow-lg mb-4 transition-all hover:scale-105"
-        >
-          <MessageCircle className="w-5 h-5" />
-          Chat with Seller on WhatsApp
-        </a>
-
-        {/* Secondary: notify Afrinza admin */}
-        <div className="mt-2 mb-6">
-          <a
-            href={adminUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 border border-border bg-white hover:bg-muted/50 text-foreground font-semibold px-6 py-3 rounded-full text-sm shadow-sm transition-all"
-          >
-            <MessageCircle className="w-4 h-4 text-[#25D366]" />
-            Also Notify Afrinza Team
-          </a>
+        <div className="bg-muted/40 rounded-2xl border border-border p-5 mb-8 text-left space-y-3">
+          <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Order Summary</p>
+          {items.map((it, i) => (
+            <div key={i} className="flex justify-between text-sm">
+              <span className="text-foreground">{it.title} × {it.qty}</span>
+              <span className="font-medium">RM {it.price}</span>
+            </div>
+          ))}
+          <div className="border-t border-border pt-3 flex justify-between font-bold">
+            <span>Total</span>
+            <span className="text-primary">RM {total}</span>
+          </div>
+          {sellerPhone && (
+            <div className="border-t border-border pt-3 flex items-center gap-2 text-sm text-muted-foreground">
+              <span className="font-medium text-foreground">Seller contact:</span>
+              <span className="font-mono">{sellerPhone}</span>
+            </div>
+          )}
         </div>
 
-        <Button variant="ghost" onClick={() => setLocation("/")} className="rounded-full">
+        <Button onClick={() => setLocation("/")} className="rounded-full px-8 h-12 font-semibold">
           Continue Shopping
         </Button>
       </div>
@@ -286,24 +274,23 @@ export default function Checkout() {
 
               <div className="bg-white p-6 md:p-8 rounded-3xl border border-border shadow-sm">
                 <div className="flex items-center gap-3 mb-6 border-b border-border/50 pb-4">
-                  <div className="bg-[#25D366]/20 p-2 rounded-full">
-                    <MessageCircle className="w-5 h-5 text-[#25D366]" />
+                  <div className="bg-primary/10 p-2 rounded-full">
+                    <Lock className="w-5 h-5 text-primary" />
                   </div>
                   <h2 className="text-xl font-bold">Payment Method</h2>
                 </div>
 
-                <div className="rounded-xl border-2 border-[#25D366] bg-[#25D366]/5 p-4 mb-4 flex items-center gap-4">
-                  <div className="w-5 h-5 rounded-full border-2 border-[#25D366] bg-[#25D366] flex items-center justify-center">
+                <div className="rounded-xl border-2 border-primary bg-primary/5 p-4 mb-4 flex items-center gap-4">
+                  <div className="w-5 h-5 rounded-full border-2 border-primary bg-primary flex items-center justify-center">
                     <div className="w-2 h-2 bg-white rounded-full" />
                   </div>
                   <div className="flex-1">
                     <p className="font-bold text-sm flex items-center gap-2">
-                      WhatsApp Order
-                      <Badge className="bg-[#25D366] text-white text-[10px] px-2">Active</Badge>
+                      Direct Order
+                      <Badge className="bg-primary text-white text-[10px] px-2">Active</Badge>
                     </p>
-                    <p className="text-xs text-muted-foreground mt-0.5">Order sent to seller via WhatsApp. Agree on payment directly.</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Order confirmed instantly. Seller will contact you to arrange payment and delivery.</p>
                   </div>
-                  <MessageCircle className="w-6 h-6 text-[#25D366]" />
                 </div>
 
                 <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider mb-3 ml-1">More payment options (coming soon)</p>
@@ -370,15 +357,14 @@ export default function Checkout() {
 
                 <Button
                   type="submit"
-                  className="w-full h-14 rounded-full text-base font-bold shadow-md hover:shadow-lg transition-all mb-3 bg-[#25D366] hover:bg-[#1ebe59] text-white flex items-center gap-2"
+                  className="w-full h-14 rounded-full text-base font-bold shadow-md hover:shadow-lg transition-all mb-3"
                   disabled={createOrder.isPending}
                 >
-                  <MessageCircle className="w-5 h-5" />
-                  {createOrder.isPending ? "Processing..." : "Place Order via WhatsApp"}
+                  {createOrder.isPending ? "Processing..." : "Place Order"}
                 </Button>
 
                 <p className="text-xs text-center text-muted-foreground">
-                  Your order details will be sent to the seller on WhatsApp to confirm payment & delivery.
+                  Your order details will be shared with the seller to confirm payment &amp; delivery.
                 </p>
               </div>
             </div>
