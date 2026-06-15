@@ -450,6 +450,15 @@ export function useCreateRoomListing() {
   });
 }
 
+export function useSubmitRoomPaymentReceipt() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ roomId, receiptUrl }: { roomId: number; receiptUrl: string }) =>
+      db.submitRoomPaymentReceipt(roomId, receiptUrl),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["rooms"] }),
+  });
+}
+
 export function useUpdateRoomListing() {
   const qc = useQueryClient();
   return useMutation({

@@ -12,6 +12,7 @@ import {
   Star, ArrowRight, Mail, Lock, Loader2, Bike,
   Home, Search, MapPin, Calendar, Phone, Wifi, Wind, Car, Utensils,
   ImagePlus, X, ChevronLeft, Eye, ChevronRight,
+  CreditCard, ScanLine, Upload, Clock,
 } from "lucide-react";
 import type { ServiceProvider, RoomListing } from "@/lib/supabase-db";
 import { VerifiedBadge } from "@/components/verified-badge";
@@ -27,7 +28,7 @@ import { MALAYSIA_LOCATIONS } from "@/lib/malaysia-locations";
 import { signUpWithEmail } from "@/lib/supabase-auth";
 import { useAuthContext } from "@/contexts/auth-context";
 import {
-  useGetRoomListings, useCreateRoomListing,
+  useGetRoomListings, useCreateRoomListing, useSubmitRoomPaymentReceipt,
   useGetServiceProviders, useCreateServiceProvider,
 } from "@/hooks/use-marketplace";
 import { uploadServicePhoto, uploadRoomPhoto } from "@/lib/supabase-db";
@@ -136,6 +137,14 @@ export default function Services() {
   const [isServiceSuccess, setIsServiceSuccess] = useState(false);
   const [isRoomSuccess, setIsRoomSuccess] = useState(false);
 
+  // Room payment flow
+  const [createdRoomId, setCreatedRoomId] = useState<number | null>(null);
+  const [roomPayStep, setRoomPayStep] = useState<"cta" | "qr" | "upload" | "done" | null>(null);
+  const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
+  const [receiptUploading, setReceiptUploading] = useState(false);
+  const receiptRef = useRef<HTMLInputElement>(null);
+
   // Detail views
   const [selectedProvider, setSelectedProvider] = useState<ServiceProvider | null>(null);
   const [selectedRoom, setSelectedRoom] = useState<RoomListing | null>(null);
@@ -164,6 +173,7 @@ export default function Services() {
   const createServiceProvider = useCreateServiceProvider();
   const roomListings = useGetRoomListings(undefined);
   const createRoomListing = useCreateRoomListing();
+  const submitReceipt = useSubmitRoomPaymentReceipt();
 
   // Reset photo index when opening a new detail
   useEffect(() => { setActiveProviderPhotoIdx(0); }, [selectedProvider?.id]);
@@ -321,7 +331,7 @@ export default function Services() {
     }
 
     try {
-      await createRoomListing.mutateAsync({
+      const room = await createRoomListing.mutateAsync({
         userId: user?.id ?? null,
         listerName: data.listerName,
         whatsapp: data.whatsapp,
@@ -335,6 +345,8 @@ export default function Services() {
         images: imageUrls,
       });
 
+      setCreatedRoomId(room.id);
+      setRoomPayStep("cta");
       setIsRoomSuccess(true);
       window.scrollTo(0, 0);
     } catch (e) {
@@ -342,6 +354,42 @@ export default function Services() {
     } finally {
       setUploading(false);
     }
+  };
+
+  const handleReceiptChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    if (f.size > 10 * 1024 * 1024) { toast.error("File too large (max 10 MB)"); return; }
+    setReceiptFile(f);
+    const reader = new FileReader();
+    reader.onload = (ev) => setReceiptPreview(ev.target?.result as string);
+    reader.readAsDataURL(f);
+  };
+
+  const handleSubmitReceipt = async () => {
+    if (!receiptFile || !createdRoomId) return;
+    setReceiptUploading(true);
+    try {
+      const url = await uploadRoomPhoto(receiptFile);
+      if (!url) throw new Error("Upload failed. Check your storage bucket settings.");
+      await submitReceipt.mutateAsync({ roomId: createdRoomId, receiptUrl: url });
+      setRoomPayStep("done");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Receipt submission failed. Please try again.");
+    } finally {
+      setReceiptUploading(false);
+    }
+  };
+
+  const resetRoomSuccess = () => {
+    setIsRoomSuccess(false);
+    setRoomPayStep(null);
+    setCreatedRoomId(null);
+    setReceiptFile(null);
+    setReceiptPreview(null);
+    roomForm.reset();
+    setRoomPhotos([]);
+    setRoomPhotoPreviews([]);
   };
 
   // ─── Success screens ──────────────────────────────────────────
@@ -392,42 +440,180 @@ export default function Services() {
   }
 
   if (isRoomSuccess) {
-    return (
-      <div className="min-h-[80vh] flex flex-col items-center justify-center p-4 text-center">
-        <div className="w-24 h-24 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-8">
-          <CheckCircle2 className="w-12 h-12" />
+    // ── Step: CTA ──────────────────────────────────────────────
+    if (roomPayStep === "cta") return (
+      <div className="min-h-[80vh] flex flex-col items-center justify-center p-4 text-center max-w-md mx-auto">
+        <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-6">
+          <CheckCircle2 className="w-10 h-10" />
         </div>
-        <h1 className="text-4xl font-bold font-serif mb-4">Room Listed!</h1>
-        <p className="text-lg text-muted-foreground mb-2 max-w-md">
-          Your room listing is live — tenants can search and find it by location.
+        <h1 className="text-3xl font-bold font-serif mb-2">Room Listed! 🎉</h1>
+        <p className="text-muted-foreground mb-8 text-sm">
+          Your listing has been submitted and is <strong>pending admin approval</strong>. To activate it, complete your RM 10/month subscription.
         </p>
-        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 max-w-sm w-full mb-8 text-left">
-          <p className="font-bold text-sm text-amber-800 mb-1">💳 Subscription required — RM 10/month</p>
-          <p className="text-xs text-amber-700 mb-3">
-            Room listings require a monthly RM 10 subscription to stay active. Scan to pay and send your receipt via WhatsApp.
-          </p>
-          <div className="bg-white rounded-xl p-3 flex flex-col items-center gap-2 border border-amber-200">
-            <img
-              src="/tng-qr.jpeg" alt="TNG QR"
-              className="w-32 h-32 object-contain rounded-lg"
-              onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
-            />
-            <p className="text-xs font-semibold text-amber-800">Scan to Pay · RM 10/month</p>
-            <a href="https://wa.me/60166088141" target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">
-              Send receipt on WhatsApp →
-            </a>
+
+        <div className="w-full bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20 rounded-3xl p-6 mb-6">
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <CreditCard className="w-5 h-5 text-primary" />
+            <span className="font-bold text-primary">Subscription Required</span>
+          </div>
+          <p className="text-3xl font-bold text-foreground mb-1">RM 10<span className="text-base font-normal text-muted-foreground">/month</span></p>
+          <p className="text-xs text-muted-foreground mb-6">Keeps your room listing active and visible to tenants</p>
+          <Button
+            onClick={() => setRoomPayStep("qr")}
+            className="w-full h-13 rounded-2xl text-base font-bold gap-2 py-4"
+            size="lg"
+          >
+            <ScanLine className="w-5 h-5" /> Pay RM 10 Now
+          </Button>
+        </div>
+
+        <button
+          onClick={() => { setMainTab("rooms"); setRoomTab("find"); resetRoomSuccess(); }}
+          className="text-sm text-muted-foreground hover:text-foreground underline underline-offset-4 transition-colors"
+        >
+          Pay later — I'll do it another time
+        </button>
+      </div>
+    );
+
+    // ── Step: QR ───────────────────────────────────────────────
+    if (roomPayStep === "qr") return (
+      <div className="min-h-[80vh] flex flex-col items-center justify-center p-4 text-center max-w-sm mx-auto">
+        <button
+          onClick={() => setRoomPayStep("cta")}
+          className="self-start flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors"
+        >
+          <ChevronLeft className="w-4 h-4" /> Back
+        </button>
+
+        <div className="flex items-center gap-2 mb-1">
+          <ScanLine className="w-5 h-5 text-primary" />
+          <h2 className="text-2xl font-bold font-serif">Scan to Pay</h2>
+        </div>
+        <p className="text-muted-foreground text-sm mb-6">Open your TNG / banking app and scan this QR code</p>
+
+        <div className="w-full bg-white rounded-3xl border-2 border-primary/20 shadow-lg p-6 mb-6">
+          <img
+            src="/tng-qr.jpeg"
+            alt="TNG QR Code"
+            className="w-full max-w-xs mx-auto rounded-2xl object-contain"
+            onError={(e) => {
+              const el = e.currentTarget as HTMLImageElement;
+              el.style.display = "none";
+              (el.nextElementSibling as HTMLElement)?.classList.remove("hidden");
+            }}
+          />
+          <div className="hidden flex-col items-center justify-center h-56 bg-muted/30 rounded-2xl text-muted-foreground gap-2">
+            <ScanLine className="w-10 h-10 opacity-30" />
+            <p className="text-sm">QR image not found<br /><span className="text-xs">(add tng-qr.jpeg to /public)</span></p>
+          </div>
+          <div className="mt-4 pt-4 border-t border-border">
+            <p className="font-bold text-lg text-foreground">RM 10.00</p>
+            <p className="text-xs text-muted-foreground">Monthly subscription · Room listing</p>
           </div>
         </div>
-        <div className="flex flex-col sm:flex-row gap-3">
+
+        <Button
+          onClick={() => setRoomPayStep("upload")}
+          className="w-full h-13 rounded-2xl text-base font-bold gap-2 py-4"
+          size="lg"
+        >
+          <Upload className="w-5 h-5" /> I've Paid — Upload Receipt
+        </Button>
+      </div>
+    );
+
+    // ── Step: Upload receipt ───────────────────────────────────
+    if (roomPayStep === "upload") return (
+      <div className="min-h-[80vh] flex flex-col items-center justify-center p-4 text-center max-w-sm mx-auto">
+        <button
+          onClick={() => setRoomPayStep("qr")}
+          className="self-start flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors"
+        >
+          <ChevronLeft className="w-4 h-4" /> Back
+        </button>
+
+        <div className="flex items-center gap-2 mb-1">
+          <Upload className="w-5 h-5 text-primary" />
+          <h2 className="text-2xl font-bold font-serif">Upload Receipt</h2>
+        </div>
+        <p className="text-muted-foreground text-sm mb-6">Take a screenshot of your payment confirmation and upload it here</p>
+
+        <input
+          ref={receiptRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={handleReceiptChange}
+        />
+
+        <button
+          onClick={() => receiptRef.current?.click()}
+          className={`w-full rounded-3xl border-2 border-dashed transition-all mb-6 overflow-hidden ${receiptFile ? "border-primary/40 bg-primary/5" : "border-border hover:border-primary/40 hover:bg-muted/30"}`}
+        >
+          {receiptPreview ? (
+            <div className="relative">
+              <img src={receiptPreview} alt="Receipt preview" className="w-full max-h-72 object-contain p-2 rounded-3xl" />
+              <div className="absolute inset-0 bg-black/0 hover:bg-black/10 transition-all rounded-3xl flex items-center justify-center">
+                <span className="opacity-0 hover:opacity-100 text-white text-xs font-semibold bg-black/60 px-3 py-1.5 rounded-full transition-all">
+                  Change photo
+                </span>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center gap-3 py-14 px-6">
+              <div className="w-14 h-14 bg-muted rounded-2xl flex items-center justify-center">
+                <ImagePlus className="w-7 h-7 text-muted-foreground" />
+              </div>
+              <p className="font-semibold text-sm">Tap to upload your receipt</p>
+              <p className="text-xs text-muted-foreground">JPG, PNG, or screenshot · Max 10 MB</p>
+            </div>
+          )}
+        </button>
+
+        <Button
+          onClick={handleSubmitReceipt}
+          disabled={!receiptFile || receiptUploading}
+          className="w-full h-13 rounded-2xl text-base font-bold gap-2 py-4 disabled:opacity-50"
+          size="lg"
+        >
+          {receiptUploading
+            ? <><Loader2 className="w-5 h-5 animate-spin" /> Submitting…</>
+            : <><CheckCircle2 className="w-5 h-5" /> Submit Receipt</>}
+        </Button>
+      </div>
+    );
+
+    // ── Step: Done ─────────────────────────────────────────────
+    return (
+      <div className="min-h-[80vh] flex flex-col items-center justify-center p-4 text-center max-w-md mx-auto">
+        <div className="w-20 h-20 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mb-6">
+          <Clock className="w-10 h-10" />
+        </div>
+        <h1 className="text-3xl font-bold font-serif mb-2">Receipt Submitted!</h1>
+        <p className="text-muted-foreground mb-2">
+          Your payment receipt is under review. Once confirmed, your room listing will go <strong>live</strong> within 24 hours.
+        </p>
+        <p className="text-sm text-muted-foreground mb-8">You'll be notified via WhatsApp when your listing is approved.</p>
+
+        <div className="w-full bg-green-50 border border-green-200 rounded-2xl px-5 py-4 mb-8 flex items-start gap-3 text-left">
+          <CheckCircle2 className="w-5 h-5 text-green-600 mt-0.5 shrink-0" />
+          <div>
+            <p className="font-semibold text-sm text-green-800">What happens next?</p>
+            <p className="text-xs text-green-700 mt-0.5">Admin reviews your receipt → activates your listing → tenants can find your room.</p>
+          </div>
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-3 w-full">
           <Button
-            onClick={() => { setIsRoomSuccess(false); setRoomTab("find"); setMainTab("rooms"); roomForm.reset(); setRoomPhotos([]); setRoomPhotoPreviews([]); }}
-            variant="outline" className="rounded-full px-8 h-12 font-semibold"
+            onClick={() => { setMainTab("rooms"); setRoomTab("find"); resetRoomSuccess(); }}
+            variant="outline" className="rounded-full px-8 h-12 font-semibold flex-1"
           >
             Browse Rooms
           </Button>
           <Button
-            onClick={() => { setIsRoomSuccess(false); setRoomTab("list"); roomForm.reset(); setRoomPhotos([]); setRoomPhotoPreviews([]); }}
-            className="rounded-full px-8 h-12 font-semibold"
+            onClick={() => { setRoomTab("list"); resetRoomSuccess(); }}
+            className="rounded-full px-8 h-12 font-semibold flex-1"
           >
             List Another Room
           </Button>

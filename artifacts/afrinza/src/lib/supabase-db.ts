@@ -1057,6 +1057,13 @@ function mapRoomListing(r: Record<string, any>): RoomListing {
   };
 }
 
+export async function submitRoomPaymentReceipt(roomId: number, receiptUrl: string): Promise<void> {
+  const { error } = await supabase
+    .from("room_payments")
+    .insert({ room_id: roomId, receipt_url: receiptUrl, status: "pending" });
+  if (error) throw new Error(`[Supabase / submitRoomPaymentReceipt] ${error.message}`);
+}
+
 export async function getRoomListings(location?: string): Promise<RoomListing[]> {
   let query = supabase
     .from("room_listings")
