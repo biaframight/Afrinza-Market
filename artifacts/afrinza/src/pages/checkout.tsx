@@ -58,28 +58,6 @@ function buildSellerMessage(
   ].join("\n"));
 }
 
-function buildAdminMessage(
-  data: CheckoutFormValues,
-  items: { title: string; qty: number; price: string }[],
-  total: string,
-  sellerPhone: string
-) {
-  return encodeURIComponent([
-    `🛒 *New Order — Afrinza*`,
-    ``,
-    `*Buyer:* ${data.buyerName}`,
-    `*Phone:* ${data.buyerPhone}`,
-    `*Address:* ${data.buyerAddress}`,
-    `*Delivery:* ${data.deliveryMethod}`,
-    `*Payment:* ${data.paymentMethod}`,
-    `*Seller WhatsApp:* ${sellerPhone}`,
-    ``,
-    `*Items:*`,
-    ...items.map((it) => `• ${it.title} x${it.qty} — RM ${it.price}`),
-    ``,
-    `*Total: RM ${total}*`,
-  ].join("\n"));
-}
 
 export default function Checkout() {
   const [, setLocation] = useLocation();
@@ -138,6 +116,10 @@ export default function Checkout() {
           setOrderSnapshot({ sellerPhone, items, total, formData: data });
           setIsSuccess(true);
           window.scrollTo(0, 0);
+
+          // Auto-open seller WhatsApp for the buyer
+          const sellerMsg = buildSellerMessage(data, items, total);
+          setTimeout(() => { window.open(`https://wa.me/${sellerPhone}?text=${sellerMsg}`, "_blank"); }, 800);
         },
         onError: () => {
           toast.error("Failed to place order. Please try again.");
@@ -147,7 +129,9 @@ export default function Checkout() {
   };
 
   if (isSuccess && orderSnapshot) {
-    const { sellerPhone, items, total } = orderSnapshot;
+    const { sellerPhone, items, total, formData } = orderSnapshot;
+    const sellerMsg = buildSellerMessage(formData, items, total);
+    const sellerUrl = `https://wa.me/${sellerPhone}?text=${sellerMsg}`;
 
     return (
       <div className="container mx-auto px-4 py-20 max-w-2xl text-center">
@@ -156,32 +140,24 @@ export default function Checkout() {
         </div>
         <h1 className="text-4xl font-bold font-serif mb-4">Order Placed!</h1>
         <p className="text-lg text-muted-foreground mb-6">
-          Your order has been received. The seller will get in touch with you to confirm payment and delivery.
+          Your order is confirmed. A WhatsApp chat with the seller is opening — confirm your details and arrange payment directly with them.
         </p>
 
-        <div className="bg-muted/40 rounded-2xl border border-border p-5 mb-8 text-left space-y-3">
-          <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Order Summary</p>
-          {items.map((it, i) => (
-            <div key={i} className="flex justify-between text-sm">
-              <span className="text-foreground">{it.title} × {it.qty}</span>
-              <span className="font-medium">RM {it.price}</span>
-            </div>
-          ))}
-          <div className="border-t border-border pt-3 flex justify-between font-bold">
-            <span>Total</span>
-            <span className="text-primary">RM {total}</span>
-          </div>
-          {sellerPhone && (
-            <div className="border-t border-border pt-3 flex items-center gap-2 text-sm text-muted-foreground">
-              <span className="font-medium text-foreground">Seller contact:</span>
-              <span className="font-mono">{sellerPhone}</span>
-            </div>
-          )}
-        </div>
+        <a
+          href={sellerUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 bg-[#25D366] hover:bg-[#1ebe59] text-white font-bold px-8 py-4 rounded-full text-base shadow-lg mb-6 transition-all hover:scale-105"
+        >
+          <MessageCircle className="w-5 h-5" />
+          Chat with Seller on WhatsApp
+        </a>
 
-        <Button onClick={() => setLocation("/")} className="rounded-full px-8 h-12 font-semibold">
-          Continue Shopping
-        </Button>
+        <div>
+          <Button variant="ghost" onClick={() => setLocation("/")} className="rounded-full">
+            Continue Shopping
+          </Button>
+        </div>
       </div>
     );
   }
@@ -357,10 +333,11 @@ export default function Checkout() {
 
                 <Button
                   type="submit"
-                  className="w-full h-14 rounded-full text-base font-bold shadow-md hover:shadow-lg transition-all mb-3"
+                  className="w-full h-14 rounded-full text-base font-bold shadow-md hover:shadow-lg transition-all mb-3 bg-[#25D366] hover:bg-[#1ebe59] text-white flex items-center gap-2"
                   disabled={createOrder.isPending}
                 >
-                  {createOrder.isPending ? "Processing..." : "Place Order"}
+                  <MessageCircle className="w-5 h-5" />
+                  {createOrder.isPending ? "Processing..." : "Place Order via WhatsApp"}
                 </Button>
 
                 <p className="text-xs text-center text-muted-foreground">
