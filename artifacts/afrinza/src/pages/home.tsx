@@ -1,9 +1,9 @@
-import { useGetFeaturedProducts, useGetFeaturedSellers } from "@/hooks/use-marketplace";
+import { useGetFeaturedProducts, useGetFeaturedSellers, useGetServiceProviders, useGetRoomListings } from "@/hooks/use-marketplace";
 import { ProductCard } from "@/components/product-card";
 import { SellerCard } from "@/components/seller-card";
 import { HeroSlider } from "@/components/hero-slider";
 import { Button } from "@/components/ui/button";
-import { Search, MapPin, ArrowRight, UtensilsCrossed, Shirt, Sparkles, Store, Send, Users, CheckCircle, Globe } from "lucide-react";
+import { Search, MapPin, ArrowRight, UtensilsCrossed, Shirt, Sparkles, Store, Send, Users, CheckCircle, Globe, BadgeCheck, Wrench, BedDouble, MessageCircle, Home as HomeIcon } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -18,6 +18,11 @@ export default function Home() {
 
   const { data: featuredProducts, isLoading: isProductsLoading, isError: isProductsError } = useGetFeaturedProducts();
   const { data: featuredSellers, isLoading: isSellersLoading, isError: isSellersError } = useGetFeaturedSellers();
+  const { data: allProviders, isLoading: isProvidersLoading } = useGetServiceProviders();
+  const { data: allRooms, isLoading: isRoomsLoading } = useGetRoomListings();
+
+  const verifiedProviders = (allProviders ?? []).filter((p) => p.isVerified).slice(0, 6);
+  const featuredRooms = (allRooms ?? []).slice(0, 6);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -235,6 +240,206 @@ export default function Home() {
               ))}
             </div>
           )}
+        </div>
+      </section>
+
+      {/* ── Verified Service Providers ─────────────────────── */}
+      <section className="container mx-auto px-4 py-14">
+        <div className="flex items-end justify-between mb-8">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <BadgeCheck className="w-5 h-5 text-emerald-500" />
+              <span className="text-xs font-bold uppercase tracking-widest text-emerald-600">Verified</span>
+            </div>
+            <h2 className="text-3xl font-bold text-foreground font-serif">Trusted Service Providers</h2>
+            <p className="text-muted-foreground mt-1">Identity-verified professionals ready to help you</p>
+          </div>
+          <Link href="/services" className="hidden md:flex items-center text-primary font-medium hover:underline gap-1 text-sm">
+            View all <ArrowRight className="w-4 h-4" />
+          </Link>
+        </div>
+
+        {isProvidersLoading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-52 rounded-2xl" />)}
+          </div>
+        ) : verifiedProviders.length === 0 ? (
+          <div className="text-center py-12 text-muted-foreground">
+            <BadgeCheck className="w-10 h-10 mx-auto mb-3 opacity-30" />
+            <p className="text-lg font-medium">No verified providers yet</p>
+            <p className="text-sm mt-1">Providers appear here after identity verification.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {verifiedProviders.map((sp, i) => (
+              <motion.div
+                key={sp.id}
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.35, delay: i * 0.06 }}
+                className="bg-white rounded-2xl border border-border shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col"
+              >
+                {/* Photo strip */}
+                <div className="h-36 bg-muted relative overflow-hidden">
+                  {sp.photos[0] ? (
+                    <img src={sp.photos[0]} alt={sp.providerName} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-emerald-50 to-emerald-100">
+                      <Wrench className="w-10 h-10 text-emerald-300" />
+                    </div>
+                  )}
+                  <div className="absolute top-2 left-2 flex items-center gap-1 bg-emerald-500 text-white text-xs font-bold px-2 py-0.5 rounded-full shadow">
+                    <BadgeCheck className="w-3 h-3" /> Verified
+                  </div>
+                </div>
+
+                <div className="p-4 flex flex-col flex-1 gap-2">
+                  <div>
+                    <p className="font-bold text-foreground leading-tight">{sp.businessName || sp.providerName}</p>
+                    {sp.businessName && <p className="text-xs text-muted-foreground">{sp.providerName}</p>}
+                  </div>
+
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <MapPin className="w-3 h-3 flex-shrink-0" /> {sp.location}
+                  </div>
+
+                  <div className="flex flex-wrap gap-1">
+                    {sp.serviceTypes.slice(0, 3).map((t) => (
+                      <span key={t} className="text-[11px] bg-emerald-50 text-emerald-700 border border-emerald-100 px-2 py-0.5 rounded-full font-medium">{t}</span>
+                    ))}
+                    {sp.serviceTypes.length > 3 && (
+                      <span className="text-[11px] text-muted-foreground px-1">+{sp.serviceTypes.length - 3}</span>
+                    )}
+                  </div>
+
+                  {sp.description && (
+                    <p className="text-xs text-muted-foreground line-clamp-2 flex-1">{sp.description}</p>
+                  )}
+
+                  <a
+                    href={`https://wa.me/${sp.whatsapp.replace(/[^0-9]/g, "")}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-1 flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#1ebe5c] text-white text-sm font-semibold py-2 rounded-xl transition-colors"
+                  >
+                    <MessageCircle className="w-4 h-4" /> WhatsApp
+                  </a>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        )}
+
+        <div className="mt-6 text-center md:hidden">
+          <Button variant="outline" asChild className="rounded-full w-full">
+            <Link href="/services">View all services</Link>
+          </Button>
+        </div>
+      </section>
+
+      {/* ── Rooms to Rent ───────────────────────────────────── */}
+      <section className="bg-muted/30 border-y border-border/50 py-14">
+        <div className="container mx-auto px-4">
+          <div className="flex items-end justify-between mb-8">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <HomeIcon className="w-4 h-4 text-blue-500" />
+                <span className="text-xs font-bold uppercase tracking-widest text-blue-600">Rooms</span>
+              </div>
+              <h2 className="text-3xl font-bold text-foreground font-serif">Rooms to Rent</h2>
+              <p className="text-muted-foreground mt-1">Find affordable rooms listed by the community</p>
+            </div>
+            <Link href="/services?tab=rooms" className="hidden md:flex items-center text-primary font-medium hover:underline gap-1 text-sm">
+              View all <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+
+          {isRoomsLoading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-56 rounded-2xl" />)}
+            </div>
+          ) : featuredRooms.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <BedDouble className="w-10 h-10 mx-auto mb-3 opacity-30" />
+              <p className="text-lg font-medium">No rooms listed yet</p>
+              <p className="text-sm mt-1">Room listings will appear here once added.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {featuredRooms.map((room, i) => (
+                <motion.div
+                  key={room.id}
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.35, delay: i * 0.06 }}
+                  className="bg-white rounded-2xl border border-border shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col"
+                >
+                  {/* Photo */}
+                  <div className="h-40 bg-muted relative overflow-hidden">
+                    {room.images[0] ? (
+                      <img src={room.images[0]} alt={room.title} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100">
+                        <BedDouble className="w-10 h-10 text-blue-300" />
+                      </div>
+                    )}
+                    <div className="absolute top-2 left-2 bg-white/90 backdrop-blur-sm text-xs font-semibold px-2 py-0.5 rounded-full border border-border shadow-sm">
+                      {room.roomType}
+                    </div>
+                    {room.pricePerMonth != null && (
+                      <div className="absolute top-2 right-2 bg-primary text-white text-xs font-bold px-2 py-0.5 rounded-full shadow">
+                        RM {room.pricePerMonth}/mo
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="p-4 flex flex-col flex-1 gap-2">
+                    <p className="font-bold text-foreground leading-tight line-clamp-1">{room.title}</p>
+
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <MapPin className="w-3 h-3 flex-shrink-0" /> {room.location}
+                    </div>
+
+                    {room.amenities.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {room.amenities.slice(0, 3).map((a) => (
+                          <span key={a} className="text-[11px] bg-blue-50 text-blue-700 border border-blue-100 px-2 py-0.5 rounded-full font-medium">{a}</span>
+                        ))}
+                        {room.amenities.length > 3 && (
+                          <span className="text-[11px] text-muted-foreground px-1">+{room.amenities.length - 3}</span>
+                        )}
+                      </div>
+                    )}
+
+                    {room.description && (
+                      <p className="text-xs text-muted-foreground line-clamp-2 flex-1">{room.description}</p>
+                    )}
+
+                    {room.availableFrom && (
+                      <p className="text-xs text-muted-foreground">
+                        Available: <span className="font-medium text-foreground">{new Date(room.availableFrom).toLocaleDateString("en-MY", { day: "numeric", month: "short", year: "numeric" })}</span>
+                      </p>
+                    )}
+
+                    <a
+                      href={`https://wa.me/${room.whatsapp.replace(/[^0-9]/g, "")}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-1 flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#1ebe5c] text-white text-sm font-semibold py-2 rounded-xl transition-colors"
+                    >
+                      <MessageCircle className="w-4 h-4" /> WhatsApp
+                    </a>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
+
+          <div className="mt-6 text-center md:hidden">
+            <Button variant="outline" asChild className="rounded-full w-full">
+              <Link href="/services?tab=rooms">View all rooms</Link>
+            </Button>
+          </div>
         </div>
       </section>
 
