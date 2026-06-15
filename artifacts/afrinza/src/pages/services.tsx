@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -106,6 +107,7 @@ type RoomFormValues = z.infer<typeof roomSchema>;
 
 export default function Services() {
   const { user, isAuthenticated } = useAuthContext();
+  const [, setLocation] = useLocation();
 
   const [mainTab, setMainTab] = useState<"services" | "rooms">(() => {
     const params = new URLSearchParams(window.location.search);
@@ -360,8 +362,8 @@ export default function Services() {
           >
             Back to Directory
           </Button>
-          <Button asChild className="rounded-full px-8 h-12 font-semibold">
-            <a href="/dashboard">Go to Dashboard</a>
+          <Button className="rounded-full px-8 h-12 font-semibold" onClick={() => setLocation("/dashboard?tab=services")}>
+            Go to Dashboard
           </Button>
         </div>
       </div>
@@ -437,13 +439,13 @@ export default function Services() {
               onClick={() => { setMainTab("services"); setShowRegisterForm(false); }}
               className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold transition-all ${mainTab === "services" ? "bg-primary text-white shadow-sm" : "bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/80"}`}
             >
-              <Wrench className="w-3.5 h-3.5" /> Services
+              <Wrench className="w-3.5 h-3.5" /> Listed Services
             </button>
             <button
               onClick={() => setMainTab("rooms")}
               className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold transition-all ${mainTab === "rooms" ? "bg-primary text-white shadow-sm" : "bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/80"}`}
             >
-              <Home className="w-3.5 h-3.5" /> Rooms
+              <Home className="w-3.5 h-3.5" /> Rent a Room
             </button>
           </div>
         </div>
