@@ -19,7 +19,7 @@ import {
   useUpdateRoomListing,
   useDeleteRoomListing,
 } from "@/hooks/use-marketplace";
-import { uploadProductImage, uploadReceiptImage, uploadServiceProviderReceipt } from "@/lib/supabase-db";
+import { uploadProductImage, uploadReceiptImage, uploadServiceProviderReceipt, uploadServicePhoto } from "@/lib/supabase-db";
 import { updateUserProfile } from "@/lib/supabase-auth";
 import type { Product, RoomListing } from "@/lib/supabase-db";
 import { Button } from "@/components/ui/button";
@@ -132,8 +132,9 @@ export default function Dashboard() {
   // SP edit dialog
   const [spEditOpen, setSpEditOpen] = useState(false);
   const [spEditForm, setSpEditForm] = useState({
-    providerName: "", businessName: "", location: "", description: "", experience: "", serviceTypes: [] as string[], customServiceType: "",
+    providerName: "", businessName: "", location: "", description: "", experience: "", serviceTypes: [] as string[], customServiceType: "", photos: [] as string[],
   });
+  const [spPhotoUploading, setSpPhotoUploading] = useState(false);
 
   // Room edit / delete
   const [editingRoom, setEditingRoom] = useState<RoomListing | null>(null);
@@ -404,8 +405,22 @@ export default function Dashboard() {
       experience: myServiceProvider.data.experience ?? "",
       serviceTypes: myServiceProvider.data.serviceTypes,
       customServiceType: myServiceProvider.data.customServiceType ?? "",
+      photos: myServiceProvider.data.photos ?? [],
     });
     setSpEditOpen(true);
+  };
+
+  const handleSpPhotoAdd = async (file: File) => {
+    setSpPhotoUploading(true);
+    try {
+      const url = await uploadServicePhoto(file);
+      if (url) setSpEditForm((f) => ({ ...f, photos: [...f.photos, url] }));
+      else toast.error("Photo upload failed.");
+    } catch {
+      toast.error("Photo upload failed.");
+    } finally {
+      setSpPhotoUploading(false);
+    }
   };
 
   const handleSaveSpEdit = () => {
@@ -422,6 +437,7 @@ export default function Dashboard() {
           experience: spEditForm.experience,
           serviceTypes: spEditForm.serviceTypes,
           customServiceType: spEditForm.customServiceType || null,
+          photos: spEditForm.photos,
         },
       },
       {
@@ -1692,6 +1708,48 @@ export default function Dashboard() {
                 <Input value={spEditForm.customServiceType} onChange={(e) => setSpEditForm((f) => ({ ...f, customServiceType: e.target.value }))} className="h-11 bg-muted/30" placeholder="Describe your service" />
               </div>
             )}
+
+            {/* ── PHOTOS ─────────────────────────────────────────── */}
+            <div>
+              <label className="text-sm font-semibold block mb-2">Photos <span className="font-normal text-muted-foreground">(up to 6)</span></label>
+              <div className="grid grid-cols-3 gap-2">
+                {spEditForm.photos.map((url, idx) => (
+                  <div key={idx} className="relative aspect-square rounded-xl overflow-hidden border border-border bg-muted">
+                    <img src={url} alt={`photo ${idx + 1}`} className="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => setSpEditForm((f) => ({ ...f, photos: f.photos.filter((_, i) => i !== idx) }))}
+                      className="absolute top-1 right-1 w-6 h-6 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center transition-colors"
+                    >
+                      <X className="w-3.5 h-3.5 text-white" />
+                    </button>
+                  </div>
+                ))}
+                {spEditForm.photos.length < 6 && (
+                  <label className={`aspect-square rounded-xl border-2 border-dashed border-border bg-muted/40 flex flex-col items-center justify-center gap-1 transition-colors ${spPhotoUploading ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:bg-muted/70"}`}>
+                    {spPhotoUploading ? (
+                      <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+                    ) : (
+                      <>
+                        <ImagePlus className="w-5 h-5 text-muted-foreground" />
+                        <span className="text-xs text-muted-foreground">Add photo</span>
+                      </>
+                    )}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      disabled={spPhotoUploading}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleSpPhotoAdd(file);
+                        e.target.value = "";
+                      }}
+                    />
+                  </label>
+                )}
+              </div>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" className="rounded-full" onClick={() => setSpEditOpen(false)}>Cancel</Button>

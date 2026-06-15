@@ -1251,6 +1251,7 @@ export async function updateServiceProvider(id: number, updates: {
   experience?: string;
   serviceTypes?: string[];
   customServiceType?: string | null;
+  photos?: string[];
 }): Promise<ServiceProvider> {
   const { data, error } = await supabase
     .from("service_providers")
@@ -1262,6 +1263,7 @@ export async function updateServiceProvider(id: number, updates: {
       experience: updates.experience,
       service_types: updates.serviceTypes,
       custom_service_type: updates.customServiceType ?? null,
+      ...(updates.photos !== undefined ? { photos: updates.photos } : {}),
     })
     .eq("id", id)
     .select()
