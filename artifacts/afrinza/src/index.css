@@ -204,9 +204,37 @@
 @layer base {
   * {
     @apply border-border;
+    box-sizing: border-box;
+  }
+
+  html {
+    /* smooth scroll only for in-page anchors; route changes use instant via JS */
+    scroll-behavior: smooth;
+    /* prevent elastic overscroll on iOS for a more native PWA feel */
+    overscroll-behavior-y: none;
   }
 
   body {
     @apply font-sans antialiased bg-background text-foreground;
+    overscroll-behavior-y: none;
+    /* prevent flash of highlight colour on tap (iOS Safari) */
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Eliminate the 300ms tap delay on all interactive elements */
+  a, button, input, select, textarea, [role="button"], label {
+    touch-action: manipulation;
+  }
+
+  /* Remove tap flash from buttons and links */
+  button, a {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+  }
+
+  /* Smooth image rendering */
+  img {
+    -webkit-user-drag: none;
+    user-select: none;
   }
 }

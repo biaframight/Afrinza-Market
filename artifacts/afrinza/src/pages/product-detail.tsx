@@ -158,9 +158,13 @@ export default function ProductDetail() {
                   <span className="font-medium text-sm ml-1">{parseFloat(String(product.rating)).toFixed(1)}</span>
                 </div>
                 <div className="w-1 h-1 rounded-full bg-border"></div>
-                <a href="#reviews" className="text-sm text-primary hover:underline">
+                <button
+                  type="button"
+                  onClick={() => document.getElementById("reviews")?.scrollIntoView({ behavior: "smooth" })}
+                  className="text-sm text-primary hover:underline"
+                >
                   {product.reviewCount} reviews
-                </a>
+                </button>
                 <div className="w-1 h-1 rounded-full bg-border"></div>
                 <span className="text-sm text-muted-foreground">
                   {product.stock ? `${product.stock} in stock` : "In stock"}
