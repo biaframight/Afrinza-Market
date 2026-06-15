@@ -61,6 +61,13 @@ export async function signInWithOAuth(provider: Provider) {
   });
 }
 
+/** Send a password-reset email to the given address */
+export async function resetPasswordForEmail(email: string) {
+  return supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${window.location.origin}/auth?reset=1`,
+  });
+}
+
 /** Sign the current user out */
 export async function signOut() {
   return supabase.auth.signOut();
