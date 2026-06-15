@@ -11,8 +11,12 @@ import {
   useGetCurrentSubscription,
   useCreateSubscriptionPayment,
   useGetRoomListingsByWhatsapp,
+  useGetServiceProviderByUser,
+  useGetServiceProviderSub,
+  useCreateServiceProviderSub,
+  useSubmitServiceProviderKyc,
 } from "@/hooks/use-marketplace";
-import { uploadProductImage, uploadReceiptImage } from "@/lib/supabase-db";
+import { uploadProductImage, uploadReceiptImage, uploadServiceProviderReceipt } from "@/lib/supabase-db";
 import { updateUserProfile } from "@/lib/supabase-auth";
 import type { Product } from "@/lib/supabase-db";
 import { Button } from "@/components/ui/button";
@@ -90,17 +94,33 @@ export default function Dashboard() {
   const currentSub = useGetCurrentSubscription(sellerProfile?.id, currentMonth);
   const createSubscription = useCreateSubscriptionPayment();
   const myRooms = useGetRoomListingsByWhatsapp(sellerProfile?.whatsapp);
+  const myServiceProvider = useGetServiceProviderByUser(user?.id);
+  const submitSpKyc = useSubmitServiceProviderKyc();
+  const currentSpSub = useGetServiceProviderSub(myServiceProvider.data?.id, currentMonth);
+  const createSpSub = useCreateServiceProviderSub();
 
   // KYC modal
   const [kycModalOpen, setKycModalOpen] = useState(false);
   const [kycWhatsapp, setKycWhatsapp] = useState("");
 
-  // Subscribe modal
+  // Subscribe modal (seller)
   const [subscribeOpen, setSubscribeOpen] = useState(false);
   const [subscribeStep, setSubscribeStep] = useState<"qr" | "upload">("qr");
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [receiptPreview, setReceiptPreview] = useState<string>("");
   const [subUploading, setSubUploading] = useState(false);
+
+  // SP subscription modal
+  const [spSubOpen, setSpSubOpen] = useState(false);
+  const [spSubStep, setSpSubStep] = useState<"qr" | "upload">("qr");
+  const [spReceiptFile, setSpReceiptFile] = useState<File | null>(null);
+  const [spReceiptPreview, setSpReceiptPreview] = useState<string>("");
+  const [spSubUploading, setSpSubUploading] = useState(false);
+  const spReceiptRef = useRef<HTMLInputElement>(null);
+
+  // SP KYC modal
+  const [spKycOpen, setSpKycOpen] = useState(false);
+  const [spKycWhatsapp, setSpKycWhatsapp] = useState("");
 
   // Redirect if not authed
   useEffect(() => {
@@ -171,6 +191,48 @@ export default function Dashboard() {
       toast.error("Upload failed. Please try again.");
     } finally {
       setSubUploading(false);
+    }
+  };
+
+  const handleSpKycSubmit = () => {
+    if (!spKycWhatsapp.trim() || !myServiceProvider.data) return;
+    if (!isValidPhone(spKycWhatsapp)) {
+      toast.error("Enter a valid phone number, e.g. +60123456789 or 0123456789");
+      return;
+    }
+    submitSpKyc.mutate(
+      { providerId: myServiceProvider.data.id, whatsapp: spKycWhatsapp },
+      {
+        onSuccess: () => {
+          toast.success("Verification request submitted! Our team will contact you on WhatsApp.");
+          setSpKycOpen(false);
+          setSpKycWhatsapp("");
+          myServiceProvider.refetch();
+        },
+        onError: () => toast.error("Failed to submit. Please try again."),
+      }
+    );
+  };
+
+  const handleSpReceiptSubmit = async () => {
+    if (!spReceiptFile || !myServiceProvider.data) return;
+    setSpSubUploading(true);
+    try {
+      const url = await uploadServiceProviderReceipt(spReceiptFile);
+      await createSpSub.mutateAsync({
+        providerId: myServiceProvider.data.id,
+        month: currentMonth,
+        receiptUrl: url,
+      });
+      setSpSubOpen(false);
+      setSpSubStep("qr");
+      setSpReceiptFile(null);
+      setSpReceiptPreview("");
+      toast.success("Payment submitted! We'll confirm within 24 hours.");
+    } catch {
+      toast.error("Upload failed. Please try again.");
+    } finally {
+      setSpSubUploading(false);
     }
   };
 
@@ -376,11 +438,13 @@ export default function Dashboard() {
   ];
 
   const buyerTabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
+    { id: "services", label: "Services", icon: <Wrench className="w-4 h-4" /> },
+    { id: "rooms", label: "Rooms", icon: <KeyRound className="w-4 h-4" /> },
     { id: "profile", label: "My Profile", icon: <User className="w-4 h-4" /> },
   ];
 
   const tabs = isSeller ? sellerTabs : buyerTabs;
-  const currentTab = isSeller ? activeTab : "profile";
+  const currentTab = tabs.some((t) => t.id === activeTab) ? activeTab : tabs[0].id;
 
   const checkboxGroup = (
     options: string[],
@@ -868,76 +932,125 @@ export default function Dashboard() {
               <h2 className="text-xl font-bold flex items-center gap-2">
                 <Wrench className="w-5 h-5 text-primary" /> My Services
               </h2>
-              <Button
-                onClick={() => { setAddForm((f) => ({ ...f, category: "Services" })); setActiveTab("add-product"); }}
-                className="rounded-full gap-2"
-                size="sm"
-              >
-                <Plus className="w-4 h-4" /> Add Service
-              </Button>
             </div>
 
-            <div className="bg-primary/5 border border-primary/20 rounded-2xl p-5 mb-6 flex items-start gap-4">
-              <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center shrink-0">
-                <Wrench className="w-5 h-5 text-primary" />
-              </div>
-              <div className="flex-1">
-                <p className="font-semibold text-sm mb-1">Register as a Service Provider</p>
-                <p className="text-xs text-muted-foreground mb-3">
-                  Reach Africans across Malaysia — Afrinza Rider, hair braider, plumber, cargo transporter, and more.
-                </p>
-                <Button size="sm" variant="outline" className="rounded-full gap-1.5" onClick={() => setLocation("/services")}>
-                  <ExternalLink className="w-3.5 h-3.5" /> Go to Service Registration
-                </Button>
-              </div>
-            </div>
-
-            {productsLoading ? (
+            {myServiceProvider.isLoading ? (
               <div className="flex justify-center py-16"><Loader2 className="w-7 h-7 animate-spin text-primary" /></div>
-            ) : serviceProducts.length === 0 ? (
-              <div className="bg-white rounded-3xl border border-border shadow p-12 text-center">
-                <Wrench className="w-12 h-12 text-muted-foreground/40 mx-auto mb-4" />
-                <h3 className="font-semibold text-lg mb-2">No services listed yet</h3>
-                <p className="text-muted-foreground text-sm mb-6">
-                  List a service product — delivery, hair braiding, cooking, repairs, or any skill you offer.
-                </p>
-                <Button
-                  onClick={() => { setAddForm((f) => ({ ...f, category: "Services" })); setActiveTab("add-product"); }}
-                  className="rounded-full gap-2"
-                >
-                  <Plus className="w-4 h-4" /> Add Your First Service
-                </Button>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {serviceProducts.map((product) => (
-                  <div key={product.id} className="bg-white rounded-2xl border border-border shadow-sm overflow-hidden">
-                    <div className="aspect-square bg-white relative overflow-hidden border-b border-border/40">
-                      {product.imageUrl ? (
-                        <img src={product.imageUrl} alt={product.title} className="w-full h-full object-contain p-2" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-muted-foreground/30">
-                          <Wrench className="w-10 h-10" />
-                        </div>
+            ) : myServiceProvider.data ? (
+              /* ── Has SP profile ─── */
+              <div className="space-y-5 max-w-2xl">
+                {/* Profile card */}
+                <div className="bg-white rounded-3xl border border-border shadow p-6">
+                  <div className="flex items-start gap-4 mb-5">
+                    {myServiceProvider.data.photos.length > 0 ? (
+                      <img src={myServiceProvider.data.photos[0]} alt="" className="w-16 h-16 rounded-2xl object-cover shrink-0" />
+                    ) : (
+                      <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0">
+                        <Wrench className="w-8 h-8 text-primary" />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <h3 className="font-bold text-lg">{myServiceProvider.data.providerName}</h3>
+                        {myServiceProvider.data.isVerified && <BadgeCheck className="w-5 h-5 text-blue-500" />}
+                      </div>
+                      {myServiceProvider.data.businessName && (
+                        <p className="text-sm text-muted-foreground">{myServiceProvider.data.businessName}</p>
                       )}
-                      <span className="absolute top-2 right-2 bg-black/60 text-white text-xs font-bold px-2 py-1 rounded-full">
-                        RM {parseFloat(product.price).toFixed(2)}
-                      </span>
-                    </div>
-                    <div className="p-4">
-                      <h3 className="font-semibold text-sm leading-tight line-clamp-2 mb-1">{product.title}</h3>
-                      <p className="text-xs text-muted-foreground">Service · Stock: {product.stock}</p>
-                      <div className="flex gap-2 mt-4">
-                        <Button variant="outline" size="sm" className="flex-1 rounded-full gap-1.5" onClick={() => openEditDialog(product)}>
-                          <Pencil className="w-3.5 h-3.5" /> Edit
-                        </Button>
-                        <Button variant="outline" size="sm" className="rounded-full text-destructive border-destructive/30 hover:bg-destructive/5" onClick={() => setDeletingId(product.id)}>
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </Button>
+                      <div className="flex items-center gap-1.5 text-sm text-muted-foreground mt-1">
+                        <MapPin className="w-3.5 h-3.5 shrink-0" /> {myServiceProvider.data.location}
                       </div>
                     </div>
                   </div>
-                ))}
+                  <div className="flex flex-wrap gap-1.5 mb-4">
+                    {myServiceProvider.data.serviceTypes.map((t) => (
+                      <span key={t} className="text-xs bg-primary/10 text-primary px-2.5 py-0.5 rounded-full font-medium">{t}</span>
+                    ))}
+                    {myServiceProvider.data.customServiceType && (
+                      <span className="text-xs bg-amber-100 text-amber-700 px-2.5 py-0.5 rounded-full font-medium">{myServiceProvider.data.customServiceType}</span>
+                    )}
+                  </div>
+                  {myServiceProvider.data.description && (
+                    <p className="text-sm text-muted-foreground line-clamp-3">{myServiceProvider.data.description}</p>
+                  )}
+                </div>
+
+                {/* Verification card */}
+                <div className="bg-white rounded-3xl border border-border shadow p-6">
+                  <div className="flex items-start gap-4">
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${myServiceProvider.data.isVerified ? "bg-blue-50" : myServiceProvider.data.kycStatus === "pending" ? "bg-amber-50" : "bg-muted"}`}>
+                      {myServiceProvider.data.isVerified ? (
+                        <BadgeCheck className="w-5 h-5 text-blue-500" />
+                      ) : myServiceProvider.data.kycStatus === "pending" ? (
+                        <Clock className="w-5 h-5 text-amber-500" />
+                      ) : (
+                        <Shield className="w-5 h-5 text-muted-foreground" />
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-semibold text-sm mb-0.5">Identity Verification</p>
+                      {myServiceProvider.data.isVerified ? (
+                        <p className="text-xs text-blue-600 font-medium">Verified ✓ — your profile shows a verified badge</p>
+                      ) : myServiceProvider.data.kycStatus === "pending" ? (
+                        <p className="text-xs text-amber-600">Under review — our team will contact you on WhatsApp within 24 hours.</p>
+                      ) : (
+                        <>
+                          <p className="text-xs text-muted-foreground mb-3">Get a verified badge on your profile by completing identity verification.</p>
+                          <Button size="sm" variant="outline" className="rounded-full gap-1.5" onClick={() => setSpKycOpen(true)}>
+                            <Shield className="w-3.5 h-3.5" /> Request Verification
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Subscription card */}
+                <div className="bg-white rounded-3xl border border-border shadow p-6">
+                  <div className="flex items-start gap-4">
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${currentSpSub.data?.status === "confirmed" ? "bg-green-50" : currentSpSub.data?.status === "pending" ? "bg-amber-50" : "bg-muted"}`}>
+                      <CreditCard className={`w-5 h-5 ${currentSpSub.data?.status === "confirmed" ? "text-green-500" : currentSpSub.data?.status === "pending" ? "text-amber-500" : "text-muted-foreground"}`} />
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-semibold text-sm mb-0.5">Monthly Subscription · {formatMonth(currentMonth)}</p>
+                      {currentSpSub.isLoading ? (
+                        <p className="text-xs text-muted-foreground">Checking status…</p>
+                      ) : currentSpSub.data?.status === "confirmed" ? (
+                        <p className="text-xs text-green-600 font-medium">Active — RM 10 paid and confirmed ✓</p>
+                      ) : currentSpSub.data?.status === "pending" ? (
+                        <p className="text-xs text-amber-600">Receipt submitted — awaiting admin confirmation.</p>
+                      ) : (
+                        <>
+                          <p className="text-xs text-muted-foreground mb-3">Pay RM 10/month to keep your listing active and visible to clients.</p>
+                          <Button size="sm" className="rounded-full gap-1.5" onClick={() => { setSpSubStep("qr"); setSpSubOpen(true); }}>
+                            <CreditCard className="w-3.5 h-3.5" /> Pay RM 10 Subscription
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" className="rounded-full gap-1.5" onClick={() => setLocation("/services")}>
+                    <ExternalLink className="w-3.5 h-3.5" /> View Public Profile
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              /* ── No SP profile ─── */
+              <div className="bg-white rounded-3xl border border-border shadow p-10 text-center max-w-md">
+                <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <Wrench className="w-8 h-8 text-primary" />
+                </div>
+                <h3 className="font-bold text-lg mb-2">Register as a Service Provider</h3>
+                <p className="text-sm text-muted-foreground mb-6">
+                  Reach Africans across Malaysia — list your skills as an Afrinza Rider, hair braider, plumber, caterer, and more.
+                </p>
+                <Button className="rounded-full gap-2 w-full" onClick={() => setLocation("/services")}>
+                  <Wrench className="w-4 h-4" /> Register on Services Page
+                </Button>
+                <p className="text-xs text-muted-foreground mt-3">RM 10/month subscription · Profile goes live instantly</p>
               </div>
             )}
           </div>
@@ -1244,6 +1357,85 @@ export default function Dashboard() {
               {editUploading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Uploading…</> : updateProduct.isPending ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Saving…</> : <><CheckCircle2 className="w-4 h-4 mr-2" />Save Changes</>}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── SP KYC MODAL ─────────────────────────────────────────── */}
+      <Dialog open={spKycOpen} onOpenChange={setSpKycOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><Shield className="w-4 h-4" /> Request Verification</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <p className="text-sm text-muted-foreground">
+              Our team will contact you on WhatsApp to verify your identity. Once verified, your profile will show a verified badge.
+            </p>
+            <div>
+              <label className="text-sm font-semibold block mb-1.5">Your WhatsApp Number</label>
+              <Input placeholder="+60123456789" value={spKycWhatsapp} onChange={(e) => setSpKycWhatsapp(e.target.value)} className="h-11 bg-muted/30" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" className="rounded-full" onClick={() => setSpKycOpen(false)}>Cancel</Button>
+            <Button className="rounded-full" onClick={handleSpKycSubmit} disabled={submitSpKyc.isPending}>
+              {submitSpKyc.isPending ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Submitting…</> : "Submit Request"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── SP SUBSCRIPTION MODAL ────────────────────────────────── */}
+      <Dialog open={spSubOpen} onOpenChange={(open) => { setSpSubOpen(open); if (!open) { setSpSubStep("qr"); setSpReceiptFile(null); setSpReceiptPreview(""); } }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><CreditCard className="w-4 h-4" /> Pay Monthly Subscription</DialogTitle>
+          </DialogHeader>
+          {spSubStep === "qr" ? (
+            <div className="space-y-4 py-2">
+              <p className="text-sm text-muted-foreground">Scan the QR code below using Touch 'n Go or DuitNow to pay RM 10 for <strong>{formatMonth(currentMonth)}</strong>.</p>
+              <div className="flex flex-col items-center gap-3 bg-muted/20 rounded-2xl p-4">
+                <img src="/tng-qr.jpeg" alt="TNG QR" className="w-40 h-40 object-contain rounded-xl" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+                <div className="text-center">
+                  <p className="font-bold text-sm">RM 10 / month</p>
+                  <p className="text-xs text-muted-foreground">Touch 'n Go · DuitNow</p>
+                </div>
+              </div>
+              <Button className="w-full rounded-full" onClick={() => setSpSubStep("upload")}>
+                <Upload className="w-4 h-4 mr-2" /> I've Paid — Upload Receipt
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-4 py-2">
+              <p className="text-sm text-muted-foreground">Upload a screenshot of your payment to confirm your subscription.</p>
+              <input ref={spReceiptRef} type="file" accept="image/*" className="hidden" onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (!f) return;
+                setSpReceiptFile(f);
+                const reader = new FileReader();
+                reader.onload = (ev) => setSpReceiptPreview(ev.target?.result as string);
+                reader.readAsDataURL(f);
+              }} />
+              {spReceiptPreview ? (
+                <div className="relative rounded-xl overflow-hidden border border-border h-36">
+                  <img src={spReceiptPreview} alt="" className="w-full h-full object-contain" />
+                  <button type="button" onClick={() => { setSpReceiptFile(null); setSpReceiptPreview(""); }} className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-1">
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ) : (
+                <button type="button" onClick={() => spReceiptRef.current?.click()} className="w-full border-2 border-dashed border-border rounded-xl p-6 flex flex-col items-center gap-2 text-muted-foreground hover:border-primary/40 hover:text-primary transition-all">
+                  <Upload className="w-6 h-6" />
+                  <p className="text-sm">Click to upload receipt screenshot</p>
+                </button>
+              )}
+              <DialogFooter className="gap-2 flex-row">
+                <Button variant="outline" className="rounded-full flex-1" onClick={() => setSpSubStep("qr")}>Back</Button>
+                <Button className="rounded-full flex-1" onClick={handleSpReceiptSubmit} disabled={!spReceiptFile || spSubUploading}>
+                  {spSubUploading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Uploading…</> : "Submit Receipt"}
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 

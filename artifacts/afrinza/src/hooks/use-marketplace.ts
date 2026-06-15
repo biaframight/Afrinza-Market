@@ -407,3 +407,51 @@ export function useCreateRoomListing() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["rooms"] }),
   });
 }
+
+// ─── Service Providers ──────────────────────────────────────────────
+
+export function useGetServiceProviders(location?: string) {
+  return useQuery({
+    queryKey: ["service-providers", location ?? "all"],
+    queryFn: () => db.getServiceProviders(location),
+  });
+}
+
+export function useGetServiceProviderByUser(userId?: string) {
+  return useQuery({
+    queryKey: ["service-provider", "by-user", userId ?? ""],
+    queryFn: () => db.getServiceProviderByUserId(userId!),
+    enabled: !!userId,
+  });
+}
+
+export function useCreateServiceProvider() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: db.createServiceProvider,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["service-providers"] }),
+  });
+}
+
+export function useSubmitServiceProviderKyc() {
+  return useMutation({
+    mutationFn: ({ providerId, whatsapp }: { providerId: number; whatsapp: string }) =>
+      db.submitServiceProviderKyc(providerId, whatsapp),
+  });
+}
+
+export function useGetServiceProviderSub(providerId?: number, month?: string) {
+  return useQuery({
+    queryKey: ["sp-sub", providerId ?? 0, month ?? ""],
+    queryFn: () => db.getServiceProviderSub(providerId!, month!),
+    enabled: !!providerId && !!month,
+  });
+}
+
+export function useCreateServiceProviderSub() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: db.createServiceProviderSub,
+    onSuccess: (_, vars) => qc.invalidateQueries({ queryKey: ["sp-sub", vars.providerId] }),
+  });
+}

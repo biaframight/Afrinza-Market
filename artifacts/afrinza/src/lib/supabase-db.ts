@@ -975,6 +975,7 @@ export interface RoomListing {
   roomType: string;
   amenities: string[];
   availableFrom: string | null;
+  images: string[];
   isActive: boolean;
   createdAt: string;
 }
@@ -991,6 +992,7 @@ function mapRoomListing(r: Record<string, any>): RoomListing {
     roomType: r.room_type,
     amenities: r.amenities ?? [],
     availableFrom: r.available_from ?? null,
+    images: r.images ?? [],
     isActive: r.is_active ?? true,
     createdAt: r.created_at,
   };
@@ -1022,6 +1024,7 @@ export async function createRoomListing(payload: {
   description: string;
   amenities: string[];
   availableFrom: string | null;
+  images?: string[];
 }): Promise<RoomListing> {
   const { data, error } = await supabase
     .from("room_listings")
@@ -1035,6 +1038,7 @@ export async function createRoomListing(payload: {
       description: payload.description,
       amenities: payload.amenities,
       available_from: payload.availableFrom,
+      images: payload.images ?? [],
     })
     .select()
     .single();
@@ -1050,4 +1054,184 @@ export async function getRoomListingsByWhatsapp(whatsapp: string): Promise<RoomL
     .order("created_at", { ascending: false });
   if (error) throw new Error(`[Supabase / getRoomListingsByWhatsapp] ${error.message}`);
   return (data ?? []).map(mapRoomListing);
+}
+
+// ─── Service Providers ─────────────────────────────────────────────
+
+export interface ServiceProvider {
+  id: number;
+  userId: string | null;
+  providerName: string;
+  businessName: string | null;
+  location: string;
+  whatsapp: string;
+  description: string | null;
+  experience: string | null;
+  serviceTypes: string[];
+  customServiceType: string | null;
+  photos: string[];
+  isVerified: boolean;
+  kycStatus: string;
+  kycWhatsapp: string | null;
+  isActive: boolean;
+  createdAt: string;
+}
+
+function mapServiceProvider(r: Record<string, any>): ServiceProvider {
+  return {
+    id: r.id,
+    userId: r.user_id ?? null,
+    providerName: r.provider_name,
+    businessName: r.business_name ?? null,
+    location: r.location,
+    whatsapp: r.whatsapp,
+    description: r.description ?? null,
+    experience: r.experience ?? null,
+    serviceTypes: r.service_types ?? [],
+    customServiceType: r.custom_service_type ?? null,
+    photos: r.photos ?? [],
+    isVerified: r.is_verified ?? false,
+    kycStatus: r.kyc_status ?? "none",
+    kycWhatsapp: r.kyc_whatsapp ?? null,
+    isActive: r.is_active ?? true,
+    createdAt: r.created_at,
+  };
+}
+
+export async function getServiceProviders(location?: string): Promise<ServiceProvider[]> {
+  let query = supabase
+    .from("service_providers")
+    .select("*")
+    .eq("is_active", true)
+    .order("created_at", { ascending: false });
+  if (location && location !== "all") {
+    query = query.eq("location", location);
+  }
+  const { data, error } = await query;
+  if (error) throw new Error(`[Supabase / getServiceProviders] ${error.message}`);
+  return (data ?? []).map(mapServiceProvider);
+}
+
+export async function getServiceProviderByUserId(userId: string): Promise<ServiceProvider | null> {
+  const { data, error } = await supabase
+    .from("service_providers")
+    .select("*")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (error) throw new Error(`[Supabase / getServiceProviderByUserId] ${error.message}`);
+  return data ? mapServiceProvider(data) : null;
+}
+
+export async function createServiceProvider(payload: {
+  userId: string | null;
+  providerName: string;
+  businessName: string;
+  location: string;
+  whatsapp: string;
+  description: string;
+  experience: string;
+  serviceTypes: string[];
+  customServiceType: string | null;
+  photos: string[];
+}): Promise<ServiceProvider> {
+  const { data, error } = await supabase
+    .from("service_providers")
+    .insert({
+      user_id: payload.userId,
+      provider_name: payload.providerName,
+      business_name: payload.businessName,
+      location: payload.location,
+      whatsapp: payload.whatsapp,
+      description: payload.description,
+      experience: payload.experience,
+      service_types: payload.serviceTypes,
+      custom_service_type: payload.customServiceType,
+      photos: payload.photos,
+    })
+    .select()
+    .single();
+  if (error) throw new Error(`[Supabase / createServiceProvider] ${error.message}`);
+  return mapServiceProvider(data);
+}
+
+export async function submitServiceProviderKyc(providerId: number, whatsapp: string): Promise<void> {
+  const { error } = await supabase
+    .from("service_providers")
+    .update({ kyc_status: "pending", kyc_whatsapp: whatsapp })
+    .eq("id", providerId);
+  if (error) throw new Error(`[Supabase / submitServiceProviderKyc] ${error.message}`);
+}
+
+export async function uploadServicePhoto(file: File): Promise<string | null> {
+  const ext = file.name.split(".").pop() ?? "jpg";
+  const path = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+  const { error } = await supabase.storage.from("service-photos").upload(path, file);
+  if (error) { console.error("Service photo upload error:", error.message); return null; }
+  return supabase.storage.from("service-photos").getPublicUrl(path).data.publicUrl;
+}
+
+export async function uploadRoomPhoto(file: File): Promise<string | null> {
+  const ext = file.name.split(".").pop() ?? "jpg";
+  const path = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+  const { error } = await supabase.storage.from("room-photos").upload(path, file);
+  if (error) { console.error("Room photo upload error:", error.message); return null; }
+  return supabase.storage.from("room-photos").getPublicUrl(path).data.publicUrl;
+}
+
+// ─── Service Provider Subscriptions ────────────────────────────────
+
+export interface ServiceProviderSub {
+  id: number;
+  providerId: number;
+  month: string;
+  receiptUrl: string;
+  status: string;
+  createdAt: string;
+}
+
+function mapServiceProviderSub(r: Record<string, any>): ServiceProviderSub {
+  return {
+    id: r.id,
+    providerId: r.provider_id,
+    month: r.month,
+    receiptUrl: r.receipt_url,
+    status: r.status,
+    createdAt: r.created_at,
+  };
+}
+
+export async function getServiceProviderSub(providerId: number, month: string): Promise<ServiceProviderSub | null> {
+  const { data, error } = await supabase
+    .from("service_provider_subscriptions")
+    .select("*")
+    .eq("provider_id", providerId)
+    .eq("month", month)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw new Error(`[Supabase / getServiceProviderSub] ${error.message}`);
+  return data ? mapServiceProviderSub(data) : null;
+}
+
+export async function createServiceProviderSub(payload: {
+  providerId: number;
+  month: string;
+  receiptUrl: string;
+}): Promise<void> {
+  const { error } = await supabase
+    .from("service_provider_subscriptions")
+    .insert({
+      provider_id: payload.providerId,
+      month: payload.month,
+      receipt_url: payload.receiptUrl,
+    });
+  if (error) throw new Error(`[Supabase / createServiceProviderSub] ${error.message}`);
+}
+
+export async function uploadServiceProviderReceipt(file: File): Promise<string> {
+  const ext = file.name.split(".").pop() ?? "jpg";
+  const path = `receipts/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+  const { error } = await supabase.storage.from("service-photos").upload(path, file);
+  if (error) throw new Error(`Receipt upload failed: ${error.message}`);
+  return supabase.storage.from("service-photos").getPublicUrl(path).data.publicUrl;
 }
