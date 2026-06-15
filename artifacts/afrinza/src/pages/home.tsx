@@ -361,9 +361,9 @@ export default function Home() {
                 className="flex-shrink-0 w-72 snap-start bg-white rounded-2xl border border-border shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col"
               >
                 {/* Photo strip — no overlay badge */}
-                <div className="h-36 bg-muted relative overflow-hidden">
+                <div className="h-36 bg-white relative overflow-hidden flex items-center justify-center border-b border-border/40">
                   {sp.photos[0] ? (
-                    <img src={sp.photos[0]} alt={sp.providerName} className="w-full h-full object-cover" />
+                    <img src={sp.photos[0]} alt={sp.providerName} className="w-full h-full object-contain" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100">
                       <Wrench className="w-10 h-10 text-blue-300" />
