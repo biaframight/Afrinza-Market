@@ -29,6 +29,7 @@ import {
   BadgeCheck, Lock, Phone, Clock, XCircle, CreditCard, Upload,
   Wrench, KeyRound, MapPin, ExternalLink,
 } from "lucide-react";
+import { VerifiedBadge } from "@/components/verified-badge";
 import { toast } from "sonner";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
@@ -601,7 +602,7 @@ export default function Dashboard() {
               <div className="bg-white rounded-3xl border border-border shadow p-6 md:p-8">
                 <div className="flex items-start gap-4">
                   <div className="w-11 h-11 rounded-2xl bg-blue-50 flex items-center justify-center shrink-0">
-                    <BadgeCheck className="w-5 h-5 text-blue-500" />
+                    <VerifiedBadge size="md" />
                   </div>
                   <div className="flex-1">
                     <h3 className="font-bold text-lg mb-1">Get Verified</h3>
@@ -637,11 +638,11 @@ export default function Dashboard() {
               <div className="bg-blue-50 border border-blue-200 rounded-3xl p-6 md:p-8">
                 <div className="flex items-start gap-4">
                   <div className="w-11 h-11 rounded-2xl bg-blue-100 flex items-center justify-center shrink-0">
-                    <BadgeCheck className="w-5 h-5 text-blue-600" />
+                    <VerifiedBadge size="md" />
                   </div>
                   <div>
                     <h3 className="font-bold text-lg text-blue-900 mb-1 flex items-center gap-2">
-                      Store Verified <BadgeCheck className="w-5 h-5 text-blue-500" />
+                      Store Verified <VerifiedBadge size="md" />
                     </h3>
                     <p className="text-sm text-blue-800 mb-2">
                       Your store has a verified badge visible to all buyers on the marketplace.
@@ -952,7 +953,7 @@ export default function Dashboard() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-0.5">
                         <h3 className="font-bold text-lg">{myServiceProvider.data.providerName}</h3>
-                        {myServiceProvider.data.isVerified && <BadgeCheck className="w-5 h-5 text-blue-500" />}
+                        {myServiceProvider.data.isVerified && <VerifiedBadge size="md" />}
                       </div>
                       {myServiceProvider.data.businessName && (
                         <p className="text-sm text-muted-foreground">{myServiceProvider.data.businessName}</p>
@@ -980,7 +981,7 @@ export default function Dashboard() {
                   <div className="flex items-start gap-4">
                     <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${myServiceProvider.data.isVerified ? "bg-blue-50" : myServiceProvider.data.kycStatus === "pending" ? "bg-amber-50" : "bg-muted"}`}>
                       {myServiceProvider.data.isVerified ? (
-                        <BadgeCheck className="w-5 h-5 text-blue-500" />
+                        <VerifiedBadge size="md" />
                       ) : myServiceProvider.data.kycStatus === "pending" ? (
                         <Clock className="w-5 h-5 text-amber-500" />
                       ) : (

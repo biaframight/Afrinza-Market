@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
-import { Search, ShoppingCart, MessageCircle, Star, Store, Wrench, Truck, CheckCircle } from "lucide-react";
+import { Search, ShoppingCart, MessageCircle, Star, Store, Wrench, Truck, CheckCircle, ChevronLeft } from "lucide-react";
 
 const BUYER_STEPS = [
   { icon: <Search className="w-7 h-7 text-white" />, color: "bg-primary", step: "01", title: "Browse & Discover", desc: "Search for African food, fashion, beauty products, or services near your city in Malaysia." },
@@ -46,8 +46,18 @@ function StepGrid({ steps }: { steps: typeof BUYER_STEPS }) {
 export default function HowItWorks() {
   return (
     <div className="min-h-screen pb-20">
+      {/* Back */}
+      <div className="container mx-auto px-4 pt-5">
+        <button
+          onClick={() => window.history.back()}
+          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors group"
+        >
+          <ChevronLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+          Back
+        </button>
+      </div>
       {/* Hero */}
-      <section className="bg-gradient-to-b from-primary/10 to-background pt-12 pb-10 md:pt-16 md:pb-12 px-4 text-center">
+      <section className="bg-gradient-to-b from-primary/10 to-background pt-8 pb-10 md:pt-12 md:pb-12 px-4 text-center">
         <div className="container mx-auto max-w-3xl">
           <span className="inline-block py-1.5 px-4 rounded-full bg-primary/10 text-primary font-medium text-sm mb-4 border border-primary/20">
             Simple & Transparent

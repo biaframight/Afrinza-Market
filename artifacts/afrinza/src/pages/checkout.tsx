@@ -107,6 +107,8 @@ export default function Checkout() {
     },
   });
 
+  const handleBack = () => window.history.back();
+
   const onSubmit = (data: CheckoutFormValues) => {
     createOrder.mutate(
       {

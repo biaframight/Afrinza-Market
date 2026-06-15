@@ -4,7 +4,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { MapPin, MessageCircle, ShoppingCart, Truck, CreditCard, ShieldCheck, User } from "lucide-react";
+import { MapPin, MessageCircle, ShoppingCart, Truck, CreditCard, ShieldCheck, User, ChevronLeft } from "lucide-react";
 import { StarRating } from "@/components/star-rating";
 import { useState } from "react";
 import { getSessionId } from "@/lib/session";
@@ -88,7 +88,16 @@ export default function ProductDetail() {
 
   return (
     <div className="bg-muted/10 min-h-screen pb-20">
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 pt-6 pb-2">
+        <button
+          onClick={() => window.history.back()}
+          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors group"
+        >
+          <ChevronLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+          Back
+        </button>
+      </div>
+      <div className="container mx-auto px-4 py-4">
         <div className="bg-white rounded-3xl shadow-sm border border-border overflow-hidden">
           <div className="flex flex-col lg:flex-row">
 

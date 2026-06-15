@@ -7,7 +7,7 @@ import {
 } from "@/hooks/use-marketplace";
 import { getSessionId } from "@/lib/session";
 import { Button } from "@/components/ui/button";
-import { Trash2, ShoppingCart, ArrowRight } from "lucide-react";
+import { Trash2, ShoppingCart, ArrowRight, ChevronLeft } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
@@ -68,6 +68,13 @@ export default function Cart() {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-5xl">
+      <button
+        onClick={() => window.history.back()}
+        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors group mb-4"
+      >
+        <ChevronLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+        Continue Shopping
+      </button>
       <h1 className="text-3xl md:text-4xl font-bold font-serif text-foreground mb-8">Your Cart</h1>
 
       {!hasItems ? (

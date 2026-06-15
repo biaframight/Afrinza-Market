@@ -4,10 +4,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ProductCard } from "@/components/product-card";
-import { MapPin, MessageCircle, Crown, Store, Calendar, Package, BadgeCheck } from "lucide-react";
+import { MapPin, MessageCircle, Crown, Store, Calendar, Package, ChevronLeft } from "lucide-react";
 import { StarRating } from "@/components/star-rating";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { format } from "date-fns";
+import { VerifiedBadge } from "@/components/verified-badge";
 
 export default function SellerDetail() {
   const params = useParams();
@@ -57,6 +58,13 @@ export default function SellerDetail() {
   return (
     <div className="min-h-screen bg-muted/10 pb-20">
       <div className="w-full h-48 md:h-72 bg-gradient-to-r from-primary to-secondary relative">
+        <button
+          onClick={() => window.history.back()}
+          className="absolute top-4 left-4 z-20 inline-flex items-center gap-1.5 text-sm font-medium text-white/90 hover:text-white bg-black/25 hover:bg-black/40 backdrop-blur-sm rounded-full px-3 py-1.5 transition-all group"
+        >
+          <ChevronLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+          Back
+        </button>
         {seller.bannerUrl && (
           <img
             src={seller.bannerUrl}
@@ -89,8 +97,8 @@ export default function SellerDetail() {
                       </Badge>
                     )}
                     {seller.isVerified && (
-                      <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-200 border-transparent gap-1 font-semibold">
-                        <BadgeCheck className="w-3.5 h-3.5" /> Verified
+                      <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-200 border-transparent gap-1.5 font-semibold">
+                        <VerifiedBadge size="sm" /> Verified
                       </Badge>
                     )}
                   </div>

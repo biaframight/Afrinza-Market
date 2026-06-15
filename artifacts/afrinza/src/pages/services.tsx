@@ -9,8 +9,9 @@ import {
   CheckCircle2, Wrench, Truck, Scissors, Package, Zap, Droplets,
   Star, ArrowRight, Mail, Lock, Loader2, Bike,
   Home, Search, MapPin, Calendar, Phone, Wifi, Wind, Car, Utensils,
-  ImagePlus, X, BadgeCheck, ChevronLeft,
+  ImagePlus, X, ChevronLeft,
 } from "lucide-react";
+import { VerifiedBadge } from "@/components/verified-badge";
 import { toast } from "sonner";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -798,9 +799,7 @@ export default function Services() {
                         <div className="p-5 flex flex-col flex-1">
                           <div className="flex items-start gap-2 mb-1">
                             <h3 className="font-bold text-foreground leading-tight flex-1">{provider.providerName}</h3>
-                            {provider.isVerified && (
-                              <BadgeCheck className="w-5 h-5 text-blue-500 shrink-0" />
-                            )}
+                            {provider.isVerified && <VerifiedBadge size="md" />}
                           </div>
                           {provider.businessName && (
                             <p className="text-xs text-muted-foreground mb-2">{provider.businessName}</p>

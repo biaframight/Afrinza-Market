@@ -245,7 +245,16 @@ export default function BecomeSeller() {
 
   return (
     <div className="bg-muted/10 min-h-screen pb-20">
-      <div className="bg-primary pt-16 pb-32 relative overflow-hidden text-white">
+      <div className="container mx-auto px-4 pt-5">
+        <button
+          onClick={() => window.history.back()}
+          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors group"
+        >
+          <ChevronLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+          Back
+        </button>
+      </div>
+      <div className="bg-primary pt-12 pb-32 relative overflow-hidden text-white">
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-20 mix-blend-overlay" />
         <div className="container mx-auto px-4 relative z-10 text-center max-w-3xl">
           <span className="inline-block py-1.5 px-4 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 font-medium text-sm mb-6">

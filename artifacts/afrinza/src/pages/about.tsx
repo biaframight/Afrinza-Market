@@ -1,7 +1,7 @@
 import { AfrinzaLogo } from "@/components/afrinza-logo";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
-import { Heart, Globe, Users, ShieldCheck, Send, MapPin, TrendingUp, Rocket } from "lucide-react";
+import { Heart, Globe, Users, ShieldCheck, Send, MapPin, TrendingUp, Rocket, ChevronLeft } from "lucide-react";
 
 const TELEGRAM_URL = "https://t.me/+zN9_dGgYrPg2OTVl";
 
@@ -51,8 +51,19 @@ export default function About() {
   return (
     <div className="min-h-screen pb-20">
 
+      {/* ── Back button ───────────────────────────────────────── */}
+      <div className="container mx-auto px-4 pt-5">
+        <button
+          onClick={() => window.history.back()}
+          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors group"
+        >
+          <ChevronLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+          Back
+        </button>
+      </div>
+
       {/* ── Hero ─────────────────────────────────────────────── */}
-      <section className="bg-gradient-to-br from-[#0f3460] via-[#1a1a2e] to-[#16213e] pt-20 pb-24 px-4 relative overflow-hidden">
+      <section className="bg-gradient-to-br from-[#0f3460] via-[#1a1a2e] to-[#16213e] pt-16 pb-24 px-4 relative overflow-hidden">
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-20 mix-blend-overlay" />
         <div className="absolute -top-40 -right-40 w-[500px] h-[500px] bg-amber-500/10 rounded-full blur-[120px]" />
         <div className="absolute -bottom-40 -left-40 w-[500px] h-[500px] bg-primary/20 rounded-full blur-[120px]" />
