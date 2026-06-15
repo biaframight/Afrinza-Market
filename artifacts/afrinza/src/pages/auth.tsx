@@ -32,8 +32,19 @@ const signInSchema = z.object({
 });
 
 const signUpSchema = z.object({
-  fullName: z.string().min(2, "Full name is required"),
-  email: z.string().email("Enter a valid email"),
+  fullName: z
+    .string()
+    .min(2, "Full name must be at least 2 characters")
+    .max(80, "Name is too long")
+    .regex(
+      /^[a-zA-ZÀ-ÖØ-öø-ÿ'\- ]+$/,
+      "Name can only contain letters, spaces, hyphens, and apostrophes — no numbers or symbols"
+    )
+    .refine((v) => v.trim().split(/\s+/).length >= 1, "Please enter your full name"),
+  email: z
+    .string()
+    .min(1, "Email is required")
+    .email("That doesn't look like a valid email address — check for typos"),
   password: z.string().min(6, "Password must be at least 6 characters"),
   role: z.enum(["buyer", "seller"]),
 });
@@ -351,7 +362,7 @@ export default function AuthPage() {
               <p className="text-muted-foreground text-sm mb-8">Sign in to manage your store or orders.</p>
 
               <Form {...signInForm}>
-                <form onSubmit={signInForm.handleSubmit(onSignIn)} className="space-y-5">
+                <form onSubmit={signInForm.handleSubmit(onSignIn, () => toast.error("Please enter a valid email and password."))} className="space-y-5">
                   <FormField control={signInForm.control} name="email" render={({ field }) => (
                     <FormItem>
                       <FormLabel className="font-semibold flex items-center gap-2">
@@ -429,7 +440,12 @@ export default function AuthPage() {
               </div>
 
               <Form {...signUpForm}>
-                <form onSubmit={signUpForm.handleSubmit(onSignUp)} className="space-y-5">
+                <form onSubmit={signUpForm.handleSubmit(onSignUp, (errors) => {
+                    if (errors.fullName) toast.error("Name: " + errors.fullName.message);
+                    else if (errors.email) toast.error("Email: " + errors.email.message);
+                    else if (errors.password) toast.error("Password: " + errors.password.message);
+                    else toast.error("Please fix the errors highlighted below.");
+                  })} className="space-y-5">
                   <FormField control={signUpForm.control} name="fullName" render={({ field }) => (
                     <FormItem>
                       <FormLabel className="font-semibold flex items-center gap-2">
