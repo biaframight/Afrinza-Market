@@ -1086,22 +1086,25 @@ export async function createRoomListing(payload: {
   availableFrom: string | null;
   images?: string[];
 }): Promise<RoomListing> {
+  const insertData: Record<string, unknown> = {
+    lister_name: payload.listerName,
+    whatsapp: payload.whatsapp,
+    location: payload.location,
+    title: payload.title,
+    room_type: payload.roomType,
+    price_per_month: payload.pricePerMonth,
+    description: payload.description,
+    amenities: payload.amenities,
+    available_from: payload.availableFrom,
+    images: payload.images ?? [],
+    is_active: false,
+  };
+  // Only include user_id once migration 012_rooms_admin.sql has been run
+  if (payload.userId) insertData.user_id = payload.userId;
+
   const { data, error } = await supabase
     .from("room_listings")
-    .insert({
-      user_id: payload.userId ?? null,
-      lister_name: payload.listerName,
-      whatsapp: payload.whatsapp,
-      location: payload.location,
-      title: payload.title,
-      room_type: payload.roomType,
-      price_per_month: payload.pricePerMonth,
-      description: payload.description,
-      amenities: payload.amenities,
-      available_from: payload.availableFrom,
-      images: payload.images ?? [],
-      is_active: false,
-    })
+    .insert(insertData)
     .select()
     .single();
   if (error) throw new Error(`[Supabase / createRoomListing] ${error.message}`);
