@@ -1097,12 +1097,38 @@ export default function Admin() {
                           )}
                         </td>
                         <td className="px-5 py-4 text-center">
-                          <div className="flex items-center justify-center gap-1.5">
+                          <div className="flex items-center justify-center gap-1.5 flex-wrap">
+                            {sp.kycStatus === "pending" && (
+                              <>
+                                <button
+                                  onClick={() => verifyServiceProvider.mutate({ id: sp.id }, {
+                                    onSuccess: () => toast.success(`${sp.providerName} verified!`),
+                                    onError: () => toast.error("Failed — run migration 011_sp_admin.sql in Supabase."),
+                                  })}
+                                  disabled={verifyServiceProvider.isPending}
+                                  title="Approve verification"
+                                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-600 text-white text-[11px] font-semibold hover:bg-blue-700 disabled:opacity-50 transition-all"
+                                >
+                                  <UserCheck className="w-3 h-3" /> Approve
+                                </button>
+                                <button
+                                  onClick={() => rejectSpKyc.mutate({ id: sp.id }, {
+                                    onSuccess: () => toast.success("KYC rejected."),
+                                    onError: () => toast.error("Failed — run migration 011_sp_admin.sql in Supabase."),
+                                  })}
+                                  disabled={rejectSpKyc.isPending}
+                                  title="Reject KYC"
+                                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-50 text-red-600 text-[11px] font-semibold hover:bg-red-100 border border-red-200 disabled:opacity-50 transition-all"
+                                >
+                                  <UserX className="w-3 h-3" /> Reject
+                                </button>
+                              </>
+                            )}
                             {sp.kycStatus === "verified" && (
                               <button
                                 onClick={() => revokeSpVerification.mutate({ id: sp.id }, {
                                   onSuccess: () => toast.success("Verification revoked."),
-                                  onError: () => toast.error("Failed — check Supabase policies."),
+                                  onError: () => toast.error("Failed — run migration 011_sp_admin.sql in Supabase."),
                                 })}
                                 disabled={revokeSpVerification.isPending}
                                 title="Revoke verification"
