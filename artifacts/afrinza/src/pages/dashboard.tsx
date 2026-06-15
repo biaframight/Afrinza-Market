@@ -162,21 +162,7 @@ export default function Dashboard() {
     }
   }, [loading, isAuthenticated, setLocation]);
 
-  if (!loading && !isAuthenticated) return (
-    <div className="min-h-[60vh] flex items-center justify-center">
-      <Loader2 className="w-8 h-8 animate-spin text-primary" />
-    </div>
-  );
-
-  if (loading || sellerLoading) {
-    return (
-      <div className="min-h-[60vh] flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  // Initialize store form from sellerProfile (useEffect — must not call setState during render)
+  // Initialize store form from sellerProfile — must be before any early return
   useEffect(() => {
     if (sellerProfile && !storeInitialized) {
       setStoreForm({
@@ -191,11 +177,26 @@ export default function Dashboard() {
     }
   }, [sellerProfile, storeInitialized]);
 
+  // Initialize profile form from user metadata — must be before any early return
   useEffect(() => {
     if (user?.user_metadata?.full_name) {
       setProfileForm({ fullName: user.user_metadata.full_name });
     }
   }, [user?.id]);
+
+  if (!loading && !isAuthenticated) return (
+    <div className="min-h-[60vh] flex items-center justify-center">
+      <Loader2 className="w-8 h-8 animate-spin text-primary" />
+    </div>
+  );
+
+  if (loading || sellerLoading) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   const isSeller = !!sellerProfile;
   const serviceProducts = (products ?? []).filter((p) => p.category === "Services");
