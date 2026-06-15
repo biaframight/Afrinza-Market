@@ -1048,8 +1048,8 @@ export default function Dashboard() {
                 <p className="text-sm text-muted-foreground mb-6">
                   Reach Africans across Malaysia — list your skills as an Afrinza Rider, hair braider, plumber, caterer, and more.
                 </p>
-                <Button className="rounded-full gap-2 w-full" onClick={() => setLocation("/services")}>
-                  <Wrench className="w-4 h-4" /> Register on Services Page
+                <Button className="rounded-full gap-2 w-full" onClick={() => setLocation("/services?register=true")}>
+                  <Wrench className="w-4 h-4" /> Register as Service Provider
                 </Button>
                 <p className="text-xs text-muted-foreground mt-3">RM 10/month subscription · Profile goes live instantly</p>
               </div>

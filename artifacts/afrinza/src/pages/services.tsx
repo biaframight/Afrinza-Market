@@ -110,7 +110,10 @@ export default function Services() {
     return params.get("tab") === "rooms" ? "rooms" : "services";
   });
 
-  const [showRegisterForm, setShowRegisterForm] = useState(false);
+  const [showRegisterForm, setShowRegisterForm] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("register") === "true";
+  });
   const [roomTab, setRoomTab] = useState<"find" | "list">("find");
 
   // Service provider filter
