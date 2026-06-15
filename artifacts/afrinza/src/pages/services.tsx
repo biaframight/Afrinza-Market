@@ -175,6 +175,12 @@ export default function Services() {
   const createRoomListing = useCreateRoomListing();
   const submitReceipt = useSubmitRoomPaymentReceipt();
 
+  const filteredRooms = roomListings.data
+    ? searchedLocation
+      ? roomListings.data.filter((r) => r.location?.toLowerCase().includes(searchedLocation.toLowerCase()))
+      : roomListings.data
+    : [];
+
   // Reset photo index when opening a new detail
   useEffect(() => { setActiveProviderPhotoIdx(0); }, [selectedProvider?.id]);
   useEffect(() => { setActiveRoomPhotoIdx(0); }, [selectedRoom?.id]);
@@ -1135,6 +1141,40 @@ export default function Services() {
           {/* ── FIND A ROOM ───────────────────────────────────────── */}
           {roomTab === "find" && (
             <div className="max-w-5xl mx-auto">
+
+              {/* Search bar */}
+              <form
+                onSubmit={(e) => { e.preventDefault(); setSearchedLocation(selectedLocation.trim() || undefined); }}
+                className="flex gap-2 mb-6"
+              >
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                  <input
+                    type="text"
+                    placeholder="Search by city or area…"
+                    value={selectedLocation}
+                    onChange={(e) => {
+                      setSelectedLocation(e.target.value);
+                      if (!e.target.value.trim()) setSearchedLocation(undefined);
+                    }}
+                    className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40 transition-all"
+                  />
+                </div>
+                <Button type="submit" className="rounded-xl px-5 font-semibold gap-2 shrink-0">
+                  <Search className="w-4 h-4" /> Search
+                </Button>
+                {searchedLocation && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => { setSelectedLocation(""); setSearchedLocation(undefined); }}
+                    className="rounded-xl px-3 shrink-0"
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                )}
+              </form>
+
               {roomListings.isLoading ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                   {[1, 2, 3].map((i) => (
@@ -1156,20 +1196,27 @@ export default function Services() {
                 <div className="text-center py-20 text-muted-foreground bg-white rounded-3xl border border-border shadow-sm">
                   <Home className="w-14 h-14 mx-auto mb-4 opacity-20" />
                   <p className="font-bold text-lg mb-2">No rooms found</p>
-                  <p className="text-sm mb-6">
-                    No rooms listed yet. Be the first!
-                  </p>
+                  <p className="text-sm mb-6">No rooms listed yet. Be the first!</p>
                   <Button onClick={() => setRoomTab("list")} className="rounded-full gap-2">
                     <Home className="w-4 h-4" /> List a Room
+                  </Button>
+                </div>
+              ) : filteredRooms.length === 0 ? (
+                <div className="text-center py-16 text-muted-foreground bg-white rounded-3xl border border-border shadow-sm">
+                  <Search className="w-12 h-12 mx-auto mb-4 opacity-20" />
+                  <p className="font-bold text-lg mb-1">No rooms in "{searchedLocation}"</p>
+                  <p className="text-sm mb-5">Try a different city or area.</p>
+                  <Button variant="outline" onClick={() => { setSelectedLocation(""); setSearchedLocation(undefined); }} className="rounded-full gap-2">
+                    <X className="w-4 h-4" /> Clear Search
                   </Button>
                 </div>
               ) : (
                 <>
                   <p className="text-sm text-muted-foreground mb-4 font-medium">
-                    {roomListings.data.length} room{roomListings.data.length !== 1 ? "s" : ""} available
+                    {filteredRooms.length} room{filteredRooms.length !== 1 ? "s" : ""} {searchedLocation ? `in "${searchedLocation}"` : "available"}
                   </p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                    {roomListings.data.map((room) => (
+                    {filteredRooms.map((room) => (
                       <div key={room.id} className="bg-white rounded-2xl border border-border shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col group cursor-pointer" onClick={() => setSelectedRoom(room)}>
                         {room.images && room.images.length > 0 ? (
                           <div className="h-44 bg-white relative flex items-center justify-center border-b border-border/40">
