@@ -19,6 +19,7 @@ export function SellerCard({ seller, index = 0 }: SellerCardProps) {
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.4, delay: index * 0.05 }}
+      className="h-full"
     >
       <Link href={`/sellers/${seller.id}`} className="block h-full outline-none">
         <Card className="h-full overflow-hidden hover:shadow-md transition-all duration-300 group bg-white hover:border-primary/30">

@@ -307,7 +307,7 @@ export default function Home() {
               className="flex gap-5 overflow-x-auto snap-x snap-mandatory pb-3 -mx-4 px-4 [&::-webkit-scrollbar]:hidden [scrollbar-width:none]"
             >
               {featuredSellers.sellers.map((seller, i) => (
-                <div key={seller.id} className="flex-shrink-0 w-64 snap-start">
+                <div key={seller.id} className="flex-shrink-0 w-64 snap-start h-full">
                   <SellerCard seller={seller} index={i} />
                 </div>
               ))}
