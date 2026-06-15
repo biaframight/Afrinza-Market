@@ -7,10 +7,11 @@ import {
   ShoppingCart, Search, Menu, Store, Home, PackageSearch,
   MessageCircleQuestion, Sparkles, Info, HelpCircle,
   LayoutDashboard, LogOut, UserCircle, Shield, Wrench, KeyRound,
+  CreditCard, BadgeCheck, AlertTriangle, X, Bell,
 } from "lucide-react";
-import { useGetCart } from "@/hooks/use-marketplace";
+import { useGetCart, useGetCurrentSubscription, useGetServiceProviderByUser, useGetServiceProviderSub } from "@/hooks/use-marketplace";
 import { getSessionId } from "@/lib/session";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger,
 } from "@/components/ui/sheet";
@@ -19,6 +20,7 @@ import {
   DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAuthContext } from "@/contexts/auth-context";
+import { toast } from "sonner";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -28,10 +30,82 @@ export function Layout({ children }: LayoutProps) {
   const [, setLocation] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [bannerDismissed, setBannerDismissed] = useState(false);
+  const [notifIndex, setNotifIndex] = useState(0);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const toastIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   const sessionId = getSessionId();
   const { user, isAuthenticated, sellerProfile, signOut } = useAuthContext();
 
+  const currentMonth = new Date().toISOString().slice(0, 7);
+  const currentSub = useGetCurrentSubscription(sellerProfile?.id, currentMonth);
+  const myServiceProvider = useGetServiceProviderByUser(user?.id);
+  const currentSpSub = useGetServiceProviderSub(myServiceProvider.data?.id, currentMonth);
+
   const { data: cartData } = useGetCart({ sessionId });
+
+  // ── Compute pending actions ─────────────────────────────────────
+  const sellerNeedsKyc = !!sellerProfile && sellerProfile.kycStatus === "none";
+  const sellerNeedsSubscription = !!sellerProfile && !currentSub.isLoading && currentSub.data?.status !== "confirmed";
+  const spNeedsKyc = !!myServiceProvider.data && !myServiceProvider.data.isVerified && myServiceProvider.data.kycStatus === "none";
+  const spNeedsSubscription = !!myServiceProvider.data && !currentSpSub.isLoading && currentSpSub.data?.status !== "confirmed";
+  const hasUrgentActions = isAuthenticated && (sellerNeedsKyc || sellerNeedsSubscription || spNeedsKyc || spNeedsSubscription);
+
+  const notifications: { msg: string; tab: string }[] = [
+    ...(sellerNeedsSubscription
+      ? [{ msg: "💳 Your seller subscription for this month hasn't been paid — pay RM 10 to avoid business interruption.", tab: "store" }]
+      : []),
+    ...(sellerNeedsKyc
+      ? [{ msg: "🛡 Verify your store identity to build buyer trust and unlock all features.", tab: "store" }]
+      : []),
+    ...(spNeedsSubscription
+      ? [{ msg: "💳 Your service provider subscription hasn't been paid this month — pay RM 10 to keep your listing active.", tab: "services" }]
+      : []),
+    ...(spNeedsKyc
+      ? [{ msg: "🛡 Complete identity verification to earn a verified badge on your service profile.", tab: "services" }]
+      : []),
+  ];
+
+  const currentNotif = notifications[notifIndex % Math.max(notifications.length, 1)];
+
+  // ── Rotate banner messages every 6s ───────────────────────────
+  useEffect(() => {
+    if (!hasUrgentActions || notifications.length <= 1) return;
+    const interval = setInterval(() => setNotifIndex((i) => i + 1), 6000);
+    return () => clearInterval(interval);
+  }, [hasUrgentActions, notifications.length]);
+
+  // ── Periodic toast reminders ───────────────────────────────────
+  useEffect(() => {
+    if (!hasUrgentActions || !isAuthenticated || notifications.length === 0) return;
+
+    // First reminder after 20 seconds
+    toastTimerRef.current = setTimeout(() => {
+      toast.warning(notifications[0].msg, {
+        description: "Go to your dashboard to avoid business interruption.",
+        action: { label: "Dashboard →", onClick: () => setLocation(`/dashboard?tab=${notifications[0].tab}`) },
+        duration: 9000,
+      });
+    }, 20000);
+
+    // Then every 7 minutes
+    let idx = 1;
+    toastIntervalRef.current = setInterval(() => {
+      const n = notifications[idx % notifications.length];
+      toast.warning(n.msg, {
+        description: "Avoid business interruption — complete this now.",
+        action: { label: "Dashboard →", onClick: () => setLocation(`/dashboard?tab=${n.tab}`) },
+        duration: 9000,
+      });
+      idx++;
+    }, 7 * 60 * 1000);
+
+    return () => {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+      if (toastIntervalRef.current) clearInterval(toastIntervalRef.current);
+    };
+  }, [hasUrgentActions, isAuthenticated]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,11 +134,14 @@ export function Layout({ children }: LayoutProps) {
           <div className="md:hidden flex items-center">
             <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="-ml-2">
+                <Button variant="ghost" size="icon" className="-ml-2 relative">
                   <Menu className="h-6 w-6" />
+                  {hasUrgentActions && (
+                    <span className="absolute top-1 right-1 w-2 h-2 bg-amber-500 rounded-full" />
+                  )}
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="w-[80vw] sm:w-[350px]">
+              <SheetContent side="left" className="w-[80vw] sm:w-[350px] overflow-y-auto">
                 <SheetHeader>
                   <SheetTitle className="text-left"><AfrinzaLogo height={38} /></SheetTitle>
                 </SheetHeader>
@@ -98,6 +175,58 @@ export function Layout({ children }: LayoutProps) {
                           <Shield className="h-5 w-5" /> Admin Panel
                         </Link>
                       )}
+
+                      {/* ── Urgent actions (mobile) ─────────────────── */}
+                      {hasUrgentActions && (
+                        <>
+                          <div className="h-px bg-amber-200 my-1" />
+                          <p className="text-xs font-bold text-amber-700 uppercase tracking-wide px-3 py-0.5 flex items-center gap-1.5">
+                            <Bell className="w-3.5 h-3.5" /> Action Required
+                          </p>
+                          {sellerNeedsSubscription && (
+                            <Link
+                              href="/dashboard?tab=store"
+                              onClick={() => setMobileMenuOpen(false)}
+                              className="flex items-center gap-3 px-3 py-2.5 text-sm rounded-md bg-amber-50 border border-amber-200 text-amber-800 hover:bg-amber-100 font-medium"
+                            >
+                              <CreditCard className="h-4 w-4 shrink-0" />
+                              <span>Pay Seller Subscription (RM 10)</span>
+                            </Link>
+                          )}
+                          {sellerNeedsKyc && (
+                            <Link
+                              href="/dashboard?tab=store"
+                              onClick={() => setMobileMenuOpen(false)}
+                              className="flex items-center gap-3 px-3 py-2.5 text-sm rounded-md bg-blue-50 border border-blue-200 text-blue-800 hover:bg-blue-100 font-medium"
+                            >
+                              <BadgeCheck className="h-4 w-4 shrink-0" />
+                              <span>Verify Your Store Identity</span>
+                            </Link>
+                          )}
+                          {spNeedsSubscription && (
+                            <Link
+                              href="/dashboard?tab=services"
+                              onClick={() => setMobileMenuOpen(false)}
+                              className="flex items-center gap-3 px-3 py-2.5 text-sm rounded-md bg-amber-50 border border-amber-200 text-amber-800 hover:bg-amber-100 font-medium"
+                            >
+                              <CreditCard className="h-4 w-4 shrink-0" />
+                              <span>Pay Service Subscription (RM 10)</span>
+                            </Link>
+                          )}
+                          {spNeedsKyc && (
+                            <Link
+                              href="/dashboard?tab=services"
+                              onClick={() => setMobileMenuOpen(false)}
+                              className="flex items-center gap-3 px-3 py-2.5 text-sm rounded-md bg-blue-50 border border-blue-200 text-blue-800 hover:bg-blue-100 font-medium"
+                            >
+                              <BadgeCheck className="h-4 w-4 shrink-0" />
+                              <span>Verify Service Provider Account</span>
+                            </Link>
+                          )}
+                          <div className="h-px bg-border my-1" />
+                        </>
+                      )}
+
                       {!sellerProfile && (
                         <>
                           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide px-3 pt-1 pb-0.5">List on Afrinza</p>
@@ -186,20 +315,32 @@ export function Layout({ children }: LayoutProps) {
               {isAuthenticated ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <button className="w-9 h-9 rounded-full bg-primary text-white font-bold text-sm flex items-center justify-center hover:bg-primary/90 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/40 focus:ring-offset-1">
+                    <button className="relative w-9 h-9 rounded-full bg-primary text-white font-bold text-sm flex items-center justify-center hover:bg-primary/90 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/40 focus:ring-offset-1">
                       {initials}
+                      {/* Orange dot when actions are pending */}
+                      {hasUrgentActions && (
+                        <span className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-amber-500 rounded-full border-2 border-white animate-pulse" />
+                      )}
                     </button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-52">
+                  <DropdownMenuContent align="end" className="w-60">
                     <div className="px-3 py-2 border-b border-border/60">
                       <p className="text-sm font-semibold truncate">{displayName}</p>
                       <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+                      {sellerProfile && (
+                        <p className="text-xs text-primary font-medium mt-0.5 truncate">🏪 {sellerProfile.storeName}</p>
+                      )}
+                      {myServiceProvider.data && (
+                        <p className="text-xs text-amber-600 font-medium mt-0.5 truncate">🔧 {myServiceProvider.data.businessName || myServiceProvider.data.providerName}</p>
+                      )}
                     </div>
+
                     <DropdownMenuItem asChild>
                       <Link href="/dashboard" className="flex items-center gap-2 cursor-pointer">
                         <LayoutDashboard className="w-4 h-4" /> My Dashboard
                       </Link>
                     </DropdownMenuItem>
+
                     {user?.email === "alphuplift@gmail.com" && (
                       <DropdownMenuItem asChild>
                         <Link href="/admin" className="flex items-center gap-2 cursor-pointer text-primary font-semibold">
@@ -207,6 +348,45 @@ export function Layout({ children }: LayoutProps) {
                         </Link>
                       </DropdownMenuItem>
                     )}
+
+                    {/* ── Urgent action shortcuts (desktop dropdown) ── */}
+                    {hasUrgentActions && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <div className="px-3 py-1 text-[11px] font-bold text-amber-700 uppercase tracking-wide flex items-center gap-1">
+                          <AlertTriangle className="w-3 h-3" /> Action Required
+                        </div>
+                        {sellerNeedsSubscription && (
+                          <DropdownMenuItem asChild>
+                            <Link href="/dashboard?tab=store" className="flex items-center gap-2 cursor-pointer text-amber-700 bg-amber-50 hover:bg-amber-100 font-medium">
+                              <CreditCard className="w-4 h-4 shrink-0" /> Pay Seller Sub · RM 10
+                            </Link>
+                          </DropdownMenuItem>
+                        )}
+                        {sellerNeedsKyc && (
+                          <DropdownMenuItem asChild>
+                            <Link href="/dashboard?tab=store" className="flex items-center gap-2 cursor-pointer text-blue-700 bg-blue-50 hover:bg-blue-100 font-medium">
+                              <BadgeCheck className="w-4 h-4 shrink-0" /> Verify Store Identity
+                            </Link>
+                          </DropdownMenuItem>
+                        )}
+                        {spNeedsSubscription && (
+                          <DropdownMenuItem asChild>
+                            <Link href="/dashboard?tab=services" className="flex items-center gap-2 cursor-pointer text-amber-700 bg-amber-50 hover:bg-amber-100 font-medium">
+                              <CreditCard className="w-4 h-4 shrink-0" /> Pay Service Sub · RM 10
+                            </Link>
+                          </DropdownMenuItem>
+                        )}
+                        {spNeedsKyc && (
+                          <DropdownMenuItem asChild>
+                            <Link href="/dashboard?tab=services" className="flex items-center gap-2 cursor-pointer text-blue-700 bg-blue-50 hover:bg-blue-100 font-medium">
+                              <BadgeCheck className="w-4 h-4 shrink-0" /> Verify Service Account
+                            </Link>
+                          </DropdownMenuItem>
+                        )}
+                      </>
+                    )}
+
                     {!sellerProfile && (
                       <>
                         <DropdownMenuSeparator />
@@ -228,6 +408,7 @@ export function Layout({ children }: LayoutProps) {
                         </DropdownMenuItem>
                       </>
                     )}
+
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={signOut} className="text-muted-foreground flex items-center gap-2 cursor-pointer">
                       <LogOut className="w-4 h-4" /> Sign Out
@@ -264,6 +445,38 @@ export function Layout({ children }: LayoutProps) {
           </form>
         </div>
       </header>
+
+      {/* ── Notification Banner ──────────────────────────────────────── */}
+      {hasUrgentActions && !bannerDismissed && currentNotif && (
+        <div className="sticky top-[calc(4rem+1px)] z-40 w-full bg-amber-500 text-white shadow-sm">
+          <div className="container mx-auto px-4 py-2.5 flex items-center gap-3">
+            <AlertTriangle className="w-4 h-4 shrink-0" />
+            <p className="text-sm font-medium flex-1 leading-snug">{currentNotif.msg}</p>
+            <Link
+              href={`/dashboard?tab=${currentNotif.tab}`}
+              className="shrink-0 text-xs font-bold underline underline-offset-2 hover:text-amber-100 whitespace-nowrap"
+            >
+              Fix now →
+            </Link>
+            <button
+              onClick={() => setBannerDismissed(true)}
+              className="shrink-0 p-0.5 rounded hover:bg-amber-600 transition-colors"
+              aria-label="Dismiss"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          {/* Progress bar showing rotation */}
+          {notifications.length > 1 && (
+            <div className="h-0.5 bg-amber-400/50">
+              <div
+                className="h-full bg-white/60 transition-none"
+                style={{ width: `${((notifIndex % notifications.length) + 1) / notifications.length * 100}%` }}
+              />
+            </div>
+          )}
+        </div>
+      )}
 
       <main className="flex-1 flex flex-col">{children}</main>
 
