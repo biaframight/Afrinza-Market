@@ -3,13 +3,37 @@ import { ProductCard } from "@/components/product-card";
 import { SellerCard } from "@/components/seller-card";
 import { HeroSlider } from "@/components/hero-slider";
 import { Button } from "@/components/ui/button";
-import { Search, MapPin, ArrowRight, UtensilsCrossed, Shirt, Sparkles, Store, Send, Users, CheckCircle, Globe, BadgeCheck, Wrench, BedDouble, MessageCircle, Home as HomeIcon } from "lucide-react";
+import { Search, MapPin, ArrowRight, UtensilsCrossed, Shirt, Sparkles, Store, Send, Users, CheckCircle, Globe, BadgeCheck, Wrench, BedDouble, MessageCircle, Home as HomeIcon, ChevronLeft, ChevronRight } from "lucide-react";
 import { Link, useLocation } from "wouter";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { motion } from "framer-motion";
 
 const TELEGRAM_URL = "https://t.me/+zN9_dGgYrPg2OTVl";
+
+function ScrollArrows({ containerRef }: { containerRef: React.RefObject<HTMLDivElement | null> }) {
+  const scroll = (dir: "left" | "right") => {
+    containerRef.current?.scrollBy({ left: dir === "left" ? -320 : 320, behavior: "smooth" });
+  };
+  return (
+    <div className="flex items-center gap-1.5">
+      <button
+        onClick={() => scroll("left")}
+        className="w-8 h-8 rounded-full border border-border bg-white shadow-sm flex items-center justify-center hover:bg-muted transition-colors"
+        aria-label="Scroll left"
+      >
+        <ChevronLeft className="w-4 h-4 text-foreground" />
+      </button>
+      <button
+        onClick={() => scroll("right")}
+        className="w-8 h-8 rounded-full border border-border bg-white shadow-sm flex items-center justify-center hover:bg-muted transition-colors"
+        aria-label="Scroll right"
+      >
+        <ChevronRight className="w-4 h-4 text-foreground" />
+      </button>
+    </div>
+  );
+}
 
 export default function Home() {
   const [, setLocation] = useLocation();
@@ -21,8 +45,13 @@ export default function Home() {
   const { data: allProviders, isLoading: isProvidersLoading } = useGetServiceProviders();
   const { data: allRooms, isLoading: isRoomsLoading } = useGetRoomListings();
 
-  const verifiedProviders = (allProviders ?? []).filter((p) => p.isVerified).slice(0, 6);
-  const featuredRooms = (allRooms ?? []).slice(0, 6);
+  const verifiedProviders = (allProviders ?? []).filter((p) => p.isVerified).slice(0, 12);
+  const featuredRooms = (allRooms ?? []).slice(0, 12);
+
+  const productsRef = useRef<HTMLDivElement>(null);
+  const sellersRef = useRef<HTMLDivElement>(null);
+  const providersRef = useRef<HTMLDivElement>(null);
+  const roomsRef = useRef<HTMLDivElement>(null);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -159,20 +188,25 @@ export default function Home() {
 
       {/* ── Market Highlights ──────────────────────────────── */}
       <section className="container mx-auto px-4 py-10">
-        <div className="flex items-end justify-between mb-8">
+        <div className="flex items-center justify-between mb-8">
           <div>
             <h2 className="text-3xl font-bold text-foreground font-serif">Market Highlights</h2>
             <p className="text-muted-foreground mt-1">Discover popular items from our community</p>
           </div>
-          <Link href="/products" className="hidden md:flex items-center text-primary font-medium hover:underline gap-1 text-sm">
-            View all <ArrowRight className="w-4 h-4" />
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link href="/products" className="hidden md:flex items-center text-primary font-medium hover:underline gap-1 text-sm">
+              View all <ArrowRight className="w-4 h-4" />
+            </Link>
+            {!isProductsLoading && !!featuredProducts?.products.length && (
+              <ScrollArrows containerRef={productsRef} />
+            )}
+          </div>
         </div>
 
         {isProductsLoading ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+          <div className="flex gap-4 overflow-hidden">
             {[...Array(5)].map((_, i) => (
-              <div key={i} className="flex flex-col gap-3">
+              <div key={i} className="flex-shrink-0 w-44 flex flex-col gap-3">
                 <Skeleton className="w-full aspect-square rounded-xl" />
                 <Skeleton className="h-4 w-3/4" />
                 <Skeleton className="h-4 w-1/2" />
@@ -190,9 +224,14 @@ export default function Home() {
             <p className="text-sm mt-1">Be the first to list your products!</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
+          <div
+            ref={productsRef}
+            className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-3 -mx-4 px-4 [&::-webkit-scrollbar]:hidden [scrollbar-width:none]"
+          >
             {featuredProducts.products.map((product, i) => (
-              <ProductCard key={product.id} product={product} index={i} />
+              <div key={product.id} className="flex-shrink-0 w-44 snap-start">
+                <ProductCard product={product} index={i} />
+              </div>
             ))}
           </div>
         )}
@@ -207,20 +246,25 @@ export default function Home() {
       {/* ── Top Rated Sellers ──────────────────────────────── */}
       <section className="bg-muted/30 border-y border-border/50 py-14">
         <div className="container mx-auto px-4">
-          <div className="flex items-end justify-between mb-8">
+          <div className="flex items-center justify-between mb-8">
             <div>
               <h2 className="text-3xl font-bold text-foreground font-serif">Top Rated Sellers</h2>
               <p className="text-muted-foreground mt-1">Trustworthy African businesses loved by the community</p>
             </div>
-            <Link href="/sellers" className="hidden md:flex items-center text-primary font-medium hover:underline gap-1 text-sm">
-              View all <ArrowRight className="w-4 h-4" />
-            </Link>
+            <div className="flex items-center gap-3">
+              <Link href="/sellers" className="hidden md:flex items-center text-primary font-medium hover:underline gap-1 text-sm">
+                View all <ArrowRight className="w-4 h-4" />
+              </Link>
+              {!isSellersLoading && !!featuredSellers?.sellers.length && (
+                <ScrollArrows containerRef={sellersRef} />
+              )}
+            </div>
           </div>
 
           {isSellersLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="flex gap-5 overflow-hidden">
               {[...Array(4)].map((_, i) => (
-                <Skeleton key={i} className="w-full h-64 rounded-xl" />
+                <Skeleton key={i} className="flex-shrink-0 w-64 h-64 rounded-xl" />
               ))}
             </div>
           ) : isSellersError ? (
@@ -234,9 +278,14 @@ export default function Home() {
               <p className="text-sm mt-1">Sellers will appear here once approved.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div
+              ref={sellersRef}
+              className="flex gap-5 overflow-x-auto snap-x snap-mandatory pb-3 -mx-4 px-4 [&::-webkit-scrollbar]:hidden [scrollbar-width:none]"
+            >
               {featuredSellers.sellers.map((seller, i) => (
-                <SellerCard key={seller.id} seller={seller} index={i} />
+                <div key={seller.id} className="flex-shrink-0 w-64 snap-start">
+                  <SellerCard seller={seller} index={i} />
+                </div>
               ))}
             </div>
           )}
@@ -245,7 +294,7 @@ export default function Home() {
 
       {/* ── Verified Service Providers ─────────────────────── */}
       <section className="container mx-auto px-4 py-14">
-        <div className="flex items-end justify-between mb-8">
+        <div className="flex items-center justify-between mb-8">
           <div>
             <div className="flex items-center gap-2 mb-1">
               <BadgeCheck className="w-5 h-5 text-emerald-500" />
@@ -254,14 +303,19 @@ export default function Home() {
             <h2 className="text-3xl font-bold text-foreground font-serif">Trusted Service Providers</h2>
             <p className="text-muted-foreground mt-1">Identity-verified professionals ready to help you</p>
           </div>
-          <Link href="/services" className="hidden md:flex items-center text-primary font-medium hover:underline gap-1 text-sm">
-            View all <ArrowRight className="w-4 h-4" />
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link href="/services" className="hidden md:flex items-center text-primary font-medium hover:underline gap-1 text-sm">
+              View all <ArrowRight className="w-4 h-4" />
+            </Link>
+            {!isProvidersLoading && verifiedProviders.length > 0 && (
+              <ScrollArrows containerRef={providersRef} />
+            )}
+          </div>
         </div>
 
         {isProvidersLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-52 rounded-2xl" />)}
+          <div className="flex gap-5 overflow-hidden">
+            {[...Array(3)].map((_, i) => <Skeleton key={i} className="flex-shrink-0 w-72 h-52 rounded-2xl" />)}
           </div>
         ) : verifiedProviders.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
@@ -270,16 +324,19 @@ export default function Home() {
             <p className="text-sm mt-1">Providers appear here after identity verification.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div
+            ref={providersRef}
+            className="flex gap-5 overflow-x-auto snap-x snap-mandatory pb-3 -mx-4 px-4 [&::-webkit-scrollbar]:hidden [scrollbar-width:none]"
+          >
             {verifiedProviders.map((sp, i) => (
               <motion.div
                 key={sp.id}
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.35, delay: i * 0.06 }}
-                className="bg-white rounded-2xl border border-border shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col"
+                transition={{ duration: 0.35, delay: Math.min(i * 0.06, 0.3) }}
+                className="flex-shrink-0 w-72 snap-start bg-white rounded-2xl border border-border shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col"
               >
-                {/* Photo strip */}
+                {/* Photo strip — no overlay badge */}
                 <div className="h-36 bg-muted relative overflow-hidden">
                   {sp.photos[0] ? (
                     <img src={sp.photos[0]} alt={sp.providerName} className="w-full h-full object-cover" />
@@ -288,15 +345,15 @@ export default function Home() {
                       <Wrench className="w-10 h-10 text-emerald-300" />
                     </div>
                   )}
-                  <div className="absolute top-2 left-2 flex items-center gap-1 bg-emerald-500 text-white text-xs font-bold px-2 py-0.5 rounded-full shadow">
-                    <BadgeCheck className="w-3 h-3" /> Verified
-                  </div>
                 </div>
 
                 <div className="p-4 flex flex-col flex-1 gap-2">
-                  <div>
-                    <p className="font-bold text-foreground leading-tight">{sp.businessName || sp.providerName}</p>
-                    {sp.businessName && <p className="text-xs text-muted-foreground">{sp.providerName}</p>}
+                  <div className="flex items-start gap-1.5">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-foreground leading-tight truncate">{sp.businessName || sp.providerName}</p>
+                      {sp.businessName && <p className="text-xs text-muted-foreground truncate">{sp.providerName}</p>}
+                    </div>
+                    <BadgeCheck className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
                   </div>
 
                   <div className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -340,7 +397,7 @@ export default function Home() {
       {/* ── Rooms to Rent ───────────────────────────────────── */}
       <section className="bg-muted/30 border-y border-border/50 py-14">
         <div className="container mx-auto px-4">
-          <div className="flex items-end justify-between mb-8">
+          <div className="flex items-center justify-between mb-8">
             <div>
               <div className="flex items-center gap-2 mb-1">
                 <HomeIcon className="w-4 h-4 text-blue-500" />
@@ -349,14 +406,19 @@ export default function Home() {
               <h2 className="text-3xl font-bold text-foreground font-serif">Rooms to Rent</h2>
               <p className="text-muted-foreground mt-1">Find affordable rooms listed by the community</p>
             </div>
-            <Link href="/services?tab=rooms" className="hidden md:flex items-center text-primary font-medium hover:underline gap-1 text-sm">
-              View all <ArrowRight className="w-4 h-4" />
-            </Link>
+            <div className="flex items-center gap-3">
+              <Link href="/services?tab=rooms" className="hidden md:flex items-center text-primary font-medium hover:underline gap-1 text-sm">
+                View all <ArrowRight className="w-4 h-4" />
+              </Link>
+              {!isRoomsLoading && featuredRooms.length > 0 && (
+                <ScrollArrows containerRef={roomsRef} />
+              )}
+            </div>
           </div>
 
           {isRoomsLoading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-56 rounded-2xl" />)}
+            <div className="flex gap-5 overflow-hidden">
+              {[...Array(3)].map((_, i) => <Skeleton key={i} className="flex-shrink-0 w-72 h-56 rounded-2xl" />)}
             </div>
           ) : featuredRooms.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
@@ -365,14 +427,17 @@ export default function Home() {
               <p className="text-sm mt-1">Room listings will appear here once added.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div
+              ref={roomsRef}
+              className="flex gap-5 overflow-x-auto snap-x snap-mandatory pb-3 -mx-4 px-4 [&::-webkit-scrollbar]:hidden [scrollbar-width:none]"
+            >
               {featuredRooms.map((room, i) => (
                 <motion.div
                   key={room.id}
                   initial={{ opacity: 0, y: 16 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.35, delay: i * 0.06 }}
-                  className="bg-white rounded-2xl border border-border shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col"
+                  transition={{ duration: 0.35, delay: Math.min(i * 0.06, 0.3) }}
+                  className="flex-shrink-0 w-72 snap-start bg-white rounded-2xl border border-border shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col"
                 >
                   {/* Photo */}
                   <div className="h-40 bg-muted relative overflow-hidden">
