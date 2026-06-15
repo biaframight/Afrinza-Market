@@ -22,11 +22,12 @@ export function SellerCard({ seller, index = 0 }: SellerCardProps) {
       className="h-full"
     >
       <Link href={`/sellers/${seller.id}`} className="block h-full outline-none">
-        <Card className="h-full overflow-hidden hover:shadow-md transition-all duration-300 group bg-white hover:border-primary/30">
-          <div className="h-24 bg-gradient-to-r from-primary/80 to-secondary/80 relative">
+        <Card className="h-full overflow-hidden hover:shadow-md transition-all duration-300 group bg-white hover:border-primary/30 flex flex-col">
+          {/* Banner */}
+          <div className="h-24 bg-gradient-to-r from-primary/80 to-secondary/80 relative shrink-0">
             {seller.bannerUrl && (
-              <img 
-                src={seller.bannerUrl} 
+              <img
+                src={seller.bannerUrl}
                 alt={`${seller.storeName} banner`}
                 className="w-full h-full object-cover opacity-80 mix-blend-overlay"
               />
@@ -45,18 +46,20 @@ export function SellerCard({ seller, index = 0 }: SellerCardProps) {
               </div>
             )}
           </div>
-          
-          <CardContent className="pt-12 pb-5 px-5">
-            <h3 className="font-bold text-lg text-foreground group-hover:text-primary transition-colors flex items-center gap-2">
-              {seller.storeName}
-              {seller.isVerified && <VerifiedBadge size="sm" />}
+
+          {/* Content — flex-col so categories always pin to the bottom */}
+          <CardContent className="pt-12 pb-5 px-5 flex flex-col flex-1 min-h-0">
+            {/* Store name — always 1 line */}
+            <h3 className="font-bold text-lg text-foreground group-hover:text-primary transition-colors flex items-center gap-2 min-w-0">
+              <span className="truncate flex-1">{seller.storeName}</span>
+              {seller.isVerified && <VerifiedBadge size="sm" className="shrink-0" />}
             </h3>
-            
+
             <div className="flex items-center gap-1 mt-1.5 mb-3 text-sm text-muted-foreground">
-              <MapPin className="w-3.5 h-3.5" />
-              <span>{seller.location}</span>
+              <MapPin className="w-3.5 h-3.5 shrink-0" />
+              <span className="truncate">{seller.location}</span>
             </div>
-            
+
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-1.5">
                 <StarRating rating={seller.rating} starClassName="w-3.5 h-3.5" />
@@ -67,7 +70,10 @@ export function SellerCard({ seller, index = 0 }: SellerCardProps) {
                 <span>{seller.productCount} items</span>
               </div>
             </div>
-            
+
+            {/* Spacer pushes categories to the bottom */}
+            <div className="flex-1" />
+
             <div className="flex flex-wrap gap-1.5">
               {seller.categories?.slice(0, 3).map((cat) => (
                 <Badge key={cat} variant="outline" className="bg-muted/50 text-xs font-normal border-transparent">
