@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -13,10 +13,18 @@ import { Input } from "@/components/ui/input";
 import {
   Form, FormControl, FormField, FormItem, FormLabel, FormMessage,
 } from "@/components/ui/form";
-import { signUpWithEmail, signInWithEmail, resetPasswordForEmail } from "@/lib/supabase-auth";
+import {
+  signUpWithEmail,
+  signInWithEmail,
+  resetPasswordForEmail,
+  updatePassword,
+  onAuthStateChange,
+} from "@/lib/supabase-auth";
 
-type Tab = "signin" | "signup" | "forgot" | "check-email";
+type Tab = "signin" | "signup" | "forgot" | "check-email" | "set-password" | "applying";
 type CheckEmailReason = "signup" | "reset";
+
+const PENDING_PW_KEY = "afrinza_pending_reset_pw";
 
 const signInSchema = z.object({
   email: z.string().email("Enter a valid email"),
@@ -32,13 +40,33 @@ const signUpSchema = z.object({
 
 const forgotSchema = z.object({
   email: z.string().email("Enter a valid email"),
+  newPassword: z.string().min(6, "Password must be at least 6 characters"),
+  confirmPassword: z.string().min(6, "Please confirm your password"),
+}).refine((d) => d.newPassword === d.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
+});
+
+const setPasswordSchema = z.object({
+  newPassword: z.string().min(6, "Password must be at least 6 characters"),
+  confirmPassword: z.string().min(6, "Please confirm your password"),
+}).refine((d) => d.newPassword === d.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
 });
 
 type SignInValues = z.infer<typeof signInSchema>;
 type SignUpValues = z.infer<typeof signUpSchema>;
 type ForgotValues = z.infer<typeof forgotSchema>;
+type SetPasswordValues = z.infer<typeof setPasswordSchema>;
 
-function PasswordInput({ field, placeholder }: { field: React.InputHTMLAttributes<HTMLInputElement> & { ref?: React.Ref<HTMLInputElement> }; placeholder?: string }) {
+function PasswordInput({
+  field,
+  placeholder,
+}: {
+  field: React.InputHTMLAttributes<HTMLInputElement> & { ref?: React.Ref<HTMLInputElement> };
+  placeholder?: string;
+}) {
   const [show, setShow] = useState(false);
   return (
     <div className="relative">
@@ -69,6 +97,32 @@ export default function AuthPage() {
   const [checkEmail, setCheckEmail] = useState("");
   const [pendingRole, setPendingRole] = useState<"buyer" | "seller">("buyer");
 
+  /* ── Listen for Supabase PASSWORD_RECOVERY event ── */
+  useEffect(() => {
+    const { data: { subscription } } = onAuthStateChange(async (event) => {
+      if (event !== "PASSWORD_RECOVERY") return;
+
+      const stored = sessionStorage.getItem(PENDING_PW_KEY);
+      if (stored) {
+        /* User set a new password on the forgot-password form — apply it automatically */
+        sessionStorage.removeItem(PENDING_PW_KEY);
+        setTab("applying");
+        const { error } = await updatePassword(stored);
+        if (error) {
+          toast.error("Couldn't update password: " + error.message);
+          setTab("set-password");
+        } else {
+          toast.success("Password updated! You're now signed in.");
+          setLocation("/dashboard");
+        }
+      } else {
+        /* No stored password (different device / cleared session) — ask them to type it */
+        setTab("set-password");
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [setLocation]);
+
   const signInForm = useForm<SignInValues>({
     resolver: zodResolver(signInSchema),
     defaultValues: { email: "", password: "" },
@@ -81,17 +135,19 @@ export default function AuthPage() {
 
   const forgotForm = useForm<ForgotValues>({
     resolver: zodResolver(forgotSchema),
-    defaultValues: { email: "" },
+    defaultValues: { email: "", newPassword: "", confirmPassword: "" },
+  });
+
+  const setPasswordForm = useForm<SetPasswordValues>({
+    resolver: zodResolver(setPasswordSchema),
+    defaultValues: { newPassword: "", confirmPassword: "" },
   });
 
   const onSignIn = async (data: SignInValues) => {
     setLoading(true);
     const { error } = await signInWithEmail(data.email, data.password);
     setLoading(false);
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
+    if (error) { toast.error(error.message); return; }
     toast.success("Welcome back!");
     setLocation("/dashboard");
   };
@@ -103,10 +159,7 @@ export default function AuthPage() {
       role: data.role,
     });
     setLoading(false);
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
+    if (error) { toast.error(error.message); return; }
     setCheckEmail(data.email);
     setPendingRole(data.role);
     setCheckEmailReason("signup");
@@ -117,17 +170,41 @@ export default function AuthPage() {
     setLoading(true);
     const { error } = await resetPasswordForEmail(data.email);
     setLoading(false);
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
+    if (error) { toast.error(error.message); return; }
+    /* Store the desired new password — applied automatically when they click the email link */
+    sessionStorage.setItem(PENDING_PW_KEY, data.newPassword);
     setCheckEmail(data.email);
     setCheckEmailReason("reset");
     setTab("check-email");
   };
 
+  const onSetPassword = async (data: SetPasswordValues) => {
+    setLoading(true);
+    const { error } = await updatePassword(data.newPassword);
+    setLoading(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Password updated! You're now signed in.");
+    setLocation("/dashboard");
+  };
+
   const roleValue = signUpForm.watch("role");
 
+  /* ── Applying (auto-applying stored password) ── */
+  if (tab === "applying") {
+    return (
+      <div className="min-h-[80vh] flex items-center justify-center p-4 bg-muted/20">
+        <div className="w-full max-w-md">
+          <div className="bg-white rounded-3xl border border-border shadow-xl p-8 text-center">
+            <Loader2 className="w-10 h-10 text-primary animate-spin mx-auto mb-4" />
+            <h1 className="text-xl font-bold font-serif">Updating your password…</h1>
+            <p className="text-muted-foreground text-sm mt-2">Just a moment, you'll be signed in shortly.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  /* ── Check email screen ── */
   if (tab === "check-email") {
     const isSignup = checkEmailReason === "signup";
     return (
@@ -141,47 +218,40 @@ export default function AuthPage() {
             </div>
 
             <h1 className="text-2xl font-bold font-serif mb-2">
-              {isSignup ? "Check your email!" : "Reset link sent!"}
+              {isSignup ? "Check your email!" : "Confirmation email sent!"}
             </h1>
-
             <p className="text-muted-foreground text-sm mb-1">
-              {isSignup ? "We sent a confirmation link to:" : "We sent a password reset link to:"}
+              {isSignup ? "We sent a confirmation link to:" : "We sent a password reset confirmation to:"}
             </p>
             <p className="font-semibold text-foreground mb-6 break-all">{checkEmail}</p>
 
             {isSignup ? (
-              <>
-                <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-sm text-amber-800 mb-6 text-left space-y-1">
-                  <p className="font-semibold">What to do next:</p>
-                  <ol className="list-decimal list-inside space-y-1 text-amber-700">
-                    <li>Open your email inbox</li>
-                    <li>Click the <span className="font-semibold">Confirm your email</span> link</li>
-                    <li>Come back here and sign in</li>
-                    {pendingRole === "seller" && (
-                      <li>Complete your seller store setup</li>
-                    )}
-                  </ol>
-                </div>
-                <p className="text-xs text-muted-foreground mb-6">
-                  Can't find the email? Check your spam or junk folder.
-                </p>
-              </>
+              <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-sm text-amber-800 mb-6 text-left space-y-1">
+                <p className="font-semibold">What to do next:</p>
+                <ol className="list-decimal list-inside space-y-1 text-amber-700">
+                  <li>Open your email inbox</li>
+                  <li>Click the <span className="font-semibold">Confirm your email</span> link</li>
+                  <li>Come back here and sign in</li>
+                  {pendingRole === "seller" && <li>Complete your seller store setup</li>}
+                </ol>
+              </div>
             ) : (
-              <>
-                <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 text-sm text-blue-800 mb-6 text-left">
-                  <p>Open the email and click the reset link. You'll be taken to a page where you can set a new password.</p>
-                </div>
-                <p className="text-xs text-muted-foreground mb-6">
-                  Can't find the email? Check your spam or junk folder.
-                </p>
-              </>
+              <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 text-sm text-blue-800 mb-6 text-left">
+                <p className="font-semibold mb-1">What to do next:</p>
+                <ol className="list-decimal list-inside space-y-1 text-blue-700">
+                  <li>Open your email inbox</li>
+                  <li>Click the <span className="font-semibold">Confirm password change</span> link</li>
+                  <li>You'll be signed in automatically with your new password</li>
+                </ol>
+              </div>
             )}
 
+            <p className="text-xs text-muted-foreground mb-6">
+              Can't find the email? Check your spam or junk folder.
+            </p>
+
             <Button
-              onClick={() => {
-                setTab("signin");
-                signInForm.reset();
-              }}
+              onClick={() => { setTab("signin"); signInForm.reset(); }}
               className="w-full rounded-full font-bold"
               size="lg"
             >
@@ -193,6 +263,60 @@ export default function AuthPage() {
     );
   }
 
+  /* ── Set-password fallback (no stored password — different device) ── */
+  if (tab === "set-password") {
+    return (
+      <div className="min-h-[80vh] flex items-center justify-center p-4 bg-muted/20">
+        <div className="w-full max-w-md">
+          <div className="bg-white rounded-3xl border border-border shadow-xl p-8">
+            <div className="flex justify-center mb-5">
+              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                <KeyRound className="w-6 h-6 text-primary" />
+              </div>
+            </div>
+            <h1 className="text-2xl font-bold font-serif mb-1 text-center">Set your new password</h1>
+            <p className="text-muted-foreground text-sm mb-8 text-center">
+              Enter and confirm your new password below.
+            </p>
+
+            <Form {...setPasswordForm}>
+              <form onSubmit={setPasswordForm.handleSubmit(onSetPassword)} className="space-y-5">
+                <FormField control={setPasswordForm.control} name="newPassword" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="font-semibold flex items-center gap-2">
+                      <Lock className="w-4 h-4 text-muted-foreground" /> New Password
+                    </FormLabel>
+                    <FormControl>
+                      <PasswordInput field={field} placeholder="Min. 6 characters" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+
+                <FormField control={setPasswordForm.control} name="confirmPassword" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="font-semibold flex items-center gap-2">
+                      <Lock className="w-4 h-4 text-muted-foreground" /> Confirm Password
+                    </FormLabel>
+                    <FormControl>
+                      <PasswordInput field={field} placeholder="Repeat your new password" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+
+                <Button type="submit" size="lg" className="w-full rounded-full font-bold" disabled={loading}>
+                  {loading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving…</> : "Save New Password"}
+                </Button>
+              </form>
+            </Form>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  /* ── Main tabs: Sign In / Sign Up / Forgot ── */
   return (
     <div className="min-h-[80vh] flex items-center justify-center p-4 bg-muted/20">
       <div className="w-full max-w-md">
@@ -202,9 +326,7 @@ export default function AuthPage() {
             <button
               onClick={() => setTab("signin")}
               className={`flex-1 py-3.5 text-sm font-semibold transition-colors ${
-                tab === "signin"
-                  ? "bg-primary text-white"
-                  : "text-muted-foreground hover:text-foreground"
+                tab === "signin" ? "bg-primary text-white" : "text-muted-foreground hover:text-foreground"
               }`}
             >
               Sign In
@@ -212,9 +334,7 @@ export default function AuthPage() {
             <button
               onClick={() => setTab("signup")}
               className={`flex-1 py-3.5 text-sm font-semibold transition-colors ${
-                tab === "signup"
-                  ? "bg-primary text-white"
-                  : "text-muted-foreground hover:text-foreground"
+                tab === "signup" ? "bg-primary text-white" : "text-muted-foreground hover:text-foreground"
               }`}
             >
               Create Account
@@ -371,7 +491,7 @@ export default function AuthPage() {
           {tab === "forgot" && (
             <>
               <button
-                onClick={() => setTab("signin")}
+                onClick={() => { setTab("signin"); forgotForm.reset(); }}
                 className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors"
               >
                 <ArrowLeft className="w-4 h-4" /> Back to Sign In
@@ -383,9 +503,9 @@ export default function AuthPage() {
                 </div>
               </div>
 
-              <h1 className="text-2xl font-bold font-serif mb-1 text-center">Forgot password?</h1>
+              <h1 className="text-2xl font-bold font-serif mb-1 text-center">Reset your password</h1>
               <p className="text-muted-foreground text-sm mb-8 text-center">
-                Enter your email and we'll send you a link to reset your password.
+                Enter your email and your new password. We'll send a confirmation link — click it and you're in.
               </p>
 
               <Form {...forgotForm}>
@@ -402,8 +522,34 @@ export default function AuthPage() {
                     </FormItem>
                   )} />
 
+                  <FormField control={forgotForm.control} name="newPassword" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="font-semibold flex items-center gap-2">
+                        <Lock className="w-4 h-4 text-muted-foreground" /> New Password
+                      </FormLabel>
+                      <FormControl>
+                        <PasswordInput field={field} placeholder="Min. 6 characters" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+
+                  <FormField control={forgotForm.control} name="confirmPassword" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="font-semibold flex items-center gap-2">
+                        <Lock className="w-4 h-4 text-muted-foreground" /> Confirm New Password
+                      </FormLabel>
+                      <FormControl>
+                        <PasswordInput field={field} placeholder="Repeat your new password" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+
                   <Button type="submit" size="lg" className="w-full rounded-full font-bold" disabled={loading}>
-                    {loading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Sending…</> : "Send Reset Link"}
+                    {loading
+                      ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Sending…</>
+                      : "Send Confirmation Email"}
                   </Button>
                 </form>
               </Form>

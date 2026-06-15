@@ -64,8 +64,13 @@ export async function signInWithOAuth(provider: Provider) {
 /** Send a password-reset email to the given address */
 export async function resetPasswordForEmail(email: string) {
   return supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${window.location.origin}/auth?reset=1`,
+    redirectTo: `${window.location.origin}/auth`,
   });
+}
+
+/** Update the current user's password (call after PASSWORD_RECOVERY event) */
+export async function updatePassword(newPassword: string) {
+  return supabase.auth.updateUser({ password: newPassword });
 }
 
 /** Sign the current user out */
