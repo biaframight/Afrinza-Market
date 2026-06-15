@@ -377,7 +377,7 @@ export default function Home() {
                       <p className="font-bold text-foreground leading-tight truncate">{sp.businessName || sp.providerName}</p>
                       {sp.businessName && <p className="text-xs text-muted-foreground truncate">{sp.providerName}</p>}
                     </div>
-                    <BadgeCheck className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
+                    <BadgeCheck className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
                   </div>
 
                   <div className="flex items-center gap-1 text-xs text-muted-foreground">
