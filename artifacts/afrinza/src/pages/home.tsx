@@ -253,7 +253,7 @@ export default function Home() {
             className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-3 -mx-4 px-4 [&::-webkit-scrollbar]:hidden [scrollbar-width:none]"
           >
             {featuredProducts.products.map((product, i) => (
-              <div key={product.id} className="flex-shrink-0 w-44 snap-start">
+              <div key={product.id} className="flex-shrink-0 w-44 snap-start self-stretch">
                 <ProductCard product={product} index={i} />
               </div>
             ))}
