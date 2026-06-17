@@ -26,6 +26,8 @@ import {
   useAdminApproveRoomListing,
   useAdminUpdateRoomListing,
   useAdminDeleteRoomListing,
+  useFeatureFlag,
+  useSetFeatureFlag,
 } from "@/hooks/use-marketplace";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -34,7 +36,7 @@ import {
   Shield, Store, Package, Star, Trash2, Loader2, StarOff, Users, Tag,
   ShoppingBag, TrendingUp, Calendar, ChevronDown, CheckCircle, Clock, XCircle,
   BadgeCheck, Phone, UserCheck, UserX, ShieldOff, CreditCard, Power,
-  KeyRound, Eye, EyeOff, Pencil,
+  KeyRound, Eye, EyeOff, Pencil, Settings, ToggleLeft, ToggleRight,
 } from "lucide-react";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -52,7 +54,7 @@ import { MALAYSIA_LOCATIONS } from "@/lib/malaysia-locations";
 
 const ADMIN_EMAIL = "alphuplift@gmail.com";
 
-type Tab = "orders" | "sellers" | "products" | "kyc" | "subscriptions" | "serviceproviders" | "rooms";
+type Tab = "orders" | "sellers" | "products" | "kyc" | "subscriptions" | "serviceproviders" | "rooms" | "settings";
 type Period = "today" | "week" | "month" | "year" | "all";
 
 const PERIOD_LABELS: Record<Period, string> = {
@@ -124,6 +126,74 @@ function groupByDay(orders: AdminOrder[]): { label: string; count: number; reven
     .map(([label, v]) => ({ label, ...v }))
     .sort((a, b) => new Date(a.label).getTime() - new Date(b.label).getTime())
     .slice(-14);
+}
+
+function AdminSettingsTab() {
+  const subFlag = useFeatureFlag("subscription_enabled");
+  const setFlag = useSetFeatureFlag();
+  const enabled = subFlag.data === "true";
+
+  const toggle = () => {
+    setFlag.mutate(
+      { key: "subscription_enabled", value: enabled ? "false" : "true" },
+      {
+        onSuccess: () => toast.success(enabled ? "Subscription feature hidden from users." : "Subscription feature is now visible to users."),
+        onError: () => toast.error("Failed to update setting. Make sure 014_site_settings.sql has been run."),
+      }
+    );
+  };
+
+  return (
+    <div className="max-w-xl space-y-6">
+      <div>
+        <h2 className="text-xl font-bold mb-1">Feature Flags</h2>
+        <p className="text-sm text-muted-foreground">Toggle features on or off site-wide. Changes take effect immediately for all users.</p>
+      </div>
+
+      <div className="bg-white rounded-2xl border border-border shadow-sm p-6">
+        <div className="flex items-start gap-4">
+          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${enabled ? "bg-green-100" : "bg-muted"}`}>
+            <CreditCard className={`w-5 h-5 ${enabled ? "text-green-600" : "text-muted-foreground"}`} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="font-bold text-sm">RM 10 Subscription Feature</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Shows subscription payment UI (QR code, receipt upload, payment prompts) to sellers, service providers, and room listers.
+                  When OFF, all subscription-related UI is hidden — listings are free.
+                </p>
+              </div>
+              <button
+                onClick={toggle}
+                disabled={subFlag.isLoading || setFlag.isPending}
+                className="shrink-0 focus:outline-none disabled:opacity-50"
+                title={enabled ? "Click to disable" : "Click to enable"}
+              >
+                {subFlag.isLoading || setFlag.isPending ? (
+                  <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+                ) : enabled ? (
+                  <ToggleRight className="w-10 h-10 text-green-500" />
+                ) : (
+                  <ToggleLeft className="w-10 h-10 text-muted-foreground" />
+                )}
+              </button>
+            </div>
+            <div className="mt-3">
+              <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${enabled ? "bg-green-100 text-green-700" : "bg-muted text-muted-foreground"}`}>
+                {enabled ? "● Visible to users" : "● Hidden from users"}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-sm text-amber-800">
+        <p className="font-semibold mb-1">⚠ Before enabling</p>
+        <p className="text-xs">Make sure migration <code className="bg-amber-100 px-1 rounded">014_site_settings.sql</code> has been run in your Supabase SQL Editor, otherwise the toggle will have no effect.</p>
+      </div>
+    </div>
+  );
 }
 
 export default function Admin() {
@@ -375,6 +445,7 @@ export default function Admin() {
             { id: "subscriptions", icon: <CreditCard  className="w-4 h-4" />, label: `Subscriptions${subPendingCount > 0 ? ` (${subPendingCount} pending)` : ""}` },
             { id: "serviceproviders", icon: <Users className="w-4 h-4" />, label: `Service Providers${spPendingCount > 0 ? ` (${spPendingCount} pending)` : ` (${(allServiceProviders.data ?? []).length})`}` },
             { id: "rooms", icon: <KeyRound className="w-4 h-4" />, label: `Rooms${roomPendingCount > 0 ? ` (${roomPendingCount} pending)` : ` (${(allRoomListings.data ?? []).length})`}` },
+            { id: "settings", icon: <Settings className="w-4 h-4" />, label: "Settings" },
           ] as const).map(({ id, icon, label }) => (
             <button
               key={id}
@@ -1407,6 +1478,11 @@ export default function Admin() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* ══════════════════════════════════════════════════════════
+          SETTINGS TAB
+      ══════════════════════════════════════════════════════════ */}
+      {tab === "settings" && <AdminSettingsTab />}
 
       {/* Confirm delete dialog */}
       <AlertDialog open={!!confirmDelete} onOpenChange={(open) => !open && setConfirmDelete(null)}>

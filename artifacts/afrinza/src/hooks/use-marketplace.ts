@@ -450,6 +450,24 @@ export function useCreateRoomListing() {
   });
 }
 
+// ─── Site Feature Flags ──────────────────────────────────────────────────────
+
+export function useFeatureFlag(key: string) {
+  return useQuery({
+    queryKey: ["site_settings", key],
+    queryFn: () => db.getSiteSetting(key),
+    staleTime: 60_000,
+  });
+}
+
+export function useSetFeatureFlag() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ key, value }: { key: string; value: string }) => db.setSiteSetting(key, value),
+    onSuccess: (_, { key }) => qc.invalidateQueries({ queryKey: ["site_settings", key] }),
+  });
+}
+
 export function useSubmitRoomPaymentReceipt() {
   const qc = useQueryClient();
   return useMutation({

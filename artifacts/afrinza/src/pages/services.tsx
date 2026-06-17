@@ -29,7 +29,7 @@ import { signUpWithEmail } from "@/lib/supabase-auth";
 import { useAuthContext } from "@/contexts/auth-context";
 import {
   useGetRoomListings, useCreateRoomListing, useSubmitRoomPaymentReceipt,
-  useGetServiceProviders, useCreateServiceProvider,
+  useGetServiceProviders, useCreateServiceProvider, useFeatureFlag,
 } from "@/hooks/use-marketplace";
 import { uploadServicePhoto, uploadRoomPhoto } from "@/lib/supabase-db";
 
@@ -174,6 +174,9 @@ export default function Services() {
   const roomListings = useGetRoomListings(undefined);
   const createRoomListing = useCreateRoomListing();
   const submitReceipt = useSubmitRoomPaymentReceipt();
+
+  const subFeature = useFeatureFlag("subscription_enabled");
+  const subscriptionEnabled = subFeature.data === "true";
 
   const filteredRooms = roomListings.data
     ? searchedLocation
@@ -352,7 +355,7 @@ export default function Services() {
       });
 
       setCreatedRoomId(room.id);
-      setRoomPayStep("cta");
+      if (subscriptionEnabled) setRoomPayStep("cta");
       setIsRoomSuccess(true);
       window.scrollTo(0, 0);
     } catch (e) {
@@ -446,6 +449,33 @@ export default function Services() {
   }
 
   if (isRoomSuccess) {
+    // ── No subscription flow (feature flag is off) ─────────────
+    if (!roomPayStep) return (
+      <div className="min-h-[80vh] flex flex-col items-center justify-center p-4 text-center max-w-md mx-auto">
+        <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-6">
+          <CheckCircle2 className="w-10 h-10" />
+        </div>
+        <h1 className="text-3xl font-bold font-serif mb-2">Room Listed! 🎉</h1>
+        <p className="text-muted-foreground mb-8 text-sm">
+          Your listing has been submitted and is <strong>pending admin approval</strong>. It will go live once reviewed.
+        </p>
+        <div className="flex flex-col sm:flex-row gap-3 w-full">
+          <Button
+            onClick={() => { setMainTab("rooms"); setRoomTab("find"); resetRoomSuccess(); }}
+            variant="outline" className="rounded-full px-8 h-12 font-semibold flex-1"
+          >
+            Browse Rooms
+          </Button>
+          <Button
+            onClick={() => { setRoomTab("list"); resetRoomSuccess(); }}
+            className="rounded-full px-8 h-12 font-semibold flex-1"
+          >
+            List Another Room
+          </Button>
+        </div>
+      </div>
+    );
+
     // ── Step: CTA ──────────────────────────────────────────────
     if (roomPayStep === "cta") return (
       <div className="min-h-[80vh] flex flex-col items-center justify-center p-4 text-center max-w-md mx-auto">
@@ -894,10 +924,12 @@ export default function Services() {
                         </FormItem>
                       )} />
 
-                      <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-sm text-amber-800">
-                        <p className="font-semibold mb-0.5">💳 Subscription: RM 10/month</p>
-                        <p className="text-xs">After registering, you'll receive payment instructions to keep your listing active.</p>
-                      </div>
+                      {subscriptionEnabled && (
+                        <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-sm text-amber-800">
+                          <p className="font-semibold mb-0.5">💳 Subscription: RM 10/month</p>
+                          <p className="text-xs">After registering, you'll receive payment instructions to keep your listing active.</p>
+                        </div>
+                      )}
 
                       <div className="pt-6 border-t border-border/50">
                         <Button
@@ -1284,7 +1316,7 @@ export default function Services() {
               <div className="mt-10 bg-primary/5 border border-primary/20 rounded-3xl p-6 text-center">
                 <Home className="w-8 h-8 text-primary mx-auto mb-3" />
                 <p className="font-bold text-lg mb-1">Have a room to rent?</p>
-                <p className="text-sm text-muted-foreground mb-4">List it and connect with Africans across Malaysia. RM 10/month subscription applies.</p>
+                <p className="text-sm text-muted-foreground mb-4">List it and connect with Africans across Malaysia.{subscriptionEnabled ? " RM 10/month subscription applies." : ""}</p>
                 <Button onClick={() => setRoomTab("list")} className="rounded-full gap-2">
                   <Home className="w-4 h-4" /> List My Room
                 </Button>
@@ -1308,10 +1340,12 @@ export default function Services() {
                   </div>
 
                   {/* Subscription notice */}
-                  <div className="mb-7 p-4 rounded-xl bg-amber-50 border border-amber-200 text-sm text-amber-800">
-                    <p className="font-semibold mb-0.5">💳 Subscription required: RM 10/month</p>
-                    <p className="text-xs">After listing, you'll receive a QR code to pay your subscription and keep your listing active.</p>
-                  </div>
+                  {subscriptionEnabled && (
+                    <div className="mb-7 p-4 rounded-xl bg-amber-50 border border-amber-200 text-sm text-amber-800">
+                      <p className="font-semibold mb-0.5">💳 Subscription required: RM 10/month</p>
+                      <p className="text-xs">After listing, you'll receive a QR code to pay your subscription and keep your listing active.</p>
+                    </div>
+                  )}
 
                   {/* Room photos */}
                   <div className="mb-7">
@@ -1481,7 +1515,7 @@ export default function Services() {
                           )}
                         </Button>
                         <p className="text-center text-xs text-muted-foreground mt-4">
-                          Your listing goes live instantly. A RM 10/month subscription keeps it active.
+                          Your listing is pending admin approval.{subscriptionEnabled ? " A RM 10/month subscription keeps it active." : ""}
                         </p>
                       </div>
                     </form>

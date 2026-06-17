@@ -9,7 +9,7 @@ import {
   LayoutDashboard, LogOut, UserCircle, Shield, Wrench, KeyRound,
   CreditCard, BadgeCheck, AlertTriangle, X, Bell,
 } from "lucide-react";
-import { useGetCart, useGetCurrentSubscription, useGetServiceProviderByUser, useGetServiceProviderSub } from "@/hooks/use-marketplace";
+import { useGetCart, useGetCurrentSubscription, useGetServiceProviderByUser, useGetServiceProviderSub, useFeatureFlag } from "@/hooks/use-marketplace";
 import { getSessionId } from "@/lib/session";
 import { useState, useEffect, useRef } from "react";
 import {
@@ -51,12 +51,15 @@ export function Layout({ children }: LayoutProps) {
   const subsLoaded = !currentSub.isLoading && !currentSpSub.isLoading;
   const isBothSellerAndSp = !!sellerProfile && !!myServiceProvider.data;
 
+  const subFeature = useFeatureFlag("subscription_enabled");
+  const subscriptionEnabled = subFeature.data === "true";
+
   const sellerNeedsKyc = !!sellerProfile && sellerProfile.kycStatus === "none";
   // For dual-role users, show a single sub prompt (not two separate ones)
-  const sellerNeedsSubscription = !!sellerProfile && subsLoaded && !anySubConfirmed;
+  const sellerNeedsSubscription = subscriptionEnabled && !!sellerProfile && subsLoaded && !anySubConfirmed;
   const spNeedsKyc = !!myServiceProvider.data && !myServiceProvider.data.isVerified && myServiceProvider.data.kycStatus === "none";
   // SP sub prompt only shown if they're NOT already a seller (seller sub covers them)
-  const spNeedsSubscription = !!myServiceProvider.data && !isBothSellerAndSp && subsLoaded && !anySubConfirmed;
+  const spNeedsSubscription = subscriptionEnabled && !!myServiceProvider.data && !isBothSellerAndSp && subsLoaded && !anySubConfirmed;
   const hasUrgentActions = isAuthenticated && (sellerNeedsKyc || sellerNeedsSubscription || spNeedsKyc || spNeedsSubscription);
 
   const notifications: { msg: string; tab: string }[] = [

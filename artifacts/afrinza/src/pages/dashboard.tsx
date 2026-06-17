@@ -18,6 +18,7 @@ import {
   useUpdateServiceProvider,
   useUpdateRoomListing,
   useDeleteRoomListing,
+  useFeatureFlag,
 } from "@/hooks/use-marketplace";
 import { uploadProductImage, uploadReceiptImage, uploadServiceProviderReceipt, uploadServicePhoto, uploadRoomPhoto } from "@/lib/supabase-db";
 import { updateUserProfile } from "@/lib/supabase-auth";
@@ -208,6 +209,9 @@ export default function Dashboard() {
 
   const isSeller = !!sellerProfile;
   const serviceProducts = (products ?? []).filter((p) => p.category === "Services");
+
+  const subFeature = useFeatureFlag("subscription_enabled");
+  const subscriptionEnabled = subFeature.data === "true";
 
   // One subscription covers all roles — seller sub and SP sub are interchangeable
   const anySubConfirmed = currentSub.data?.status === "confirmed" || currentSpSub.data?.status === "confirmed";
@@ -854,7 +858,7 @@ export default function Dashboard() {
         )}
 
         {/* ── STORE TAB: SUBSCRIPTION CARD ─────────────────────── */}
-        {currentTab === "store" && sellerProfile && (
+        {subscriptionEnabled && currentTab === "store" && sellerProfile && (
           <div className="max-w-2xl mt-6">
             {anySubConfirmed ? (
               <div className="bg-green-50 border border-green-200 rounded-3xl p-6 md:p-8">
@@ -1186,7 +1190,7 @@ export default function Dashboard() {
                 </div>
 
                 {/* Subscription card — shared with seller subscription */}
-                {!anySubConfirmed && !anySubPending && (
+                {subscriptionEnabled && !anySubConfirmed && !anySubPending && (
                   <div className="bg-white rounded-3xl border border-border shadow p-6">
                     <div className="flex items-start gap-4">
                       <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-muted">
@@ -1215,7 +1219,7 @@ export default function Dashboard() {
                     </div>
                   </div>
                 )}
-                {anySubConfirmed && (
+                {subscriptionEnabled && anySubConfirmed && (
                   <div className="bg-green-50 border border-green-200 rounded-3xl p-6">
                     <div className="flex items-start gap-4">
                       <div className="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center shrink-0">
@@ -1228,7 +1232,7 @@ export default function Dashboard() {
                     </div>
                   </div>
                 )}
-                {anySubPending && (
+                {subscriptionEnabled && anySubPending && (
                   <div className="bg-amber-50 border border-amber-200 rounded-3xl p-6">
                     <div className="flex items-start gap-4">
                       <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">

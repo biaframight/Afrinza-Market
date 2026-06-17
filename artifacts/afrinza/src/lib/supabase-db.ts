@@ -1480,3 +1480,22 @@ export async function uploadServiceProviderReceipt(file: File): Promise<string> 
   if (error) throw new Error(`Receipt upload failed: ${error.message}`);
   return supabase.storage.from("service-photos").getPublicUrl(path).data.publicUrl;
 }
+
+// ─── Site Settings / Feature Flags ──────────────────────────────────────────
+
+export async function getSiteSetting(key: string): Promise<string | null> {
+  const { data, error } = await supabase
+    .from("site_settings")
+    .select("value")
+    .eq("key", key)
+    .maybeSingle();
+  if (error) return null;
+  return data?.value ?? null;
+}
+
+export async function setSiteSetting(key: string, value: string): Promise<void> {
+  const { error } = await supabase
+    .from("site_settings")
+    .upsert({ key, value }, { onConflict: "key" });
+  if (error) throw new Error(`[Supabase / setSiteSetting] ${error.message}`);
+}
