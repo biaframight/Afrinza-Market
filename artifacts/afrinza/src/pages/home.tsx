@@ -50,16 +50,11 @@ export default function Home() {
 
   const productsRef = useRef<HTMLDivElement>(null);
   const sellersRef = useRef<HTMLDivElement>(null);
-  const providersRef = useRef<HTMLDivElement>(null);
-  const roomsRef = useRef<HTMLDivElement>(null);
-
   // ── Auto-slideshow: advance each carousel every 3.5 s ─────────
   useEffect(() => {
     const carousels = [
       { ref: productsRef, step: 192 },   // w-44 (176) + gap-4 (16)
       { ref: sellersRef, step: 276 },    // w-64 (256) + gap-5 (20)
-      { ref: providersRef, step: 308 },  // w-72 (288) + gap-5 (20)
-      { ref: roomsRef, step: 308 },
     ];
     const timers = carousels.map(({ ref, step }) =>
       setInterval(() => {
@@ -315,88 +310,89 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── Verified Service Providers ─────────────────────── */}
+      {/* ── Services & Rooms — unified grid ─────────────────── */}
       <section className="container mx-auto px-4 py-14">
         <div className="flex items-center justify-between mb-8">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <BadgeCheck className="w-5 h-5 text-blue-500" />
-              <span className="text-xs font-bold uppercase tracking-widest text-blue-600">Verified</span>
+              <Wrench className="w-4 h-4 text-primary" />
+              <HomeIcon className="w-4 h-4 text-blue-500" />
+              <span className="text-xs font-bold uppercase tracking-widest text-primary">Services & Rooms</span>
             </div>
-            <h2 className="text-3xl font-bold text-foreground font-serif">Trusted Service Providers</h2>
-            <p className="text-muted-foreground mt-1">Identity-verified professionals ready to help you</p>
+            <h2 className="text-3xl font-bold text-foreground font-serif">Services & Rooms to Rent</h2>
+            <p className="text-muted-foreground mt-1">Find professionals and rooms listed by the African community</p>
           </div>
-          <div className="flex items-center gap-3">
-            <Link href="/services" className="hidden md:flex items-center text-primary font-medium hover:underline gap-1 text-sm">
-              View all <ArrowRight className="w-4 h-4" />
-            </Link>
-            {!isProvidersLoading && verifiedProviders.length > 0 && (
-              <ScrollArrows containerRef={providersRef} />
-            )}
-          </div>
+          <Link href="/services" className="hidden md:flex items-center text-primary font-medium hover:underline gap-1 text-sm">
+            View all <ArrowRight className="w-4 h-4" />
+          </Link>
         </div>
 
-        {isProvidersLoading ? (
-          <div className="flex gap-5 overflow-hidden">
-            {[...Array(3)].map((_, i) => <Skeleton key={i} className="flex-shrink-0 w-72 h-52 rounded-2xl" />)}
+        {(isProvidersLoading || isRoomsLoading) ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="bg-white rounded-2xl border border-border p-5 space-y-3">
+                <Skeleton className="h-44 w-full rounded-xl" />
+                <Skeleton className="h-5 w-3/4" />
+                <Skeleton className="h-4 w-1/2" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+            ))}
           </div>
-        ) : verifiedProviders.length === 0 ? (
+        ) : (allProviders ?? []).length === 0 && (allRooms ?? []).length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
-            <BadgeCheck className="w-10 h-10 mx-auto mb-3 opacity-30" />
-            <p className="text-lg font-medium">No verified providers yet</p>
-            <p className="text-sm mt-1">Providers appear here after identity verification.</p>
+            <Wrench className="w-10 h-10 mx-auto mb-3 opacity-30" />
+            <p className="text-lg font-medium">Nothing listed yet</p>
+            <p className="text-sm mt-1">Service providers and rooms will appear here once added.</p>
           </div>
         ) : (
-          <div
-            ref={providersRef}
-            className="flex gap-5 overflow-x-auto snap-x snap-mandatory pb-3 -mx-4 px-4 [&::-webkit-scrollbar]:hidden [scrollbar-width:none]"
-          >
-            {verifiedProviders.map((sp, i) => (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {/* ── Service provider cards ── */}
+            {(allProviders ?? []).slice(0, 6).map((sp, i) => (
               <motion.div
-                key={sp.id}
+                key={`sp-${sp.id}`}
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.35, delay: Math.min(i * 0.06, 0.3) }}
-                className="flex-shrink-0 w-72 snap-start bg-white rounded-2xl border border-border shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col"
+                className="bg-white rounded-2xl border border-border shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col cursor-pointer"
+                onClick={() => setLocation(`/services?provider=${sp.id}`)}
               >
-                {/* Photo strip — no overlay badge */}
-                <div className="h-36 bg-white relative overflow-hidden flex items-center justify-center border-b border-border/40">
+                <div className="relative h-44 border-b border-border/40">
+                  <span className="absolute top-2 left-2 z-10 bg-primary text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <Wrench className="w-2.5 h-2.5" /> Service
+                  </span>
+                  {sp.isVerified && (
+                    <span className="absolute top-2 right-2 z-10">
+                      <BadgeCheck className="w-5 h-5 text-blue-500 drop-shadow" />
+                    </span>
+                  )}
                   {sp.photos[0] ? (
-                    <img src={sp.photos[0]} alt={sp.providerName} className="w-full h-full object-contain" />
+                    <img src={sp.photos[0]} alt={sp.providerName} className="w-full h-full object-contain bg-white" />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100">
-                      <Wrench className="w-10 h-10 text-blue-300" />
+                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/10 to-primary/5">
+                      <Wrench className="w-10 h-10 text-primary/30" />
                     </div>
                   )}
                 </div>
-
                 <div className="p-4 flex flex-col flex-1 gap-2">
-                  <div className="flex items-start gap-1.5">
-                    <div className="flex-1 min-w-0">
-                      <p className="font-bold text-foreground leading-tight truncate">{sp.businessName || sp.providerName}</p>
-                      {sp.businessName && <p className="text-xs text-muted-foreground truncate">{sp.providerName}</p>}
-                    </div>
-                    <BadgeCheck className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-foreground leading-tight truncate">{sp.businessName || sp.providerName}</p>
+                    {sp.businessName && <p className="text-xs text-muted-foreground truncate">{sp.providerName}</p>}
                   </div>
-
                   <div className="flex items-center gap-1 text-xs text-muted-foreground">
                     <MapPin className="w-3 h-3 flex-shrink-0" /> {sp.location}
                   </div>
-
                   <div className="flex flex-wrap gap-1">
                     {sp.serviceTypes.slice(0, 3).map((t) => (
-                      <span key={t} className="text-[11px] bg-blue-50 text-blue-700 border border-blue-100 px-2 py-0.5 rounded-full font-medium">{t}</span>
+                      <span key={t} className="text-[11px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">{t}</span>
                     ))}
                     {sp.serviceTypes.length > 3 && (
                       <span className="text-[11px] text-muted-foreground px-1">+{sp.serviceTypes.length - 3}</span>
                     )}
                   </div>
-
                   {sp.description && (
-                    <p className="text-xs text-muted-foreground line-clamp-2 flex-1">{sp.description}</p>
+                    <p className="text-xs text-muted-foreground line-clamp-2">{sp.description}</p>
                   )}
-
-                  <div className="mt-1 flex gap-2">
+                  <div className="mt-1 flex gap-2" onClick={(e) => e.stopPropagation()}>
                     <button
                       onClick={() => setLocation(`/services?provider=${sp.id}`)}
                       className="flex-1 flex items-center justify-center gap-1.5 bg-primary/10 hover:bg-primary/20 text-primary text-sm font-semibold py-2 rounded-xl transition-colors"
@@ -415,135 +411,81 @@ export default function Home() {
                 </div>
               </motion.div>
             ))}
+
+            {/* ── Room cards ── */}
+            {(allRooms ?? []).slice(0, 6).map((room, i) => (
+              <motion.div
+                key={`room-${room.id}`}
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.35, delay: Math.min(i * 0.06, 0.3) }}
+                className="bg-white rounded-2xl border border-border shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col cursor-pointer"
+                onClick={() => setLocation(`/services?tab=rooms&room=${room.id}`)}
+              >
+                <div className="relative h-44 border-b border-border/40 overflow-hidden">
+                  <span className="absolute top-2 left-2 z-10 bg-blue-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <HomeIcon className="w-2.5 h-2.5" /> Room
+                  </span>
+                  {room.pricePerMonth != null && (
+                    <span className="absolute top-2 right-2 z-10 bg-primary text-white text-xs font-bold px-2 py-0.5 rounded-full shadow">
+                      RM {room.pricePerMonth}/mo
+                    </span>
+                  )}
+                  {room.images[0] ? (
+                    <img src={room.images[0]} alt={room.title} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100">
+                      <BedDouble className="w-10 h-10 text-blue-300" />
+                    </div>
+                  )}
+                </div>
+                <div className="p-4 flex flex-col flex-1 gap-2">
+                  <div className="flex items-start gap-2">
+                    <p className="font-bold text-foreground leading-tight line-clamp-1 flex-1">{room.title}</p>
+                    <span className="shrink-0 text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">{room.roomType}</span>
+                  </div>
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <MapPin className="w-3 h-3 flex-shrink-0" /> {room.location}
+                  </div>
+                  {room.amenities.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {room.amenities.slice(0, 3).map((a) => (
+                        <span key={a} className="text-[11px] bg-blue-50 text-blue-700 border border-blue-100 px-2 py-0.5 rounded-full font-medium">{a}</span>
+                      ))}
+                      {room.amenities.length > 3 && (
+                        <span className="text-[11px] text-muted-foreground px-1">+{room.amenities.length - 3}</span>
+                      )}
+                    </div>
+                  )}
+                  {room.description && (
+                    <p className="text-xs text-muted-foreground line-clamp-2 flex-1">{room.description}</p>
+                  )}
+                  <div className="mt-1 flex gap-2" onClick={(e) => e.stopPropagation()}>
+                    <button
+                      onClick={() => setLocation(`/services?tab=rooms&room=${room.id}`)}
+                      className="flex-1 flex items-center justify-center gap-1.5 bg-primary/10 hover:bg-primary/20 text-primary text-sm font-semibold py-2 rounded-xl transition-colors"
+                    >
+                      <Eye className="w-4 h-4" /> View Details
+                    </button>
+                    <a
+                      href={`https://wa.me/${room.whatsapp.replace(/[^0-9]/g, "")}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1 flex items-center justify-center gap-1.5 bg-[#25D366] hover:bg-[#1ebe5c] text-white text-sm font-semibold py-2 rounded-xl transition-colors"
+                    >
+                      <MessageCircle className="w-4 h-4" /> WhatsApp
+                    </a>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
           </div>
         )}
 
-        <div className="mt-6 text-center md:hidden">
-          <Button variant="outline" asChild className="rounded-full w-full">
-            <Link href="/services">View all services</Link>
+        <div className="mt-8 text-center">
+          <Button variant="outline" asChild className="rounded-full">
+            <Link href="/services">View all services & rooms <ArrowRight className="w-4 h-4 ml-1" /></Link>
           </Button>
-        </div>
-      </section>
-
-      {/* ── Rooms to Rent ───────────────────────────────────── */}
-      <section className="bg-muted/30 border-y border-border/50 py-14">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <HomeIcon className="w-4 h-4 text-blue-500" />
-                <span className="text-xs font-bold uppercase tracking-widest text-blue-600">Rooms</span>
-              </div>
-              <h2 className="text-3xl font-bold text-foreground font-serif">Rooms to Rent</h2>
-              <p className="text-muted-foreground mt-1">Find affordable rooms listed by the community</p>
-            </div>
-            <div className="flex items-center gap-3">
-              <Link href="/services?tab=rooms" className="hidden md:flex items-center text-primary font-medium hover:underline gap-1 text-sm">
-                View all <ArrowRight className="w-4 h-4" />
-              </Link>
-              {!isRoomsLoading && featuredRooms.length > 0 && (
-                <ScrollArrows containerRef={roomsRef} />
-              )}
-            </div>
-          </div>
-
-          {isRoomsLoading ? (
-            <div className="flex gap-5 overflow-hidden">
-              {[...Array(3)].map((_, i) => <Skeleton key={i} className="flex-shrink-0 w-72 h-56 rounded-2xl" />)}
-            </div>
-          ) : featuredRooms.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <BedDouble className="w-10 h-10 mx-auto mb-3 opacity-30" />
-              <p className="text-lg font-medium">No rooms listed yet</p>
-              <p className="text-sm mt-1">Room listings will appear here once added.</p>
-            </div>
-          ) : (
-            <div
-              ref={roomsRef}
-              className="flex gap-5 overflow-x-auto snap-x snap-mandatory pb-3 -mx-4 px-4 [&::-webkit-scrollbar]:hidden [scrollbar-width:none]"
-            >
-              {featuredRooms.map((room, i) => (
-                <motion.div
-                  key={room.id}
-                  initial={{ opacity: 0, y: 16 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.35, delay: Math.min(i * 0.06, 0.3) }}
-                  className="flex-shrink-0 w-72 snap-start bg-white rounded-2xl border border-border shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col"
-                >
-                  {/* Photo */}
-                  <div className="h-40 bg-muted relative overflow-hidden">
-                    {room.images[0] ? (
-                      <img src={room.images[0]} alt={room.title} className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100">
-                        <BedDouble className="w-10 h-10 text-blue-300" />
-                      </div>
-                    )}
-                    <div className="absolute top-2 left-2 bg-white/90 backdrop-blur-sm text-xs font-semibold px-2 py-0.5 rounded-full border border-border shadow-sm">
-                      {room.roomType}
-                    </div>
-                    {room.pricePerMonth != null && (
-                      <div className="absolute top-2 right-2 bg-primary text-white text-xs font-bold px-2 py-0.5 rounded-full shadow">
-                        RM {room.pricePerMonth}/mo
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="p-4 flex flex-col flex-1 gap-2">
-                    <p className="font-bold text-foreground leading-tight line-clamp-1">{room.title}</p>
-
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                      <MapPin className="w-3 h-3 flex-shrink-0" /> {room.location}
-                    </div>
-
-                    {room.amenities.length > 0 && (
-                      <div className="flex flex-wrap gap-1">
-                        {room.amenities.slice(0, 3).map((a) => (
-                          <span key={a} className="text-[11px] bg-blue-50 text-blue-700 border border-blue-100 px-2 py-0.5 rounded-full font-medium">{a}</span>
-                        ))}
-                        {room.amenities.length > 3 && (
-                          <span className="text-[11px] text-muted-foreground px-1">+{room.amenities.length - 3}</span>
-                        )}
-                      </div>
-                    )}
-
-                    {room.description && (
-                      <p className="text-xs text-muted-foreground line-clamp-2 flex-1">{room.description}</p>
-                    )}
-
-                    {room.availableFrom && (
-                      <p className="text-xs text-muted-foreground">
-                        Available: <span className="font-medium text-foreground">{new Date(room.availableFrom).toLocaleDateString("en-MY", { day: "numeric", month: "short", year: "numeric" })}</span>
-                      </p>
-                    )}
-
-                    <div className="mt-1 flex gap-2">
-                      <button
-                        onClick={() => setLocation(`/services?tab=rooms&room=${room.id}`)}
-                        className="flex-1 flex items-center justify-center gap-1.5 bg-primary/10 hover:bg-primary/20 text-primary text-sm font-semibold py-2 rounded-xl transition-colors"
-                      >
-                        <Eye className="w-4 h-4" /> View Details
-                      </button>
-                      <a
-                        href={`https://wa.me/${room.whatsapp.replace(/[^0-9]/g, "")}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex-1 flex items-center justify-center gap-1.5 bg-[#25D366] hover:bg-[#1ebe5c] text-white text-sm font-semibold py-2 rounded-xl transition-colors"
-                      >
-                        <MessageCircle className="w-4 h-4" /> WhatsApp
-                      </a>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          )}
-
-          <div className="mt-6 text-center md:hidden">
-            <Button variant="outline" asChild className="rounded-full w-full">
-              <Link href="/services?tab=rooms">View all rooms</Link>
-            </Button>
-          </div>
         </div>
       </section>
 
