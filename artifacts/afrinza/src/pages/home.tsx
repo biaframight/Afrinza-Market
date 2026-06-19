@@ -81,8 +81,7 @@ export default function Home() {
     const params = new URLSearchParams();
     if (searchQuery) params.append("search", searchQuery);
     if (location) params.append("location", location);
-    // Route to services when the query looks like a service, otherwise products
-    setLocation(`/services?${params.toString()}`);
+    setLocation(`/products?${params.toString()}`);
   };
 
   return (
