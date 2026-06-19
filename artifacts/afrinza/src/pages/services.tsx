@@ -670,10 +670,10 @@ export default function Services() {
             </div>
             <div className="min-w-0">
               <p className="font-bold text-sm leading-tight truncate">
-                {mainTab === "services" ? "Service Providers" : "Rooms for Rent"}
+                {mainTab === "services" ? "Services & Rooms" : "Rooms for Rent"}
               </p>
               <p className="text-xs text-muted-foreground truncate">
-                {mainTab === "services" ? "Find African service pros across Malaysia" : "Search or list rooms across Malaysia"}
+                {mainTab === "services" ? "Find African service pros & rooms across Malaysia" : "Search or list rooms across Malaysia"}
               </p>
             </div>
           </div>
@@ -682,13 +682,13 @@ export default function Services() {
               onClick={() => { setMainTab("services"); setShowRegisterForm(false); }}
               className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold transition-all ${mainTab === "services" ? "bg-primary text-white shadow-sm" : "bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/80"}`}
             >
-              <Wrench className="w-3.5 h-3.5" /> Listed Services
+              <Wrench className="w-3.5 h-3.5" /> All Services
             </button>
             <button
               onClick={() => setMainTab("rooms")}
               className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold transition-all ${mainTab === "rooms" ? "bg-primary text-white shadow-sm" : "bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/80"}`}
             >
-              <Home className="w-3.5 h-3.5" /> Rent a Room
+              <Home className="w-3.5 h-3.5" /> Rooms to Rent
             </button>
           </div>
         </div>
@@ -1142,6 +1142,110 @@ export default function Services() {
                 </>
                 );
               })()}
+            </div>
+          )}
+
+          {/* ── Rooms for Rent section (visible in All Services view) ── */}
+          {!showRegisterForm && (
+            <div className="max-w-6xl mx-auto mt-12 mb-4">
+              <div className="flex items-center justify-between mb-5">
+                <div>
+                  <h2 className="text-xl font-bold flex items-center gap-2">
+                    <Home className="w-5 h-5 text-primary" /> Rooms for Rent
+                  </h2>
+                  <p className="text-sm text-muted-foreground mt-0.5">Available rooms across Malaysia</p>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="rounded-full gap-1.5"
+                    onClick={() => { setMainTab("rooms"); setRoomTab("list"); window.scrollTo(0, 0); }}
+                  >
+                    <Home className="w-3.5 h-3.5" /> List My Room
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="rounded-full gap-1.5"
+                    onClick={() => { setMainTab("rooms"); setRoomTab("find"); window.scrollTo(0, 0); }}
+                  >
+                    View All <ArrowRight className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+              </div>
+
+              {roomListings.isLoading ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="bg-white rounded-2xl border border-border p-5 space-y-3">
+                      <Skeleton className="h-44 w-full rounded-xl" />
+                      <Skeleton className="h-5 w-3/4" />
+                      <Skeleton className="h-4 w-1/2" />
+                    </div>
+                  ))}
+                </div>
+              ) : !roomListings.data || roomListings.data.length === 0 ? (
+                <div className="text-center py-14 text-muted-foreground bg-white rounded-3xl border border-border shadow-sm">
+                  <Home className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                  <p className="font-bold mb-1">No rooms listed yet</p>
+                  <p className="text-sm mb-5">Be the first to list a room for rent.</p>
+                  <Button
+                    className="rounded-full gap-2"
+                    onClick={() => { setMainTab("rooms"); setRoomTab("list"); window.scrollTo(0, 0); }}
+                  >
+                    <Home className="w-4 h-4" /> List a Room
+                  </Button>
+                </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                    {roomListings.data.slice(0, 6).map((room) => (
+                      <div
+                        key={room.id}
+                        className="bg-white rounded-2xl border border-border shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col group cursor-pointer"
+                        onClick={() => { setSelectedRoom(room); setMainTab("rooms"); setRoomTab("find"); }}
+                      >
+                        {room.images && room.images.length > 0 ? (
+                          <div className="h-44 bg-white relative flex items-center justify-center border-b border-border/40">
+                            <img src={room.images[0]} alt={room.title} className="w-full h-full object-contain" />
+                            {room.images.length > 1 && (
+                              <span className="absolute bottom-2 right-2 bg-black/50 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full backdrop-blur-sm">+{room.images.length - 1} more</span>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="h-44 bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center border-b border-border/40">
+                            <Home className="w-10 h-10 text-primary/30" />
+                          </div>
+                        )}
+                        <div className="p-5 flex flex-col flex-1">
+                          <div className="flex items-start gap-2 mb-1">
+                            <h3 className="font-bold text-foreground leading-tight flex-1">{room.title}</h3>
+                            <Badge className="shrink-0 bg-primary/10 text-primary border-transparent text-[10px]">{room.roomType}</Badge>
+                          </div>
+                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-2">
+                            <MapPin className="w-3.5 h-3.5 shrink-0" /> {room.location}
+                          </div>
+                          <p className="font-bold text-primary mt-auto">
+                            RM {room.pricePerMonth?.toLocaleString()}<span className="font-normal text-xs text-muted-foreground">/month</span>
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  {roomListings.data.length > 6 && (
+                    <div className="text-center mt-6">
+                      <Button
+                        variant="outline"
+                        className="rounded-full gap-2"
+                        onClick={() => { setMainTab("rooms"); setRoomTab("find"); window.scrollTo(0, 0); }}
+                      >
+                        View all {roomListings.data.length} rooms <ArrowRight className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           )}
         </div>
