@@ -81,7 +81,7 @@ export default function Products() {
           <AccordionItem value="category" className="border-b-0">
             <AccordionTrigger className="hover:no-underline py-3">Category</AccordionTrigger>
             <AccordionContent>
-              <RadioGroup value={category} onValueChange={(v) => { setCategory(v); const p = new URLSearchParams(); if (search) p.append("search", search); if (v) p.append("category", v); if (locFilter) p.append("location", locFilter); setLocation(`/products?${p.toString()}`); }} className="space-y-3 pt-2">
+              <RadioGroup value={category} onValueChange={(v) => { if (v === "Services") { setLocation("/services"); return; } setCategory(v); const p = new URLSearchParams(); if (search) p.append("search", search); if (v) p.append("category", v); if (locFilter) p.append("location", locFilter); setLocation(`/products?${p.toString()}`); }} className="space-y-3 pt-2">
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="" id="cat-all" />
                   <Label htmlFor="cat-all">All Categories</Label>

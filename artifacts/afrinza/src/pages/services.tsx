@@ -1013,12 +1013,12 @@ export default function Services() {
                 </div>
               </div>
 
-              {/* Provider grid */}
-              {serviceProviders.isLoading ? (
+              {/* ── Unified grid: service providers + rooms ── */}
+              {(serviceProviders.isLoading || roomListings.isLoading) ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                  {[1, 2, 3].map((i) => (
+                  {[1, 2, 3, 4, 5, 6].map((i) => (
                     <div key={i} className="bg-white rounded-2xl border border-border p-5 space-y-3">
-                      <Skeleton className="h-40 w-full rounded-xl" />
+                      <Skeleton className="h-44 w-full rounded-xl" />
                       <Skeleton className="h-5 w-3/4" />
                       <Skeleton className="h-4 w-1/2" />
                       <Skeleton className="h-10 w-full" />
@@ -1028,224 +1028,188 @@ export default function Services() {
               ) : serviceProviders.error ? (
                 <div className="text-center py-16 text-muted-foreground bg-white rounded-3xl border border-border shadow-sm">
                   <Wrench className="w-12 h-12 mx-auto mb-4 opacity-30" />
-                  <p className="font-semibold mb-2">Could not load service providers</p>
+                  <p className="font-semibold mb-2">Could not load listings</p>
                   <p className="text-sm">Run the migration in <code className="bg-muted px-1 rounded text-xs">MIGRATION.sql</code> in your Supabase SQL Editor first.</p>
-                </div>
-              ) : !serviceProviders.data || serviceProviders.data.length === 0 ? (
-                <div className="text-center py-20 text-muted-foreground bg-white rounded-3xl border border-border shadow-sm">
-                  <Wrench className="w-14 h-14 mx-auto mb-4 opacity-20" />
-                  <p className="font-bold text-lg mb-2">No service providers yet</p>
-                  <p className="text-sm mb-6">
-                    {filteredSpLocation
-                      ? `No providers in ${filteredSpLocation}. Try a different location.`
-                      : "Be the first to list your services on Afrinza!"}
-                  </p>
-                  <Button className="rounded-full gap-2" onClick={() => { setShowRegisterForm(true); window.scrollTo(0, 0); }}>
-                    <Wrench className="w-4 h-4" /> List My Services
-                  </Button>
                 </div>
               ) : (() => {
                 const q = spSearch.toLowerCase().trim();
-                const filtered = q
-                  ? serviceProviders.data!.filter((p) =>
-                      p.providerName.toLowerCase().includes(q) ||
-                      (p.businessName ?? "").toLowerCase().includes(q) ||
-                      (p.description ?? "").toLowerCase().includes(q) ||
-                      p.serviceTypes.some((t) => t.toLowerCase().includes(q)) ||
-                      (p.customServiceType ?? "").toLowerCase().includes(q)
-                    )
-                  : serviceProviders.data!;
 
-                return filtered.length === 0 ? (
+                const filteredProviders = (serviceProviders.data ?? []).filter((p) =>
+                  !q ||
+                  p.providerName.toLowerCase().includes(q) ||
+                  (p.businessName ?? "").toLowerCase().includes(q) ||
+                  (p.description ?? "").toLowerCase().includes(q) ||
+                  p.serviceTypes.some((t) => t.toLowerCase().includes(q)) ||
+                  (p.customServiceType ?? "").toLowerCase().includes(q)
+                );
+
+                const filteredRooms = (roomListings.data ?? []).filter((r) =>
+                  !q ||
+                  r.title.toLowerCase().includes(q) ||
+                  r.location.toLowerCase().includes(q) ||
+                  r.roomType.toLowerCase().includes(q) ||
+                  (r.description ?? "").toLowerCase().includes(q)
+                );
+
+                const total = filteredProviders.length + filteredRooms.length;
+
+                if (total === 0 && q) return (
                   <div className="text-center py-20 text-muted-foreground bg-white rounded-3xl border border-border shadow-sm">
                     <Search className="w-14 h-14 mx-auto mb-4 opacity-20" />
                     <p className="font-bold text-lg mb-2">No results for "{spSearch}"</p>
-                    <p className="text-sm mb-4">Try a different keyword or browse all providers below.</p>
-                    <Button variant="outline" className="rounded-full gap-2" onClick={() => setSpSearch("")}>
-                      Clear Search
-                    </Button>
+                    <p className="text-sm mb-4">Try a different keyword.</p>
+                    <Button variant="outline" className="rounded-full gap-2" onClick={() => setSpSearch("")}>Clear Search</Button>
                   </div>
-                ) : (
-                <>
-                  <p className="text-sm text-muted-foreground mb-4 font-medium">
-                    {filtered.length} provider{filtered.length !== 1 ? "s" : ""}
-                    {q ? ` matching "${spSearch}"` : filteredSpLocation ? ` in ${filteredSpLocation}` : " across Malaysia"}
-                  </p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                    {filtered.map((provider) => (
-                      <div key={provider.id} className="bg-white rounded-2xl border border-border shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col group cursor-pointer" onClick={() => setSelectedProvider(provider)}>
-                        {provider.photos.length > 0 ? (
-                          <div className="h-44 bg-white relative flex items-center justify-center border-b border-border/40">
-                            <img src={provider.photos[0]} alt={provider.providerName} className="w-full h-full object-contain" />
-                            {provider.photos.length > 1 && (
-                              <span className="absolute bottom-2 right-2 bg-black/50 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full backdrop-blur-sm">+{provider.photos.length - 1} more</span>
-                            )}
-                          </div>
-                        ) : (
-                          <div className="h-44 bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center border-b border-border/40">
-                            <Wrench className="w-10 h-10 text-primary/30" />
-                          </div>
-                        )}
-                        <div className="p-5 flex flex-col flex-1">
-                          <div className="flex items-start gap-2 mb-1">
-                            <h3 className="font-bold text-foreground leading-tight flex-1">{provider.providerName}</h3>
-                            {provider.isVerified && <VerifiedBadge size="md" />}
-                          </div>
-                          {provider.businessName && (
-                            <p className="text-xs text-muted-foreground mb-1">{provider.businessName}</p>
-                          )}
-                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-2">
-                            <MapPin className="w-3.5 h-3.5 shrink-0" /> {provider.location}
-                          </div>
-                          <div className="flex flex-wrap gap-1 mb-3">
-                            {provider.serviceTypes.map((t) => (
-                              <span key={t} className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">{t}</span>
-                            ))}
-                            {provider.customServiceType && (
-                              <span className="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">{provider.customServiceType}</span>
-                            )}
-                          </div>
-                          {provider.description && (
-                            <p className="text-xs text-muted-foreground line-clamp-2 mb-3 flex-1">{provider.description}</p>
-                          )}
-                          <div className="flex gap-2 mt-auto" onClick={(e) => e.stopPropagation()}>
-                            <button
-                              onClick={() => setSelectedProvider(provider)}
-                              className="flex items-center justify-center gap-1.5 flex-1 border border-border rounded-full py-2 text-xs font-semibold text-foreground hover:bg-muted/50 transition-colors"
-                            >
-                              <Eye className="w-3.5 h-3.5" /> View Details
-                            </button>
-                            <a
-                              href={`https://wa.me/${provider.whatsapp.replace(/\D/g, "")}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex items-center justify-center gap-1.5 flex-1 bg-green-600 hover:bg-green-700 text-white rounded-full py-2 text-xs font-semibold transition-colors"
-                            >
-                              <Phone className="w-3.5 h-3.5" /> WhatsApp
-                            </a>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="mt-10 bg-primary/5 border border-primary/20 rounded-3xl p-6 text-center">
-                    <Wrench className="w-8 h-8 text-primary mx-auto mb-3" />
-                    <p className="font-bold text-lg mb-1">Offer a service?</p>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      Join {filtered.length} provider{filtered.length !== 1 ? "s" : ""} already listed on Afrinza.
-                    </p>
-                    <Button className="rounded-full gap-2" onClick={() => { setShowRegisterForm(true); window.scrollTo(0, 0); }}>
-                      <Wrench className="w-4 h-4" /> List My Services
-                    </Button>
-                  </div>
-                </>
                 );
-              })()}
-            </div>
-          )}
 
-          {/* ── Rooms for Rent section (visible in All Services view) ── */}
-          {!showRegisterForm && (
-            <div className="max-w-6xl mx-auto mt-12 mb-4">
-              <div className="flex items-center justify-between mb-5">
-                <div>
-                  <h2 className="text-xl font-bold flex items-center gap-2">
-                    <Home className="w-5 h-5 text-primary" /> Rooms for Rent
-                  </h2>
-                  <p className="text-sm text-muted-foreground mt-0.5">Available rooms across Malaysia</p>
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="rounded-full gap-1.5"
-                    onClick={() => { setMainTab("rooms"); setRoomTab("list"); window.scrollTo(0, 0); }}
-                  >
-                    <Home className="w-3.5 h-3.5" /> List My Room
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="rounded-full gap-1.5"
-                    onClick={() => { setMainTab("rooms"); setRoomTab("find"); window.scrollTo(0, 0); }}
-                  >
-                    View All <ArrowRight className="w-3.5 h-3.5" />
-                  </Button>
-                </div>
-              </div>
-
-              {roomListings.isLoading ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                  {[1, 2, 3].map((i) => (
-                    <div key={i} className="bg-white rounded-2xl border border-border p-5 space-y-3">
-                      <Skeleton className="h-44 w-full rounded-xl" />
-                      <Skeleton className="h-5 w-3/4" />
-                      <Skeleton className="h-4 w-1/2" />
-                    </div>
-                  ))}
-                </div>
-              ) : !roomListings.data || roomListings.data.length === 0 ? (
-                <div className="text-center py-14 text-muted-foreground bg-white rounded-3xl border border-border shadow-sm">
-                  <Home className="w-12 h-12 mx-auto mb-3 opacity-20" />
-                  <p className="font-bold mb-1">No rooms listed yet</p>
-                  <p className="text-sm mb-5">Be the first to list a room for rent.</p>
-                  <Button
-                    className="rounded-full gap-2"
-                    onClick={() => { setMainTab("rooms"); setRoomTab("list"); window.scrollTo(0, 0); }}
-                  >
-                    <Home className="w-4 h-4" /> List a Room
-                  </Button>
-                </div>
-              ) : (
-                <>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                    {roomListings.data.slice(0, 6).map((room) => (
-                      <div
-                        key={room.id}
-                        className="bg-white rounded-2xl border border-border shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col group cursor-pointer"
-                        onClick={() => { setSelectedRoom(room); setMainTab("rooms"); setRoomTab("find"); }}
-                      >
-                        {room.images && room.images.length > 0 ? (
-                          <div className="h-44 bg-white relative flex items-center justify-center border-b border-border/40">
-                            <img src={room.images[0]} alt={room.title} className="w-full h-full object-contain" />
-                            {room.images.length > 1 && (
-                              <span className="absolute bottom-2 right-2 bg-black/50 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full backdrop-blur-sm">+{room.images.length - 1} more</span>
-                            )}
-                          </div>
-                        ) : (
-                          <div className="h-44 bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center border-b border-border/40">
-                            <Home className="w-10 h-10 text-primary/30" />
-                          </div>
-                        )}
-                        <div className="p-5 flex flex-col flex-1">
-                          <div className="flex items-start gap-2 mb-1">
-                            <h3 className="font-bold text-foreground leading-tight flex-1">{room.title}</h3>
-                            <Badge className="shrink-0 bg-primary/10 text-primary border-transparent text-[10px]">{room.roomType}</Badge>
-                          </div>
-                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-2">
-                            <MapPin className="w-3.5 h-3.5 shrink-0" /> {room.location}
-                          </div>
-                          <p className="font-bold text-primary mt-auto">
-                            RM {room.pricePerMonth?.toLocaleString()}<span className="font-normal text-xs text-muted-foreground">/month</span>
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  {roomListings.data.length > 6 && (
-                    <div className="text-center mt-6">
-                      <Button
-                        variant="outline"
-                        className="rounded-full gap-2"
-                        onClick={() => { setMainTab("rooms"); setRoomTab("find"); window.scrollTo(0, 0); }}
-                      >
-                        View all {roomListings.data.length} rooms <ArrowRight className="w-4 h-4" />
+                if (total === 0) return (
+                  <div className="text-center py-20 text-muted-foreground bg-white rounded-3xl border border-border shadow-sm">
+                    <Wrench className="w-14 h-14 mx-auto mb-4 opacity-20" />
+                    <p className="font-bold text-lg mb-2">Nothing listed yet</p>
+                    <p className="text-sm mb-6">Be the first — list your services or a room!</p>
+                    <div className="flex gap-3 justify-center flex-wrap">
+                      <Button className="rounded-full gap-2" onClick={() => { setShowRegisterForm(true); window.scrollTo(0, 0); }}>
+                        <Wrench className="w-4 h-4" /> List My Services
+                      </Button>
+                      <Button variant="outline" className="rounded-full gap-2" onClick={() => { setMainTab("rooms"); setRoomTab("list"); window.scrollTo(0, 0); }}>
+                        <Home className="w-4 h-4" /> List My Room
                       </Button>
                     </div>
-                  )}
-                </>
-              )}
+                  </div>
+                );
+
+                return (
+                  <>
+                    <p className="text-sm text-muted-foreground mb-4 font-medium">
+                      {filteredProviders.length} service{filteredProviders.length !== 1 ? "s" : ""} · {filteredRooms.length} room{filteredRooms.length !== 1 ? "s" : ""}
+                      {q ? ` matching "${spSearch}"` : filteredSpLocation ? ` in ${filteredSpLocation}` : " across Malaysia"}
+                    </p>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+
+                      {/* ── Service provider cards ── */}
+                      {filteredProviders.map((provider) => (
+                        <div key={`sp-${provider.id}`} className="bg-white rounded-2xl border border-border shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col cursor-pointer" onClick={() => setSelectedProvider(provider)}>
+                          <div className="relative h-44 border-b border-border/40">
+                            <span className="absolute top-2 left-2 z-10 bg-primary text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                              <Wrench className="w-2.5 h-2.5" /> Service
+                            </span>
+                            {provider.photos.length > 0 ? (
+                              <>
+                                <img src={provider.photos[0]} alt={provider.providerName} className="w-full h-full object-contain bg-white" />
+                                {provider.photos.length > 1 && (
+                                  <span className="absolute bottom-2 right-2 bg-black/50 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full backdrop-blur-sm">+{provider.photos.length - 1} more</span>
+                                )}
+                              </>
+                            ) : (
+                              <div className="w-full h-full bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center">
+                                <Wrench className="w-10 h-10 text-primary/30" />
+                              </div>
+                            )}
+                          </div>
+                          <div className="p-5 flex flex-col flex-1">
+                            <div className="flex items-start gap-2 mb-1">
+                              <h3 className="font-bold text-foreground leading-tight flex-1">{provider.providerName}</h3>
+                              {provider.isVerified && <VerifiedBadge size="md" />}
+                            </div>
+                            {provider.businessName && (
+                              <p className="text-xs text-muted-foreground mb-1">{provider.businessName}</p>
+                            )}
+                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-2">
+                              <MapPin className="w-3.5 h-3.5 shrink-0" /> {provider.location}
+                            </div>
+                            <div className="flex flex-wrap gap-1 mb-3">
+                              {provider.serviceTypes.map((t) => (
+                                <span key={t} className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">{t}</span>
+                              ))}
+                              {provider.customServiceType && (
+                                <span className="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">{provider.customServiceType}</span>
+                              )}
+                            </div>
+                            {provider.description && (
+                              <p className="text-xs text-muted-foreground line-clamp-2 mb-3 flex-1">{provider.description}</p>
+                            )}
+                            <div className="flex gap-2 mt-auto" onClick={(e) => e.stopPropagation()}>
+                              <button onClick={() => setSelectedProvider(provider)} className="flex items-center justify-center gap-1.5 flex-1 border border-border rounded-full py-2 text-xs font-semibold text-foreground hover:bg-muted/50 transition-colors">
+                                <Eye className="w-3.5 h-3.5" /> View Details
+                              </button>
+                              <a href={`https://wa.me/${provider.whatsapp.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-1.5 flex-1 bg-green-600 hover:bg-green-700 text-white rounded-full py-2 text-xs font-semibold transition-colors">
+                                <Phone className="w-3.5 h-3.5" /> WhatsApp
+                              </a>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+
+                      {/* ── Room cards ── */}
+                      {filteredRooms.map((room) => (
+                        <div key={`room-${room.id}`} className="bg-white rounded-2xl border border-border shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col cursor-pointer" onClick={() => { setSelectedRoom(room); setMainTab("rooms"); setRoomTab("find"); }}>
+                          <div className="relative h-44 border-b border-border/40">
+                            <span className="absolute top-2 left-2 z-10 bg-blue-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                              <Home className="w-2.5 h-2.5" /> Room
+                            </span>
+                            {room.images && room.images.length > 0 ? (
+                              <>
+                                <img src={room.images[0]} alt={room.title} className="w-full h-full object-cover" />
+                                {room.images.length > 1 && (
+                                  <span className="absolute bottom-2 right-2 bg-black/50 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full backdrop-blur-sm">+{room.images.length - 1} more</span>
+                                )}
+                              </>
+                            ) : (
+                              <div className="w-full h-full bg-gradient-to-br from-blue-50 to-blue-100/50 flex items-center justify-center">
+                                <Home className="w-10 h-10 text-blue-300" />
+                              </div>
+                            )}
+                          </div>
+                          <div className="p-5 flex flex-col flex-1">
+                            <div className="flex items-start gap-2 mb-1">
+                              <h3 className="font-bold text-foreground leading-tight flex-1">{room.title}</h3>
+                              <span className="shrink-0 text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">{room.roomType}</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-2">
+                              <MapPin className="w-3.5 h-3.5 shrink-0" /> {room.location}
+                            </div>
+                            {room.description && (
+                              <p className="text-xs text-muted-foreground line-clamp-2 mb-3 flex-1">{room.description}</p>
+                            )}
+                            <div className="flex items-center justify-between mt-auto">
+                              <p className="font-bold text-blue-700">
+                                RM {room.pricePerMonth?.toLocaleString()}<span className="font-normal text-xs text-muted-foreground">/mo</span>
+                              </p>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); setSelectedRoom(room); setMainTab("rooms"); setRoomTab("find"); }}
+                                className="flex items-center justify-center gap-1.5 border border-border rounded-full px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-muted/50 transition-colors"
+                              >
+                                <Eye className="w-3.5 h-3.5" /> View
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Bottom CTAs */}
+                    <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="bg-primary/5 border border-primary/20 rounded-3xl p-6 text-center">
+                        <Wrench className="w-7 h-7 text-primary mx-auto mb-2" />
+                        <p className="font-bold mb-1">Offer a service?</p>
+                        <p className="text-sm text-muted-foreground mb-4">Join {filteredProviders.length} provider{filteredProviders.length !== 1 ? "s" : ""} already listed.</p>
+                        <Button className="rounded-full gap-2 w-full sm:w-auto" onClick={() => { setShowRegisterForm(true); window.scrollTo(0, 0); }}>
+                          <Wrench className="w-4 h-4" /> List My Services
+                        </Button>
+                      </div>
+                      <div className="bg-blue-50 border border-blue-200 rounded-3xl p-6 text-center">
+                        <Home className="w-7 h-7 text-blue-600 mx-auto mb-2" />
+                        <p className="font-bold mb-1">Have a room to rent?</p>
+                        <p className="text-sm text-muted-foreground mb-4">Connect with Africans looking for a place across Malaysia.</p>
+                        <Button variant="outline" className="rounded-full gap-2 w-full sm:w-auto border-blue-300 text-blue-700 hover:bg-blue-100" onClick={() => { setMainTab("rooms"); setRoomTab("list"); window.scrollTo(0, 0); }}>
+                          <Home className="w-4 h-4" /> List My Room
+                        </Button>
+                      </div>
+                    </div>
+                  </>
+                );
+              })()}
             </div>
           )}
         </div>
