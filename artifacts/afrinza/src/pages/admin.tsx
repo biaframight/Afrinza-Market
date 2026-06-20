@@ -50,7 +50,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import type { AdminOrder, RoomListing } from "@/lib/supabase-db";
-import { MALAYSIA_LOCATIONS, CITIES_BY_COUNTRY, LOCATION_COUNTRIES, getCountryForCity } from "@/lib/malaysia-locations";
+import { MALAYSIA_LOCATIONS, CITIES_BY_COUNTRY, LOCATION_COUNTRIES, getCountryForCity, formatPrice, getCurrencyForCity } from "@/lib/malaysia-locations";
 
 const ADMIN_EMAIL = "alphuplift@gmail.com";
 
@@ -765,7 +765,7 @@ export default function Admin() {
                         </td>
                         <td className="px-5 py-4 text-muted-foreground">{product.sellerName}</td>
                         <td className="px-5 py-4"><Badge variant="outline" className="text-xs">{product.category}</Badge></td>
-                        <td className="px-5 py-4 font-semibold">RM {parseFloat(product.price).toFixed(2)}</td>
+                        <td className="px-5 py-4 font-semibold">{formatPrice(product.price, product.location)}</td>
                         <td className="px-5 py-4 text-center">
                           <button
                             onClick={() => handleToggleProduct(product.id, product.isSponsored)}
@@ -1352,7 +1352,7 @@ export default function Admin() {
                             </a>
                           </td>
                           <td className="px-5 py-4 text-center font-semibold text-primary text-sm">
-                            {room.pricePerMonth != null ? `RM ${room.pricePerMonth.toFixed(0)}` : "—"}
+                            {room.pricePerMonth != null ? `${getCurrencyForCity(room.location).symbol} ${room.pricePerMonth.toFixed(0)}` : "—"}
                           </td>
                           <td className="px-5 py-4 text-center">
                             {room.isActive ? (

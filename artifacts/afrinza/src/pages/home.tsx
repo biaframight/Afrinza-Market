@@ -1,5 +1,5 @@
 import { useGetFeaturedProducts, useGetFeaturedSellers, useGetServiceProviders, useGetRoomListings } from "@/hooks/use-marketplace";
-import { MALAYSIA_LOCATIONS, CITIES_BY_COUNTRY, LOCATION_COUNTRIES } from "@/lib/malaysia-locations";
+import { MALAYSIA_LOCATIONS, CITIES_BY_COUNTRY, LOCATION_COUNTRIES, formatPricePerMonth } from "@/lib/malaysia-locations";
 import { ProductCard } from "@/components/product-card";
 import { SellerCard } from "@/components/seller-card";
 import { HeroSlider } from "@/components/hero-slider";
@@ -418,7 +418,7 @@ export default function Home() {
                   </span>
                   {room.pricePerMonth != null && (
                     <span className="absolute top-2 right-2 z-10 bg-primary text-white text-xs font-bold px-2 py-0.5 rounded-full shadow">
-                      RM {room.pricePerMonth}/mo
+                      {formatPricePerMonth(room.pricePerMonth, room.location)}
                     </span>
                   )}
                   {room.images[0] ? (

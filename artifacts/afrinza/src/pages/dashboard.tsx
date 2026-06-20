@@ -46,7 +46,7 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { MALAYSIA_LOCATIONS, CITIES_BY_COUNTRY, LOCATION_COUNTRIES, getCountryForCity } from "@/lib/malaysia-locations";
+import { MALAYSIA_LOCATIONS, CITIES_BY_COUNTRY, LOCATION_COUNTRIES, getCountryForCity, formatPrice, getCurrencyForCity, getCurrencyForCountry } from "@/lib/malaysia-locations";
 
 const CATEGORIES = ["Food", "Fashion", "Services", "Groceries", "Beauty", "Other"];
 const DELIVERY_OPTIONS = ["Afrinza Rider", "Grab Delivery", "Lalamove", "Self Pickup"];
@@ -1104,7 +1104,7 @@ export default function Dashboard() {
                         </div>
                       )}
                       <span className="absolute top-2 right-2 bg-black/60 text-white text-xs font-bold px-2 py-1 rounded-full">
-                        RM {parseFloat(product.price).toFixed(2)}
+                        {formatPrice(product.price, product.location)}
                       </span>
                     </div>
                     <div className="p-4">
@@ -1339,7 +1339,7 @@ export default function Dashboard() {
                     </p>
                     {room.pricePerMonth != null && (
                       <p className="text-sm font-bold text-primary">
-                        RM {room.pricePerMonth.toFixed(0)}
+                        {getCurrencyForCity(room.location).symbol} {room.pricePerMonth.toFixed(0)}
                         <span className="text-xs font-normal text-muted-foreground">/mo</span>
                       </p>
                     )}
@@ -1415,9 +1415,9 @@ export default function Dashboard() {
                   <Input placeholder="e.g. Jollof Rice Party Pack" value={addForm.title} onChange={(e) => setAddForm((f) => ({ ...f, title: e.target.value }))} className="h-11 bg-muted/30" />
                 </div>
                 <div>
-                  <label className="text-sm font-semibold block mb-1.5">Price (MYR)</label>
+                  <label className="text-sm font-semibold block mb-1.5">Price ({storeCountry ? getCurrencyForCountry(storeCountry).code : "MYR"})</label>
                   <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm font-medium">RM</span>
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm font-medium">{storeCountry ? getCurrencyForCountry(storeCountry).symbol : "RM"}</span>
                     <Input type="number" min="0" step="0.01" placeholder="0.00" value={addForm.price} onChange={(e) => setAddForm((f) => ({ ...f, price: e.target.value }))} className="h-11 bg-muted/30 pl-10" />
                   </div>
                 </div>
@@ -1570,9 +1570,9 @@ export default function Dashboard() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-sm font-semibold block mb-1.5">Price (MYR)</label>
+                <label className="text-sm font-semibold block mb-1.5">Price ({storeCountry ? getCurrencyForCountry(storeCountry).code : "MYR"})</label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-xs font-medium">RM</span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-xs font-medium">{storeCountry ? getCurrencyForCountry(storeCountry).symbol : "RM"}</span>
                   <Input type="number" min="0" step="0.01" value={editForm.price} onChange={(e) => setEditForm((f) => ({ ...f, price: e.target.value }))} className="h-11 bg-muted/30 pl-9" />
                 </div>
               </div>
@@ -1845,7 +1845,7 @@ export default function Dashboard() {
                 </Select>
               </div>
               <div>
-                <label className="text-sm font-semibold block mb-1.5">Price / month (RM)</label>
+                <label className="text-sm font-semibold block mb-1.5">Price / month ({roomEditCountry ? getCurrencyForCountry(roomEditCountry).code : "MYR"})</label>
                 <Input type="number" min="0" value={roomEditForm.pricePerMonth} onChange={(e) => setRoomEditForm((f) => ({ ...f, pricePerMonth: e.target.value }))} className="h-11 bg-muted/30" placeholder="0" />
               </div>
               <div>

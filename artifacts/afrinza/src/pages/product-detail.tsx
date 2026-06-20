@@ -1,5 +1,6 @@
 import { useParams } from "wouter";
 import { useGetProduct, useGetReviews, useAddToCart, keys } from "@/hooks/use-marketplace";
+import { formatPrice } from "@/lib/malaysia-locations";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -181,7 +182,7 @@ export default function ProductDetail() {
               </div>
 
               <div className="mb-8">
-                <span className="text-4xl font-bold text-primary tracking-tight">RM {parseFloat(String(product.price)).toFixed(2)}</span>
+                <span className="text-4xl font-bold text-primary tracking-tight">{formatPrice(product.price, product.location)}</span>
               </div>
 
               <div className="prose prose-sm text-muted-foreground mb-8 max-w-none">

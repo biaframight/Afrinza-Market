@@ -24,7 +24,7 @@ import {
   Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription,
 } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { MALAYSIA_LOCATIONS, CITIES_BY_COUNTRY, LOCATION_COUNTRIES } from "@/lib/malaysia-locations";
+import { MALAYSIA_LOCATIONS, CITIES_BY_COUNTRY, LOCATION_COUNTRIES, getCurrencyForCity, getCurrencyForCountry, formatPricePerMonth } from "@/lib/malaysia-locations";
 import { signUpWithEmail } from "@/lib/supabase-auth";
 import { useAuthContext } from "@/contexts/auth-context";
 import {
@@ -1203,7 +1203,7 @@ export default function Services() {
                             )}
                             <div className="flex items-center justify-between mt-auto">
                               <p className="font-bold text-blue-700">
-                                RM {room.pricePerMonth?.toLocaleString()}<span className="font-normal text-xs text-muted-foreground">/mo</span>
+                                {formatPricePerMonth(room.pricePerMonth, room.location)}
                               </p>
                               <button
                                 onClick={(e) => { e.stopPropagation(); setSelectedRoom(room); setMainTab("rooms"); setRoomTab("find"); }}
@@ -1369,7 +1369,7 @@ export default function Services() {
                           </div>
                           {room.pricePerMonth ? (
                             <div className="text-lg font-bold text-foreground mb-2">
-                              RM {room.pricePerMonth.toFixed(0)}<span className="text-xs font-normal text-muted-foreground">/month</span>
+                              {getCurrencyForCity(room.location).symbol} {room.pricePerMonth.toFixed(0)}<span className="text-xs font-normal text-muted-foreground">/month</span>
                             </div>
                           ) : (
                             <div className="text-xs font-semibold text-muted-foreground mb-2 italic">Price negotiable</div>
@@ -1548,7 +1548,7 @@ export default function Services() {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <FormField control={roomForm.control} name="pricePerMonth" render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Monthly Rent (RM)</FormLabel>
+                            <FormLabel>Monthly Rent ({roomFormCountry ? getCurrencyForCountry(roomFormCountry).code : "MYR"})</FormLabel>
                             <FormControl><Input type="number" min="0" placeholder="e.g. 650 (leave blank if negotiable)" className="h-12 bg-muted/30" {...field} /></FormControl>
                             <FormDescription className="text-xs">Leave blank to show "Price negotiable".</FormDescription>
                             <FormMessage />
@@ -1782,7 +1782,7 @@ export default function Services() {
                   {selectedRoom.pricePerMonth ? (
                     <div>
                       <p className="text-xs text-muted-foreground mb-0.5">Monthly Rent</p>
-                      <p className="text-2xl font-bold text-foreground">RM {selectedRoom.pricePerMonth.toFixed(0)}<span className="text-sm font-normal text-muted-foreground">/month</span></p>
+                      <p className="text-2xl font-bold text-foreground">{getCurrencyForCity(selectedRoom.location).symbol} {selectedRoom.pricePerMonth.toFixed(0)}<span className="text-sm font-normal text-muted-foreground">/month</span></p>
                     </div>
                   ) : (
                     <p className="text-sm font-semibold text-muted-foreground italic">Price negotiable — contact for details</p>

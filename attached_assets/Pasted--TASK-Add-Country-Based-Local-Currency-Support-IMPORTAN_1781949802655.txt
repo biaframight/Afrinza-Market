@@ -1,0 +1,177 @@
+# TASK: Add Country-Based Local Currency Support
+
+IMPORTANT:
+
+This is a currency enhancement task only.
+
+Do NOT redesign anything.
+
+Do NOT modify:
+
+* authentication
+* Supabase
+* subscriptions
+* payments
+* business logic
+* API routes
+* styling
+* layout
+* responsive design
+
+Do NOT touch unrelated files.
+
+---
+
+# GOAL
+
+Afrinza supports users across multiple countries.
+
+Each user should see and create listings using the local currency of their selected country.
+
+Language remains English for all countries.
+
+No multilingual support is required.
+
+---
+
+# IMPORTANT RULES
+
+Do NOT implement exchange-rate conversion.
+
+Do NOT call external currency APIs.
+
+Do NOT convert prices between currencies.
+
+Do NOT use real-time currency feeds.
+
+Each listing simply stores and displays its original currency.
+
+Example:
+
+Malaysia → MYR (RM)
+
+United Kingdom → GBP (£)
+
+United States → USD ($)
+
+Canada → CAD (C$)
+
+Australia → AUD (A$)
+
+Singapore → SGD (S$)
+
+Japan → JPY (¥)
+
+UAE → AED
+
+Saudi Arabia → SAR
+
+Europe → country-specific currency
+
+---
+
+# REQUIRED BEHAVIOR
+
+When a user selects a country:
+
+* automatically assign that country's currency;
+* display the correct symbol beside prices;
+* save the currency code with listings.
+
+Example:
+
+country = Malaysia
+currency = MYR
+
+country = United Kingdom
+currency = GBP
+
+country = United States
+currency = USD
+
+country = Australia
+currency = AUD
+
+---
+
+# DATABASE SAFETY
+
+Before making changes:
+
+Inspect the current schema.
+
+If a currency field already exists:
+
+* reuse it.
+
+If no currency field exists:
+
+* add only the minimum required field.
+
+Do NOT alter existing data.
+
+Do NOT remove any columns.
+
+Maintain backward compatibility.
+
+Existing Malaysian listings should default to:
+
+MYR
+
+---
+
+# UI REQUIREMENTS
+
+Display prices like:
+
+RM 120
+
+£25
+
+$50
+
+€30
+
+S$40
+
+A$60
+
+Use the correct symbol for each country.
+
+Do NOT ask users to manually choose currency.
+
+Currency should be derived automatically from the selected country.
+
+---
+
+# SEARCH AND FILTERS
+
+Existing filters must continue working.
+
+Do not break:
+
+* marketplace listings;
+* services;
+* room-for-rent listings;
+* profiles.
+
+---
+
+# LANGUAGE
+
+Keep English only.
+
+No translation system is required.
+
+---
+
+# FINAL REPORT
+
+After completion, provide:
+
+1. files modified;
+2. database changes made;
+3. currency mappings added;
+4. confirmation that existing Malaysian listings still use MYR.
+
+Do not make unrelated changes.

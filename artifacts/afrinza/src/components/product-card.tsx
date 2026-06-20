@@ -5,6 +5,7 @@ import { MapPin, ShieldCheck, Crown } from "lucide-react";
 import { StarRating } from "./star-rating";
 import type { Product } from "@/lib/supabase-db";
 import { motion } from "framer-motion";
+import { formatPrice } from "@/lib/malaysia-locations";
 
 interface ProductCardProps {
   product: Product;
@@ -62,7 +63,7 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
 
             <div className="mt-auto pt-3 flex items-center justify-between border-t border-border/50">
               <div className="font-bold text-lg text-primary">
-                RM {parseFloat(String(product.price)).toFixed(2)}
+                {formatPrice(product.price, product.location)}
               </div>
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                 {product.isPremiumSeller && <Crown className="w-3.5 h-3.5 text-secondary" />}

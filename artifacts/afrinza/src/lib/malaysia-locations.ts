@@ -560,3 +560,94 @@ export function getCountryForCity(cityValue: string): string {
   }
   return "";
 }
+
+// ─── Currency support ────────────────────────────────────────────────────────
+
+export interface CurrencyInfo {
+  code: string;
+  symbol: string;
+}
+
+export const CURRENCY_BY_COUNTRY: Record<string, CurrencyInfo> = {
+  // Asia-Pacific
+  Malaysia:        { code: "MYR", symbol: "RM" },
+  Singapore:       { code: "SGD", symbol: "S$" },
+  Australia:       { code: "AUD", symbol: "A$" },
+  "New Zealand":   { code: "NZD", symbol: "NZ$" },
+  Japan:           { code: "JPY", symbol: "¥" },
+  China:           { code: "CNY", symbol: "¥" },
+  "South Korea":   { code: "KRW", symbol: "₩" },
+  "Hong Kong":     { code: "HKD", symbol: "HK$" },
+  Taiwan:          { code: "TWD", symbol: "NT$" },
+  India:           { code: "INR", symbol: "₹" },
+  Indonesia:       { code: "IDR", symbol: "Rp" },
+  Thailand:        { code: "THB", symbol: "฿" },
+  Philippines:     { code: "PHP", symbol: "₱" },
+  Vietnam:         { code: "VND", symbol: "₫" },
+  Pakistan:        { code: "PKR", symbol: "Rs" },
+  Bangladesh:      { code: "BDT", symbol: "৳" },
+  "Sri Lanka":     { code: "LKR", symbol: "Rs" },
+  Nepal:           { code: "NPR", symbol: "Rs" },
+  // Middle East
+  "United Arab Emirates": { code: "AED", symbol: "AED" },
+  "Saudi Arabia":         { code: "SAR", symbol: "SAR" },
+  Qatar:                  { code: "QAR", symbol: "QAR" },
+  Kuwait:                 { code: "KWD", symbol: "KWD" },
+  Bahrain:                { code: "BHD", symbol: "BHD" },
+  Oman:                   { code: "OMR", symbol: "OMR" },
+  Turkey:                 { code: "TRY", symbol: "₺" },
+  // Europe
+  "United Kingdom": { code: "GBP", symbol: "£" },
+  France:           { code: "EUR", symbol: "€" },
+  Germany:          { code: "EUR", symbol: "€" },
+  Italy:            { code: "EUR", symbol: "€" },
+  Spain:            { code: "EUR", symbol: "€" },
+  Netherlands:      { code: "EUR", symbol: "€" },
+  Belgium:          { code: "EUR", symbol: "€" },
+  Portugal:         { code: "EUR", symbol: "€" },
+  Austria:          { code: "EUR", symbol: "€" },
+  Ireland:          { code: "EUR", symbol: "€" },
+  Denmark:          { code: "DKK", symbol: "DKK" },
+  Norway:           { code: "NOK", symbol: "NOK" },
+  Sweden:           { code: "SEK", symbol: "SEK" },
+  Switzerland:      { code: "CHF", symbol: "CHF" },
+  Poland:           { code: "PLN", symbol: "zł" },
+  // North America
+  "United States": { code: "USD", symbol: "$" },
+  Canada:          { code: "CAD", symbol: "C$" },
+  Mexico:          { code: "MXN", symbol: "$" },
+  // South America
+  Brazil:    { code: "BRL", symbol: "R$" },
+  Argentina: { code: "ARS", symbol: "$" },
+  Colombia:  { code: "COP", symbol: "$" },
+  Chile:     { code: "CLP", symbol: "$" },
+};
+
+const NO_DECIMAL_CURRENCIES = new Set(["JPY", "KRW", "VND", "IDR"]);
+
+/** Get currency info for a country name. Falls back to MYR if not found. */
+export function getCurrencyForCountry(country: string): CurrencyInfo {
+  return CURRENCY_BY_COUNTRY[country] ?? { code: "MYR", symbol: "RM" };
+}
+
+/** Get currency info derived from a saved city/location value. Falls back to MYR. */
+export function getCurrencyForCity(cityValue: string): CurrencyInfo {
+  const country = getCountryForCity(cityValue);
+  return getCurrencyForCountry(country || "Malaysia");
+}
+
+/** Format a product price with the correct currency symbol for a given city/location. */
+export function formatPrice(amount: number | string | null | undefined, cityValue: string): string {
+  const { symbol, code } = getCurrencyForCity(cityValue);
+  if (amount == null || amount === "") return `${symbol} —`;
+  const num = typeof amount === "string" ? parseFloat(amount) : amount;
+  if (isNaN(num)) return `${symbol} —`;
+  return `${symbol} ${NO_DECIMAL_CURRENCIES.has(code) ? Math.round(num).toLocaleString() : num.toFixed(2)}`;
+}
+
+/** Format a per-month room rental price with the correct currency symbol. */
+export function formatPricePerMonth(amount: number | null | undefined, cityValue: string): string {
+  const { symbol, code } = getCurrencyForCity(cityValue);
+  if (amount == null) return "Price negotiable";
+  return `${symbol} ${NO_DECIMAL_CURRENCIES.has(code) ? Math.round(amount).toLocaleString() : amount.toFixed(0)}/mo`;
+}
