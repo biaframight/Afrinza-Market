@@ -967,70 +967,86 @@ export default function Services() {
           ) : (
             /* ── PROVIDER DIRECTORY ──────────────────────────── */
             <div className="max-w-6xl mx-auto">
-              {/* Filter + CTA bar */}
-              <div className="flex flex-col gap-3 mb-8">
-                {/* Keyword search row */}
-                <div className="flex gap-2 w-full">
-                  <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+
+              {/* ── Hero banner ── */}
+              <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary via-primary to-primary/80 text-white px-8 py-10 mb-8">
+                <div className="relative z-10 max-w-xl">
+                  <p className="text-[11px] font-bold uppercase tracking-widest text-white/60 mb-2">African Service Network · Malaysia</p>
+                  <h1 className="text-3xl font-bold font-serif leading-tight mb-3">Find Trusted Service Providers</h1>
+                  <p className="text-white/75 text-sm mb-6">Connect with skilled Africans offering services across Malaysia — delivery riders, hair stylists, plumbers, tutors and more.</p>
+                  <Button variant="secondary" className="rounded-full gap-2 font-semibold shadow-lg" onClick={() => { setShowRegisterForm(true); window.scrollTo(0, 0); }}>
+                    <Wrench className="w-4 h-4" /> List Your Services
+                  </Button>
+                </div>
+                <div className="absolute right-0 top-0 bottom-0 flex items-center pr-8 opacity-[0.07] pointer-events-none select-none">
+                  <Wrench className="w-48 h-48" />
+                </div>
+              </div>
+
+              {/* ── Search & filter card ── */}
+              <div className="bg-white rounded-2xl border border-border shadow-sm p-4 mb-6">
+                <div className="flex gap-3 flex-wrap">
+                  <div className="relative flex-1 min-w-[200px]">
+                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
                     <input
                       type="text"
-                      placeholder="Search by service type, name or keyword…"
+                      placeholder="Search service, name or keyword…"
                       value={spSearch}
                       onChange={(e) => setSpSearch(e.target.value)}
-                      className="w-full h-11 pl-9 pr-3 rounded-xl border border-border bg-white text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                      className="w-full h-11 pl-10 pr-9 rounded-xl border border-border bg-muted/30 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all"
                     />
                     {spSearch && (
-                      <button
-                        onClick={() => setSpSearch("")}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                      >
+                      <button onClick={() => setSpSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
                         <X className="w-4 h-4" />
                       </button>
                     )}
                   </div>
-                </div>
-                {/* Location + CTA row */}
-                <div className="flex flex-col sm:flex-row items-center gap-3 w-full">
-                  <div className="flex gap-2 flex-1 w-full flex-wrap">
-                    <Select value={spFilterCountry} onValueChange={(v) => { setSpFilterCountry(v); setSpLocation(""); }}>
-                      <SelectTrigger className="h-11 bg-white border-border flex-1 min-w-[140px]">
-                        <SelectValue placeholder="Country…" />
+                  <Select value={spFilterCountry} onValueChange={(v) => { setSpFilterCountry(v); setSpLocation(""); }}>
+                    <SelectTrigger className="h-11 bg-muted/30 border-border w-40 shrink-0">
+                      <SelectValue placeholder="Country…" />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-64">
+                      <SelectItem value="all">All Countries</SelectItem>
+                      {LOCATION_COUNTRIES.map((c) => (
+                        <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {spFilterCountry && spFilterCountry !== "all" && (
+                    <Select value={spLocation} onValueChange={setSpLocation}>
+                      <SelectTrigger className="h-11 bg-muted/30 border-border w-36 shrink-0">
+                        <SelectValue placeholder="City…" />
                       </SelectTrigger>
                       <SelectContent className="max-h-64">
-                        <SelectItem value="all">All Countries</SelectItem>
-                        {LOCATION_COUNTRIES.map((c) => (
-                          <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                        <SelectItem value="all">All Cities</SelectItem>
+                        {(CITIES_BY_COUNTRY[spFilterCountry] ?? []).map((loc) => (
+                          <SelectItem key={loc.value} value={loc.value}>{loc.label}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
-                    {spFilterCountry && spFilterCountry !== "all" && (
-                      <Select value={spLocation} onValueChange={setSpLocation}>
-                        <SelectTrigger className="h-11 bg-white border-border flex-1 min-w-[140px]">
-                          <SelectValue placeholder="City…" />
-                        </SelectTrigger>
-                        <SelectContent className="max-h-64">
-                          <SelectItem value="all">All Cities</SelectItem>
-                          {(CITIES_BY_COUNTRY[spFilterCountry] ?? []).map((loc) => (
-                            <SelectItem key={loc.value} value={loc.value}>{loc.label}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-                    <Button
-                      variant="outline"
-                      className="h-11 px-4 rounded-xl"
-                      onClick={() => setFilteredSpLocation(spLocation === "all" ? undefined : spLocation || undefined)}
-                    >
-                      <Search className="w-4 h-4" />
-                    </Button>
-                  </div>
+                  )}
                   <Button
-                    className="h-11 rounded-xl gap-2 whitespace-nowrap w-full sm:w-auto"
-                    onClick={() => { setShowRegisterForm(true); window.scrollTo(0, 0); }}
+                    className="h-11 px-6 rounded-xl gap-2 shrink-0"
+                    onClick={() => setFilteredSpLocation(spLocation === "all" ? undefined : spLocation || undefined)}
                   >
-                    <Wrench className="w-4 h-4" /> List Your Services
+                    <Search className="w-4 h-4" /> Search
                   </Button>
+                </div>
+
+                {/* Category quick-filter chips */}
+                <div className="flex gap-2 flex-wrap mt-3 pt-3 border-t border-border/50">
+                  {SERVICE_TYPES.slice(0, 9).map((type) => {
+                    const active = spSearch.toLowerCase() === type.id.toLowerCase();
+                    return (
+                      <button
+                        key={type.id}
+                        onClick={() => setSpSearch(active ? "" : type.id)}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${active ? "bg-primary text-white border-primary shadow-sm" : "bg-muted/40 text-muted-foreground border-transparent hover:border-border hover:text-foreground hover:bg-muted"}`}
+                      >
+                        {type.icon} {type.label.split(" ")[0]}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -1095,51 +1111,60 @@ export default function Services() {
 
                       {/* ── Service provider cards ── */}
                       {filteredProviders.map((provider) => (
-                        <div key={`sp-${provider.id}`} className="bg-white rounded-2xl border border-border shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col cursor-pointer" onClick={() => setSelectedProvider(provider)}>
-                          <div className="relative h-44 border-b border-border/40">
-                            <span className="absolute top-2 left-2 z-10 bg-primary text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
-                              <Wrench className="w-2.5 h-2.5" /> Service
-                            </span>
+                        <div key={`sp-${provider.id}`} className="bg-white rounded-2xl border border-border shadow-sm hover:shadow-lg transition-all duration-200 overflow-hidden flex flex-col cursor-pointer group" onClick={() => setSelectedProvider(provider)}>
+                          <div className="relative h-52 overflow-hidden">
                             {provider.photos.length > 0 ? (
                               <>
-                                <img src={provider.photos[0]} alt={provider.providerName} className="w-full h-full object-contain bg-white" />
+                                <img src={provider.photos[0]} alt={provider.providerName} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
                                 {provider.photos.length > 1 && (
-                                  <span className="absolute bottom-2 right-2 bg-black/50 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full backdrop-blur-sm">+{provider.photos.length - 1} more</span>
+                                  <span className="absolute bottom-3 right-3 bg-black/60 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full backdrop-blur-sm">+{provider.photos.length - 1} photo{provider.photos.length > 2 ? "s" : ""}</span>
                                 )}
                               </>
                             ) : (
-                              <div className="w-full h-full bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center">
-                                <Wrench className="w-10 h-10 text-primary/30" />
+                              <div className="w-full h-full bg-gradient-to-br from-primary/15 via-primary/8 to-primary/5 flex flex-col items-center justify-center gap-2">
+                                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                                  <Wrench className="w-7 h-7 text-primary/50" />
+                                </div>
+                                <p className="text-xs text-primary/40 font-medium">No photos yet</p>
                               </div>
+                            )}
+                            <span className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm text-primary text-[10px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1 shadow-sm">
+                              <Wrench className="w-2.5 h-2.5" /> Service
+                            </span>
+                            {provider.isVerified && (
+                              <span className="absolute top-3 right-3">
+                                <VerifiedBadge size="md" />
+                              </span>
                             )}
                           </div>
                           <div className="p-5 flex flex-col flex-1">
-                            <div className="flex items-start gap-2 mb-1">
-                              <h3 className="font-bold text-foreground leading-tight flex-1">{provider.providerName}</h3>
-                              {provider.isVerified && <VerifiedBadge size="md" />}
-                            </div>
+                            <h3 className="font-bold text-foreground leading-tight mb-0.5">{provider.providerName}</h3>
                             {provider.businessName && (
-                              <p className="text-xs text-muted-foreground mb-1">{provider.businessName}</p>
+                              <p className="text-xs text-muted-foreground mb-2 font-medium">{provider.businessName}</p>
                             )}
-                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-2">
-                              <MapPin className="w-3.5 h-3.5 shrink-0" /> {provider.location}
+                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-3">
+                              <MapPin className="w-3.5 h-3.5 shrink-0 text-primary/60" /> {provider.location}
                             </div>
-                            <div className="flex flex-wrap gap-1 mb-3">
-                              {provider.serviceTypes.map((t) => (
-                                <span key={t} className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">{t}</span>
+                            <div className="flex flex-wrap gap-1.5 mb-3">
+                              {provider.serviceTypes.slice(0, 3).map((t) => (
+                                <span key={t} className="text-[10px] bg-primary/10 text-primary px-2.5 py-1 rounded-full font-semibold">{t}</span>
                               ))}
+                              {provider.serviceTypes.length > 3 && (
+                                <span className="text-[10px] bg-muted text-muted-foreground px-2.5 py-1 rounded-full font-medium">+{provider.serviceTypes.length - 3} more</span>
+                              )}
                               {provider.customServiceType && (
-                                <span className="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">{provider.customServiceType}</span>
+                                <span className="text-[10px] bg-amber-100 text-amber-700 px-2.5 py-1 rounded-full font-semibold">{provider.customServiceType}</span>
                               )}
                             </div>
                             {provider.description && (
-                              <p className="text-xs text-muted-foreground line-clamp-2 mb-3 flex-1">{provider.description}</p>
+                              <p className="text-xs text-muted-foreground line-clamp-2 mb-4 flex-1 leading-relaxed">{provider.description}</p>
                             )}
                             <div className="flex gap-2 mt-auto" onClick={(e) => e.stopPropagation()}>
-                              <button onClick={() => setSelectedProvider(provider)} className="flex items-center justify-center gap-1.5 flex-1 border border-border rounded-full py-2 text-xs font-semibold text-foreground hover:bg-muted/50 transition-colors">
-                                <Eye className="w-3.5 h-3.5" /> View Details
+                              <button onClick={() => setSelectedProvider(provider)} className="flex items-center justify-center gap-1.5 flex-1 border border-border rounded-xl py-2.5 text-xs font-semibold text-foreground hover:bg-muted/50 transition-colors">
+                                <Eye className="w-3.5 h-3.5" /> View Profile
                               </button>
-                              <a href={`https://wa.me/${provider.whatsapp.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-1.5 flex-1 bg-green-600 hover:bg-green-700 text-white rounded-full py-2 text-xs font-semibold transition-colors">
+                              <a href={`https://wa.me/${provider.whatsapp.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-1.5 flex-1 bg-green-600 hover:bg-green-700 text-white rounded-xl py-2.5 text-xs font-semibold transition-colors">
                                 <Phone className="w-3.5 h-3.5" /> WhatsApp
                               </a>
                             </div>
@@ -1149,23 +1174,26 @@ export default function Services() {
 
                     </div>
 
-                    {/* Bottom CTAs */}
-                    <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="bg-primary/5 border border-primary/20 rounded-3xl p-6 text-center">
-                        <Wrench className="w-7 h-7 text-primary mx-auto mb-2" />
-                        <p className="font-bold mb-1">Offer a service?</p>
-                        <p className="text-sm text-muted-foreground mb-4">Join {filteredProviders.length} provider{filteredProviders.length !== 1 ? "s" : ""} already listed.</p>
-                        <Button className="rounded-full gap-2 w-full sm:w-auto" onClick={() => { setShowRegisterForm(true); window.scrollTo(0, 0); }}>
-                          <Wrench className="w-4 h-4" /> List My Services
-                        </Button>
-                      </div>
-                      <div className="bg-blue-50 border border-blue-200 rounded-3xl p-6 text-center">
-                        <Home className="w-7 h-7 text-blue-600 mx-auto mb-2" />
-                        <p className="font-bold mb-1">Looking for a room?</p>
-                        <p className="text-sm text-muted-foreground mb-4">Browse rooms to rent listed by Africans across Malaysia.</p>
-                        <Button variant="outline" className="rounded-full gap-2 w-full sm:w-auto border-blue-300 text-blue-700 hover:bg-blue-100" onClick={() => { setMainTab("rooms"); setRoomTab("find"); window.scrollTo(0, 0); }}>
-                          <Home className="w-4 h-4" /> Browse Rooms
-                        </Button>
+                    {/* Bottom CTA banner */}
+                    <div className="mt-12 rounded-3xl overflow-hidden border border-border shadow-sm">
+                      <div className="bg-gradient-to-r from-primary/5 to-primary/10 px-8 py-8 flex flex-col sm:flex-row items-center justify-between gap-6">
+                        <div className="flex items-center gap-5">
+                          <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0">
+                            <Wrench className="w-7 h-7 text-primary" />
+                          </div>
+                          <div>
+                            <p className="font-bold text-lg">Are you a service provider?</p>
+                            <p className="text-sm text-muted-foreground">Join {filteredProviders.length} provider{filteredProviders.length !== 1 ? "s" : ""} already listed — clients find you by service type and location.</p>
+                          </div>
+                        </div>
+                        <div className="flex gap-3 shrink-0 flex-wrap justify-center sm:justify-end">
+                          <Button variant="outline" className="rounded-full gap-2 border-blue-300 text-blue-700 hover:bg-blue-50" onClick={() => { setMainTab("rooms"); setRoomTab("find"); window.scrollTo(0, 0); }}>
+                            <Home className="w-4 h-4" /> Browse Rooms
+                          </Button>
+                          <Button className="rounded-full gap-2" onClick={() => { setShowRegisterForm(true); window.scrollTo(0, 0); }}>
+                            <Wrench className="w-4 h-4" /> List My Services
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   </>
@@ -1182,6 +1210,35 @@ export default function Services() {
       {mainTab === "rooms" && (
         <div className="container mx-auto px-4 mt-6">
 
+          {/* Rooms hero banner */}
+          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-600 via-blue-600 to-blue-500 text-white px-8 py-10 mb-8">
+            <div className="relative z-10 max-w-xl">
+              <p className="text-[11px] font-bold uppercase tracking-widest text-white/60 mb-2">African Community · Malaysia</p>
+              <h1 className="text-3xl font-bold font-serif leading-tight mb-3">Rooms to Rent</h1>
+              <p className="text-white/75 text-sm mb-6">Find affordable rooms listed by Africans across Malaysia, or list your own space and connect with trusted tenants.</p>
+              <div className="flex gap-3 flex-wrap">
+                <Button
+                  variant="secondary"
+                  className="rounded-full gap-2 font-semibold shadow-lg"
+                  onClick={() => { setRoomTab("find"); window.scrollTo(0, 0); }}
+                >
+                  <Search className="w-4 h-4" /> Find a Room
+                </Button>
+                <Button
+                  variant="outline"
+                  className="rounded-full gap-2 font-semibold bg-transparent border-white/40 text-white hover:bg-white/10"
+                  onClick={() => { setRoomTab("list"); window.scrollTo(0, 0); }}
+                >
+                  <Home className="w-4 h-4" /> List My Room
+                </Button>
+              </div>
+            </div>
+            <div className="absolute right-0 top-0 bottom-0 flex items-center pr-8 opacity-[0.07] pointer-events-none select-none">
+              <Home className="w-48 h-48" />
+            </div>
+          </div>
+
+          {/* Sub-tab switcher */}
           <div className="flex justify-center mb-8">
             <div className="inline-flex bg-white rounded-2xl border border-border shadow-sm p-1 gap-1">
               <button
