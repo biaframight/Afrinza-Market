@@ -7,7 +7,7 @@ import {
   ShoppingCart, Search, Menu, Store, Home, PackageSearch,
   MessageCircleQuestion, Sparkles, Info, HelpCircle,
   LayoutDashboard, LogOut, UserCircle, Shield, Wrench, KeyRound,
-  CreditCard, BadgeCheck, AlertTriangle, X, Bell,
+  CreditCard, BadgeCheck, AlertTriangle, X, Bell, ChevronDown,
 } from "lucide-react";
 import { useGetCart, useGetCurrentSubscription, useGetServiceProviderByUser, useGetServiceProviderSub, useFeatureFlag } from "@/hooks/use-marketplace";
 import { getSessionId } from "@/lib/session";
@@ -170,7 +170,10 @@ export function Layout({ children }: LayoutProps) {
                     <Store className="h-5 w-5 text-muted-foreground" /> Sellers
                   </Link>
                   <Link href="/services" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 px-3 py-2 text-base rounded-md hover:bg-muted font-medium">
-                    <Sparkles className="h-5 w-5 text-muted-foreground" /> Services
+                    <Wrench className="h-5 w-5 text-muted-foreground" /> All Services
+                  </Link>
+                  <Link href="/services?tab=rooms" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 px-3 py-2 pl-9 text-sm rounded-md hover:bg-muted text-muted-foreground">
+                    <Home className="h-4 w-4 text-muted-foreground" /> Rooms to Rent
                   </Link>
                   <Link href="/about" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 px-3 py-2 text-base rounded-md hover:bg-muted font-medium">
                     <Info className="h-5 w-5 text-muted-foreground" /> About
@@ -293,7 +296,23 @@ export function Layout({ children }: LayoutProps) {
           <nav className="hidden md:flex items-center gap-4 mx-3">
             <Link href="/products" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors whitespace-nowrap">Products</Link>
             <Link href="/sellers" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors whitespace-nowrap">Sellers</Link>
-            <Link href="/services" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors whitespace-nowrap">Services</Link>
+            <DropdownMenu>
+              <DropdownMenuTrigger className="flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-primary transition-colors whitespace-nowrap outline-none select-none">
+                Services <ChevronDown className="w-3.5 h-3.5" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-48">
+                <DropdownMenuItem asChild>
+                  <Link href="/services" className="flex items-center gap-2 cursor-pointer">
+                    <Wrench className="w-4 h-4" /> All Services
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/services?tab=rooms" className="flex items-center gap-2 cursor-pointer">
+                    <Home className="w-4 h-4" /> Rooms to Rent
+                  </Link>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Link href="/about" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors whitespace-nowrap">About</Link>
             <Link href="/how-it-works" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors whitespace-nowrap">How it Works</Link>
           </nav>
