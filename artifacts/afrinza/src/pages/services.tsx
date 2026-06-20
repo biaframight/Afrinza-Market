@@ -1003,6 +1003,9 @@ export default function Services() {
                       )}
                     </div>
 
+                    {/* Scrollable body — both Category and Location scroll together */}
+                    <div className="overflow-y-auto max-h-[calc(100vh-180px)] sidebar-scroll">
+
                     {/* Category accordion */}
                     <div className="border-b border-border/60">
                       <button
@@ -1013,7 +1016,7 @@ export default function Services() {
                         <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${categoryOpen ? "rotate-180" : ""}`} />
                       </button>
                       {categoryOpen && (
-                        <div className="pb-3 px-3 space-y-0.5 max-h-72 overflow-y-auto">
+                        <div className="pb-3 px-3 space-y-0.5">
                           <button
                             onClick={() => setSpSearch("")}
                             className={`w-full text-left px-3 py-2 rounded-xl text-sm transition-colors ${!spSearch ? "bg-primary/10 text-primary font-semibold" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}
@@ -1082,6 +1085,8 @@ export default function Services() {
                         </div>
                       )}
                     </div>
+
+                    </div>{/* end scrollable body */}
                   </div>
                 </div>
 
