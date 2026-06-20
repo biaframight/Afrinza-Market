@@ -1,4 +1,5 @@
 import { useGetFeaturedProducts, useGetFeaturedSellers, useGetServiceProviders, useGetRoomListings } from "@/hooks/use-marketplace";
+import { MALAYSIA_LOCATIONS } from "@/lib/malaysia-locations";
 import { ProductCard } from "@/components/product-card";
 import { SellerCard } from "@/components/seller-card";
 import { HeroSlider } from "@/components/hero-slider";
@@ -38,7 +39,7 @@ function ScrollArrows({ containerRef }: { containerRef: React.RefObject<HTMLDivE
 export default function Home() {
   const [, setLocation] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
-  const [location, setLocationFilter] = useState("KL");
+  const [location, setLocationFilter] = useState("");
 
   const { data: featuredProducts, isLoading: isProductsLoading, isError: isProductsError } = useGetFeaturedProducts();
   const { data: featuredSellers, isLoading: isSellersLoading, isError: isSellersError } = useGetFeaturedSellers();
@@ -118,7 +119,7 @@ export default function Home() {
             transition={{ duration: 0.5, delay: 0.2 }}
             className="text-base md:text-lg text-muted-foreground mb-8 max-w-2xl"
           >
-            Find African food, fashion, beauty, and trusted services near you in Malaysia.
+            Find African food, fashion, beauty, and trusted services wherever you are.
           </motion.p>
 
           <motion.div
@@ -145,36 +146,10 @@ export default function Home() {
                   value={location}
                   onChange={(e) => setLocationFilter(e.target.value)}
                 >
-                  <option value="">All Malaysia</option>
-                  <option value="KL">Kuala Lumpur</option>
-                  <option value="Putrajaya">Putrajaya</option>
-                  <option value="Selangor">Selangor</option>
-                  <option value="Shah Alam">Shah Alam</option>
-                  <option value="Petaling Jaya">Petaling Jaya</option>
-                  <option value="Subang Jaya">Subang Jaya</option>
-                  <option value="Cyberjaya">Cyberjaya</option>
-                  <option value="Puchong">Puchong</option>
-                  <option value="Klang">Klang</option>
-                  <option value="Penang">Penang</option>
-                  <option value="Georgetown">Georgetown</option>
-                  <option value="Johor">Johor</option>
-                  <option value="Johor Bahru">Johor Bahru</option>
-                  <option value="Perak">Perak</option>
-                  <option value="Ipoh">Ipoh</option>
-                  <option value="Negeri Sembilan">Negeri Sembilan</option>
-                  <option value="Seremban">Seremban</option>
-                  <option value="Melaka">Melaka</option>
-                  <option value="Pahang">Pahang</option>
-                  <option value="Kuantan">Kuantan</option>
-                  <option value="Kedah">Kedah</option>
-                  <option value="Kelantan">Kelantan</option>
-                  <option value="Terengganu">Terengganu</option>
-                  <option value="Perlis">Perlis</option>
-                  <option value="Sabah">Sabah</option>
-                  <option value="Kota Kinabalu">Kota Kinabalu</option>
-                  <option value="Sarawak">Sarawak</option>
-                  <option value="Kuching">Kuching</option>
-                  <option value="Labuan">Labuan</option>
+                  <option value="">Anywhere</option>
+                  {MALAYSIA_LOCATIONS.map((loc) => (
+                    <option key={loc.value} value={loc.value}>{loc.label}</option>
+                  ))}
                 </select>
               </div>
               <Button type="submit" className="h-12 rounded-xl md:rounded-full px-7 font-semibold shadow-md">

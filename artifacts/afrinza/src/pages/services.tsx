@@ -814,7 +814,7 @@ export default function Services() {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <FormField control={serviceForm.control} name="location" render={({ field }) => (
                           <FormItem>
-                            <FormLabel>State / City (Coverage Area)</FormLabel>
+                            <FormLabel>Location / Coverage Area</FormLabel>
                             <Select onValueChange={field.onChange} defaultValue={field.value}>
                               <FormControl>
                                 <SelectTrigger className="h-12 bg-muted/30"><SelectValue placeholder="Select area" /></SelectTrigger>

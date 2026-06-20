@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { MALAYSIA_LOCATIONS } from "@/lib/malaysia-locations";
 import { useLocation, useSearch } from "wouter";
 import { useGetProducts } from "@/hooks/use-marketplace";
 import { ProductCard } from "@/components/product-card";
@@ -112,43 +113,12 @@ export default function Products() {
               <RadioGroup value={locFilter} onValueChange={(v) => { setLocFilter(v); const p = new URLSearchParams(); if (search) p.append("search", search); if (category) p.append("category", category); if (v) p.append("location", v); setLocation(`/products?${p.toString()}`); }} className="space-y-2 pt-2 max-h-64 overflow-y-auto pr-1">
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="" id="loc-all" />
-                  <Label htmlFor="loc-all">Anywhere in Malaysia</Label>
+                  <Label htmlFor="loc-all">Anywhere</Label>
                 </div>
-                {[
-                  ["KL", "Kuala Lumpur"],
-                  ["Putrajaya", "Putrajaya"],
-                  ["Selangor", "Selangor"],
-                  ["Shah Alam", "Shah Alam"],
-                  ["Petaling Jaya", "Petaling Jaya"],
-                  ["Subang Jaya", "Subang Jaya"],
-                  ["Cyberjaya", "Cyberjaya"],
-                  ["Puchong", "Puchong"],
-                  ["Klang", "Klang"],
-                  ["Kajang", "Kajang"],
-                  ["Penang", "Penang"],
-                  ["Georgetown", "Georgetown"],
-                  ["Johor", "Johor"],
-                  ["Johor Bahru", "Johor Bahru"],
-                  ["Perak", "Perak"],
-                  ["Ipoh", "Ipoh"],
-                  ["Negeri Sembilan", "Negeri Sembilan"],
-                  ["Seremban", "Seremban"],
-                  ["Melaka", "Melaka"],
-                  ["Pahang", "Pahang"],
-                  ["Kuantan", "Kuantan"],
-                  ["Kedah", "Kedah"],
-                  ["Kelantan", "Kelantan"],
-                  ["Terengganu", "Terengganu"],
-                  ["Perlis", "Perlis"],
-                  ["Sabah", "Sabah"],
-                  ["Kota Kinabalu", "Kota Kinabalu"],
-                  ["Sarawak", "Sarawak"],
-                  ["Kuching", "Kuching"],
-                  ["Labuan", "Labuan"],
-                ].map(([val, lbl]) => (
-                  <div key={val} className="flex items-center space-x-2">
-                    <RadioGroupItem value={val} id={`loc-${val}`} />
-                    <Label htmlFor={`loc-${val}`}>{lbl}</Label>
+                {MALAYSIA_LOCATIONS.map((loc) => (
+                  <div key={loc.value} className="flex items-center space-x-2">
+                    <RadioGroupItem value={loc.value} id={`loc-${loc.value}`} />
+                    <Label htmlFor={`loc-${loc.value}`}>{loc.label}</Label>
                   </div>
                 ))}
               </RadioGroup>

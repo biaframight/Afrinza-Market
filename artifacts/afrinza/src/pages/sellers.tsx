@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { useGetSellers } from "@/hooks/use-marketplace";
+import { MALAYSIA_LOCATIONS } from "@/lib/malaysia-locations";
 import { SellerCard } from "@/components/seller-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
@@ -64,10 +65,9 @@ export default function Sellers() {
               }}
             >
               <option value="">All Locations</option>
-              <option value="KL">Kuala Lumpur</option>
-              <option value="Selangor">Selangor</option>
-              <option value="Penang">Penang</option>
-              <option value="Johor">Johor</option>
+              {MALAYSIA_LOCATIONS.map((loc) => (
+                <option key={loc.value} value={loc.value}>{loc.label}</option>
+              ))}
             </select>
             <Button type="submit" variant="secondary" className="h-12 rounded-xl md:rounded-full px-8 font-bold">
               Find Stores
