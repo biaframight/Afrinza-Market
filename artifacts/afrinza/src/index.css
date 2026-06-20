@@ -238,22 +238,23 @@
     user-select: none;
   }
 
-  /* Sidebar filter scrollbar */
-  .sidebar-scroll::-webkit-scrollbar {
-    width: 4px;
-  }
-  .sidebar-scroll::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  .sidebar-scroll::-webkit-scrollbar-thumb {
-    background: hsl(var(--border));
-    border-radius: 9999px;
-  }
-  .sidebar-scroll::-webkit-scrollbar-thumb:hover {
-    background: hsl(var(--muted-foreground) / 0.4);
-  }
-  .sidebar-scroll {
-    scrollbar-width: thin;
-    scrollbar-color: hsl(var(--border)) transparent;
-  }
+}
+
+/* Sidebar filter scrollbar — outside @layer so it has normal cascade priority */
+.sidebar-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #d1d5db transparent;
+}
+.sidebar-scroll::-webkit-scrollbar {
+  width: 5px;
+}
+.sidebar-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.sidebar-scroll::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 9999px;
+}
+.sidebar-scroll::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
 }

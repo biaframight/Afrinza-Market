@@ -989,8 +989,8 @@ export default function Services() {
               <div className="flex gap-6 items-start">
 
                 {/* ── Sidebar filter (desktop only) ── */}
-                <div className="hidden lg:block w-64 shrink-0">
-                  <div className="bg-white rounded-2xl border border-border shadow-sm sticky top-[76px]">
+                <div className="hidden lg:block w-64 shrink-0 sticky top-[76px] self-start">
+                  <div className="bg-white rounded-2xl border border-border shadow-sm">
                     <div className="px-5 py-4 border-b border-border/60 flex items-center justify-between">
                       <h3 className="font-bold text-base">Filters</h3>
                       {(spSearch || (spFilterCountry && spFilterCountry !== "all")) && (
@@ -1003,8 +1003,8 @@ export default function Services() {
                       )}
                     </div>
 
-                    {/* Scrollable body — both Category and Location scroll together */}
-                    <div className="overflow-y-auto max-h-[calc(100vh-180px)] sidebar-scroll">
+                    {/* Scrollable body — Category + Location scroll together */}
+                    <div className="overflow-y-scroll sidebar-scroll" style={{ maxHeight: "480px" }}>
 
                     {/* Category accordion */}
                     <div className="border-b border-border/60">
