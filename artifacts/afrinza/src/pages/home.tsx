@@ -1,5 +1,5 @@
 import { useGetFeaturedProducts, useGetFeaturedSellers, useGetServiceProviders, useGetRoomListings } from "@/hooks/use-marketplace";
-import { MALAYSIA_LOCATIONS } from "@/lib/malaysia-locations";
+import { MALAYSIA_LOCATIONS, CITIES_BY_COUNTRY, LOCATION_COUNTRIES } from "@/lib/malaysia-locations";
 import { ProductCard } from "@/components/product-card";
 import { SellerCard } from "@/components/seller-card";
 import { HeroSlider } from "@/components/hero-slider";
@@ -39,6 +39,7 @@ function ScrollArrows({ containerRef }: { containerRef: React.RefObject<HTMLDivE
 export default function Home() {
   const [, setLocation] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
+  const [country, setCountry] = useState("");
   const [location, setLocationFilter] = useState("");
 
   const { data: featuredProducts, isLoading: isProductsLoading, isError: isProductsError } = useGetFeaturedProducts();
@@ -139,19 +140,33 @@ export default function Home() {
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
-              <div className="w-full md:w-44 flex items-center px-4 bg-muted/30 rounded-xl md:rounded-full border border-transparent focus-within:border-primary/30 focus-within:bg-white transition-all h-12">
+              <div className="w-full md:w-40 flex items-center px-4 bg-muted/30 rounded-xl md:rounded-full border border-transparent focus-within:border-primary/30 focus-within:bg-white transition-all h-12">
                 <MapPin className="w-4 h-4 text-muted-foreground mr-3 flex-shrink-0" />
                 <select
                   className="w-full bg-transparent border-none outline-none text-foreground cursor-pointer appearance-none text-sm"
-                  value={location}
-                  onChange={(e) => setLocationFilter(e.target.value)}
+                  value={country}
+                  onChange={(e) => { setCountry(e.target.value); setLocationFilter(""); }}
                 >
-                  <option value="">Anywhere</option>
-                  {MALAYSIA_LOCATIONS.map((loc) => (
-                    <option key={loc.value} value={loc.value}>{loc.label}</option>
+                  <option value="">All Countries</option>
+                  {LOCATION_COUNTRIES.map((c) => (
+                    <option key={c.value} value={c.value}>{c.label}</option>
                   ))}
                 </select>
               </div>
+              {country && (
+                <div className="w-full md:w-40 flex items-center px-4 bg-muted/30 rounded-xl md:rounded-full border border-transparent focus-within:border-primary/30 focus-within:bg-white transition-all h-12">
+                  <select
+                    className="w-full bg-transparent border-none outline-none text-foreground cursor-pointer appearance-none text-sm"
+                    value={location}
+                    onChange={(e) => setLocationFilter(e.target.value)}
+                  >
+                    <option value="">All Cities</option>
+                    {(CITIES_BY_COUNTRY[country] ?? []).map((c) => (
+                      <option key={c.value} value={c.value}>{c.label}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
               <Button type="submit" className="h-12 rounded-xl md:rounded-full px-7 font-semibold shadow-md">
                 Search
               </Button>

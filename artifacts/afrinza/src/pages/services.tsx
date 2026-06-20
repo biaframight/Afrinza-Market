@@ -24,7 +24,7 @@ import {
   Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription,
 } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { MALAYSIA_LOCATIONS } from "@/lib/malaysia-locations";
+import { MALAYSIA_LOCATIONS, CITIES_BY_COUNTRY, LOCATION_COUNTRIES } from "@/lib/malaysia-locations";
 import { signUpWithEmail } from "@/lib/supabase-auth";
 import { useAuthContext } from "@/contexts/auth-context";
 import {
@@ -128,6 +128,11 @@ export default function Services() {
     const params = new URLSearchParams(window.location.search);
     return params.get("search") ?? "";
   });
+
+  // Location filter country selectors
+  const [spFilterCountry, setSpFilterCountry] = useState("");
+  const [spFormCountry, setSpFormCountry] = useState("");
+  const [roomFormCountry, setRoomFormCountry] = useState("");
 
   // Room search
   const [selectedLocation, setSelectedLocation] = useState<string>("");
@@ -812,15 +817,26 @@ export default function Services() {
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Country</label>
+                          <Select value={spFormCountry} onValueChange={(v) => { setSpFormCountry(v); serviceForm.setValue("location", ""); }}>
+                            <SelectTrigger className="h-12 bg-muted/30"><SelectValue placeholder="Select country" /></SelectTrigger>
+                            <SelectContent className="max-h-64">
+                              {LOCATION_COUNTRIES.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                            </SelectContent>
+                          </Select>
+                        </div>
                         <FormField control={serviceForm.control} name="location" render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Location / Coverage Area</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormLabel>City / Coverage Area</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value} disabled={!spFormCountry}>
                               <FormControl>
-                                <SelectTrigger className="h-12 bg-muted/30"><SelectValue placeholder="Select area" /></SelectTrigger>
+                                <SelectTrigger className="h-12 bg-muted/30">
+                                  <SelectValue placeholder={spFormCountry ? "Select city" : "Select country first"} />
+                                </SelectTrigger>
                               </FormControl>
                               <SelectContent className="max-h-64">
-                                {MALAYSIA_LOCATIONS.map((loc) => <SelectItem key={loc.value} value={loc.value}>{loc.label}</SelectItem>)}
+                                {(CITIES_BY_COUNTRY[spFormCountry] ?? []).map((loc) => <SelectItem key={loc.value} value={loc.value}>{loc.label}</SelectItem>)}
                               </SelectContent>
                             </Select>
                             <FormMessage />
@@ -984,18 +1000,31 @@ export default function Services() {
                 </div>
                 {/* Location + CTA row */}
                 <div className="flex flex-col sm:flex-row items-center gap-3 w-full">
-                  <div className="flex gap-2 flex-1 w-full">
-                    <Select value={spLocation} onValueChange={setSpLocation}>
-                      <SelectTrigger className="h-11 bg-white border-border flex-1">
-                        <SelectValue placeholder="Filter by location…" />
+                  <div className="flex gap-2 flex-1 w-full flex-wrap">
+                    <Select value={spFilterCountry} onValueChange={(v) => { setSpFilterCountry(v); setSpLocation(""); }}>
+                      <SelectTrigger className="h-11 bg-white border-border flex-1 min-w-[140px]">
+                        <SelectValue placeholder="Country…" />
                       </SelectTrigger>
                       <SelectContent className="max-h-64">
-                        <SelectItem value="all">All Locations</SelectItem>
-                        {MALAYSIA_LOCATIONS.map((loc) => (
-                          <SelectItem key={loc.value} value={loc.value}>{loc.label}</SelectItem>
+                        <SelectItem value="all">All Countries</SelectItem>
+                        {LOCATION_COUNTRIES.map((c) => (
+                          <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
+                    {spFilterCountry && spFilterCountry !== "all" && (
+                      <Select value={spLocation} onValueChange={setSpLocation}>
+                        <SelectTrigger className="h-11 bg-white border-border flex-1 min-w-[140px]">
+                          <SelectValue placeholder="City…" />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-64">
+                          <SelectItem value="all">All Cities</SelectItem>
+                          {(CITIES_BY_COUNTRY[spFilterCountry] ?? []).map((loc) => (
+                            <SelectItem key={loc.value} value={loc.value}>{loc.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
                     <Button
                       variant="outline"
                       className="h-11 px-4 rounded-xl"
@@ -1475,15 +1504,26 @@ export default function Services() {
                       )} />
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Country</label>
+                          <Select value={roomFormCountry} onValueChange={(v) => { setRoomFormCountry(v); roomForm.setValue("location", ""); }}>
+                            <SelectTrigger className="h-12 bg-muted/30"><SelectValue placeholder="Select country" /></SelectTrigger>
+                            <SelectContent className="max-h-64">
+                              {LOCATION_COUNTRIES.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                            </SelectContent>
+                          </Select>
+                        </div>
                         <FormField control={roomForm.control} name="location" render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Location</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormLabel>City / Area</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value} disabled={!roomFormCountry}>
                               <FormControl>
-                                <SelectTrigger className="h-12 bg-muted/30"><SelectValue placeholder="Select area" /></SelectTrigger>
+                                <SelectTrigger className="h-12 bg-muted/30">
+                                  <SelectValue placeholder={roomFormCountry ? "Select city" : "Select country first"} />
+                                </SelectTrigger>
                               </FormControl>
                               <SelectContent className="max-h-64">
-                                {MALAYSIA_LOCATIONS.map((loc) => <SelectItem key={loc.value} value={loc.value}>{loc.label}</SelectItem>)}
+                                {(CITIES_BY_COUNTRY[roomFormCountry] ?? []).map((loc) => <SelectItem key={loc.value} value={loc.value}>{loc.label}</SelectItem>)}
                               </SelectContent>
                             </Select>
                             <FormMessage />

@@ -46,7 +46,7 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { MALAYSIA_LOCATIONS } from "@/lib/malaysia-locations";
+import { MALAYSIA_LOCATIONS, CITIES_BY_COUNTRY, LOCATION_COUNTRIES, getCountryForCity } from "@/lib/malaysia-locations";
 
 const CATEGORIES = ["Food", "Fashion", "Services", "Groceries", "Beauty", "Other"];
 const DELIVERY_OPTIONS = ["Afrinza Rider", "Grab Delivery", "Lalamove", "Self Pickup"];
@@ -152,6 +152,11 @@ export default function Dashboard() {
   const roomEditPhotoRef = useRef<HTMLInputElement>(null);
   const [deletingRoomId, setDeletingRoomId] = useState<number | null>(null);
 
+  // Country selectors for location dependent dropdowns
+  const [storeCountry, setStoreCountry] = useState("");
+  const [spEditCountry, setSpEditCountry] = useState("");
+  const [roomEditCountry, setRoomEditCountry] = useState("");
+
   // Auto-switch tab from URL param ?tab=X and auto-open modals via ?action=X
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -182,6 +187,7 @@ export default function Dashboard() {
         whatsapp: sellerProfile.whatsapp,
         categories: sellerProfile.categories,
       });
+      setStoreCountry(getCountryForCity(sellerProfile.location));
       setStoreInitialized(true);
     }
   }, [sellerProfile, storeInitialized]);
@@ -420,6 +426,7 @@ export default function Dashboard() {
       customServiceType: myServiceProvider.data.customServiceType ?? "",
       photos: myServiceProvider.data.photos ?? [],
     });
+    setSpEditCountry(getCountryForCity(myServiceProvider.data.location));
     setSpEditOpen(true);
   };
 
@@ -472,6 +479,7 @@ export default function Dashboard() {
       availableFrom: room.availableFrom ?? "",
       images: room.images ?? [],
     });
+    setRoomEditCountry(getCountryForCity(room.location));
     setRoomEditNewFiles([]);
     setRoomEditNewPreviews([]);
   };
@@ -723,11 +731,20 @@ export default function Dashboard() {
                   <Input value={storeForm.ownerName} onChange={(e) => setStoreForm((f) => ({ ...f, ownerName: e.target.value }))} className="h-11 bg-muted/30" />
                 </div>
                 <div>
-                  <label className="text-sm font-semibold block mb-1.5">Location</label>
-                  <Select value={storeForm.location} onValueChange={(v) => setStoreForm((f) => ({ ...f, location: v }))}>
-                    <SelectTrigger className="h-11 bg-muted/30"><SelectValue /></SelectTrigger>
+                  <label className="text-sm font-semibold block mb-1.5">Country</label>
+                  <Select value={storeCountry} onValueChange={(v) => { setStoreCountry(v); setStoreForm((f) => ({ ...f, location: "" })); }}>
+                    <SelectTrigger className="h-11 bg-muted/30"><SelectValue placeholder="Select country" /></SelectTrigger>
                     <SelectContent className="max-h-60">
-                      {MALAYSIA_LOCATIONS.map((l) => <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>)}
+                      {LOCATION_COUNTRIES.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="text-sm font-semibold block mb-1.5">City / State</label>
+                  <Select value={storeForm.location} onValueChange={(v) => setStoreForm((f) => ({ ...f, location: v }))} disabled={!storeCountry}>
+                    <SelectTrigger className="h-11 bg-muted/30"><SelectValue placeholder={storeCountry ? "Select city" : "Select country first"} /></SelectTrigger>
+                    <SelectContent className="max-h-60">
+                      {(CITIES_BY_COUNTRY[storeCountry] ?? []).map((l) => <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
@@ -1704,12 +1721,21 @@ export default function Dashboard() {
                 <label className="text-sm font-semibold block mb-1.5">Business Name <span className="font-normal text-muted-foreground">(optional)</span></label>
                 <Input value={spEditForm.businessName} onChange={(e) => setSpEditForm((f) => ({ ...f, businessName: e.target.value }))} className="h-11 bg-muted/30" placeholder="e.g. Kwame Rides" />
               </div>
-              <div className="col-span-2">
-                <label className="text-sm font-semibold block mb-1.5">Location</label>
-                <Select value={spEditForm.location} onValueChange={(v) => setSpEditForm((f) => ({ ...f, location: v }))}>
-                  <SelectTrigger className="h-11 bg-muted/30"><SelectValue /></SelectTrigger>
+              <div>
+                <label className="text-sm font-semibold block mb-1.5">Country</label>
+                <Select value={spEditCountry} onValueChange={(v) => { setSpEditCountry(v); setSpEditForm((f) => ({ ...f, location: "" })); }}>
+                  <SelectTrigger className="h-11 bg-muted/30"><SelectValue placeholder="Select country" /></SelectTrigger>
                   <SelectContent className="max-h-60">
-                    {MALAYSIA_LOCATIONS.map((l) => <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>)}
+                    {LOCATION_COUNTRIES.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-semibold block mb-1.5">City / State</label>
+                <Select value={spEditForm.location} onValueChange={(v) => setSpEditForm((f) => ({ ...f, location: v }))} disabled={!spEditCountry}>
+                  <SelectTrigger className="h-11 bg-muted/30"><SelectValue placeholder={spEditCountry ? "Select city" : "Select country first"} /></SelectTrigger>
+                  <SelectContent className="max-h-60">
+                    {(CITIES_BY_COUNTRY[spEditCountry] ?? []).map((l) => <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
@@ -1822,12 +1848,21 @@ export default function Dashboard() {
                 <label className="text-sm font-semibold block mb-1.5">Price / month (RM)</label>
                 <Input type="number" min="0" value={roomEditForm.pricePerMonth} onChange={(e) => setRoomEditForm((f) => ({ ...f, pricePerMonth: e.target.value }))} className="h-11 bg-muted/30" placeholder="0" />
               </div>
-              <div className="col-span-2">
-                <label className="text-sm font-semibold block mb-1.5">Location</label>
-                <Select value={roomEditForm.location} onValueChange={(v) => setRoomEditForm((f) => ({ ...f, location: v }))}>
-                  <SelectTrigger className="h-11 bg-muted/30"><SelectValue /></SelectTrigger>
+              <div>
+                <label className="text-sm font-semibold block mb-1.5">Country</label>
+                <Select value={roomEditCountry} onValueChange={(v) => { setRoomEditCountry(v); setRoomEditForm((f) => ({ ...f, location: "" })); }}>
+                  <SelectTrigger className="h-11 bg-muted/30"><SelectValue placeholder="Select country" /></SelectTrigger>
                   <SelectContent className="max-h-60">
-                    {MALAYSIA_LOCATIONS.map((l) => <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>)}
+                    {LOCATION_COUNTRIES.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-semibold block mb-1.5">City / State</label>
+                <Select value={roomEditForm.location} onValueChange={(v) => setRoomEditForm((f) => ({ ...f, location: v }))} disabled={!roomEditCountry}>
+                  <SelectTrigger className="h-11 bg-muted/30"><SelectValue placeholder={roomEditCountry ? "Select city" : "Select country first"} /></SelectTrigger>
+                  <SelectContent className="max-h-60">
+                    {(CITIES_BY_COUNTRY[roomEditCountry] ?? []).map((l) => <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { useGetSellers } from "@/hooks/use-marketplace";
-import { MALAYSIA_LOCATIONS } from "@/lib/malaysia-locations";
+import { MALAYSIA_LOCATIONS, CITIES_BY_COUNTRY, LOCATION_COUNTRIES } from "@/lib/malaysia-locations";
 import { SellerCard } from "@/components/seller-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
@@ -14,6 +14,7 @@ export default function Sellers() {
 
   const [search, setSearch] = useState(searchParams.get("search") || "");
   const [locFilter, setLocFilter] = useState(searchParams.get("location") || "");
+  const [locCountry, setLocCountry] = useState("");
 
   const { data, isLoading } = useGetSellers({ location: locFilter || undefined });
 
@@ -55,20 +56,39 @@ export default function Sellers() {
             </div>
             <select
               className="h-12 px-4 rounded-xl md:rounded-full bg-white text-foreground border-transparent shadow-sm outline-none cursor-pointer sm:w-48"
-              value={locFilter}
+              value={locCountry}
               onChange={(e) => {
-                setLocFilter(e.target.value);
+                setLocCountry(e.target.value);
+                setLocFilter("");
                 setTimeout(() => {
                   const form = e.target.closest("form");
                   if (form) form.requestSubmit();
                 }, 0);
               }}
             >
-              <option value="">All Locations</option>
-              {MALAYSIA_LOCATIONS.map((loc) => (
-                <option key={loc.value} value={loc.value}>{loc.label}</option>
+              <option value="">All Countries</option>
+              {LOCATION_COUNTRIES.map((c) => (
+                <option key={c.value} value={c.value}>{c.label}</option>
               ))}
             </select>
+            {locCountry && (
+              <select
+                className="h-12 px-4 rounded-xl md:rounded-full bg-white text-foreground border-transparent shadow-sm outline-none cursor-pointer sm:w-44"
+                value={locFilter}
+                onChange={(e) => {
+                  setLocFilter(e.target.value);
+                  setTimeout(() => {
+                    const form = e.target.closest("form");
+                    if (form) form.requestSubmit();
+                  }, 0);
+                }}
+              >
+                <option value="">All Cities</option>
+                {(CITIES_BY_COUNTRY[locCountry] ?? []).map((c) => (
+                  <option key={c.value} value={c.value}>{c.label}</option>
+                ))}
+              </select>
+            )}
             <Button type="submit" variant="secondary" className="h-12 rounded-xl md:rounded-full px-8 font-bold">
               Find Stores
             </Button>

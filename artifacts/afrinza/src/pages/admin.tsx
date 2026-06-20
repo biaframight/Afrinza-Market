@@ -50,7 +50,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import type { AdminOrder, RoomListing } from "@/lib/supabase-db";
-import { MALAYSIA_LOCATIONS } from "@/lib/malaysia-locations";
+import { MALAYSIA_LOCATIONS, CITIES_BY_COUNTRY, LOCATION_COUNTRIES, getCountryForCity } from "@/lib/malaysia-locations";
 
 const ADMIN_EMAIL = "alphuplift@gmail.com";
 
@@ -206,6 +206,7 @@ export default function Admin() {
   const [confirmDeleteRoom, setConfirmDeleteRoom] = useState<{ id: number; title: string } | null>(null);
   const [editingAdminRoom, setEditingAdminRoom] = useState<RoomListing | null>(null);
   const [adminRoomForm, setAdminRoomForm] = useState({ title: "", roomType: "", pricePerMonth: "", location: "", availableFrom: "" });
+  const [adminRoomCountry, setAdminRoomCountry] = useState("");
   const [adminRoomFilter, setAdminRoomFilter] = useState<"all" | "pending" | "live">("all");
 
   const allSellers = useAdminGetAllSellers();
@@ -352,6 +353,7 @@ export default function Admin() {
       location: room.location,
       availableFrom: room.availableFrom ?? "",
     });
+    setAdminRoomCountry(getCountryForCity(room.location));
   };
 
   const handleSaveAdminRoom = () => {
@@ -1429,12 +1431,21 @@ export default function Admin() {
                 <label className="text-sm font-semibold block mb-1.5">Price / mo (RM)</label>
                 <Input type="number" min="0" value={adminRoomForm.pricePerMonth} onChange={(e) => setAdminRoomForm((f) => ({ ...f, pricePerMonth: e.target.value }))} className="h-10 bg-muted/30" placeholder="0" />
               </div>
-              <div className="col-span-2">
-                <label className="text-sm font-semibold block mb-1.5">Location</label>
-                <Select value={adminRoomForm.location} onValueChange={(v) => setAdminRoomForm((f) => ({ ...f, location: v }))}>
-                  <SelectTrigger className="h-10 bg-muted/30"><SelectValue /></SelectTrigger>
+              <div>
+                <label className="text-sm font-semibold block mb-1.5">Country</label>
+                <Select value={adminRoomCountry} onValueChange={(v) => { setAdminRoomCountry(v); setAdminRoomForm((f) => ({ ...f, location: "" })); }}>
+                  <SelectTrigger className="h-10 bg-muted/30"><SelectValue placeholder="Select country" /></SelectTrigger>
                   <SelectContent className="max-h-60">
-                    {MALAYSIA_LOCATIONS.map((l) => <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>)}
+                    {LOCATION_COUNTRIES.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-semibold block mb-1.5">City / State</label>
+                <Select value={adminRoomForm.location} onValueChange={(v) => setAdminRoomForm((f) => ({ ...f, location: v }))} disabled={!adminRoomCountry}>
+                  <SelectTrigger className="h-10 bg-muted/30"><SelectValue placeholder={adminRoomCountry ? "Select city" : "Select country first"} /></SelectTrigger>
+                  <SelectContent className="max-h-60">
+                    {(CITIES_BY_COUNTRY[adminRoomCountry] ?? []).map((l) => <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>

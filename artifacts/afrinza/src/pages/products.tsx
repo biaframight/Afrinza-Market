@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { MALAYSIA_LOCATIONS } from "@/lib/malaysia-locations";
+import { MALAYSIA_LOCATIONS, CITIES_BY_COUNTRY, LOCATION_COUNTRIES } from "@/lib/malaysia-locations";
 import { useLocation, useSearch } from "wouter";
 import { useGetProducts } from "@/hooks/use-marketplace";
 import { ProductCard } from "@/components/product-card";
@@ -36,6 +36,7 @@ export default function Products() {
   const [search, setSearch] = useState(urlSearch);
   const [category, setCategory] = useState(urlCategory);
   const [locFilter, setLocFilter] = useState(urlLocFilter);
+  const [locCountry, setLocCountry] = useState("");
 
   useEffect(() => {
     setSearch(urlSearch);
@@ -110,18 +111,50 @@ export default function Products() {
           <AccordionItem value="location" className="border-b-0 mt-4">
             <AccordionTrigger className="hover:no-underline py-3">Location</AccordionTrigger>
             <AccordionContent>
-              <RadioGroup value={locFilter} onValueChange={(v) => { setLocFilter(v); const p = new URLSearchParams(); if (search) p.append("search", search); if (category) p.append("category", category); if (v) p.append("location", v); setLocation(`/products?${p.toString()}`); }} className="space-y-2 pt-2 max-h-64 overflow-y-auto pr-1">
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="" id="loc-all" />
-                  <Label htmlFor="loc-all">Anywhere</Label>
-                </div>
-                {MALAYSIA_LOCATIONS.map((loc) => (
-                  <div key={loc.value} className="flex items-center space-x-2">
-                    <RadioGroupItem value={loc.value} id={`loc-${loc.value}`} />
-                    <Label htmlFor={`loc-${loc.value}`}>{loc.label}</Label>
-                  </div>
-                ))}
-              </RadioGroup>
+              <div className="space-y-3 pt-2">
+                <select
+                  className="w-full text-sm border border-border rounded-lg px-3 py-2 bg-white outline-none cursor-pointer"
+                  value={locCountry}
+                  onChange={(e) => {
+                    setLocCountry(e.target.value);
+                    setLocFilter("");
+                    const p = new URLSearchParams();
+                    if (search) p.append("search", search);
+                    if (category) p.append("category", category);
+                    setLocation(`/products?${p.toString()}`);
+                  }}
+                >
+                  <option value="">All Countries</option>
+                  {LOCATION_COUNTRIES.map((c) => (
+                    <option key={c.value} value={c.value}>{c.label}</option>
+                  ))}
+                </select>
+                {locCountry && (
+                  <RadioGroup
+                    value={locFilter}
+                    onValueChange={(v) => {
+                      setLocFilter(v);
+                      const p = new URLSearchParams();
+                      if (search) p.append("search", search);
+                      if (category) p.append("category", category);
+                      if (v) p.append("location", v);
+                      setLocation(`/products?${p.toString()}`);
+                    }}
+                    className="space-y-2 max-h-48 overflow-y-auto pr-1"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="" id="loc-all" />
+                      <Label htmlFor="loc-all">Anywhere in {locCountry}</Label>
+                    </div>
+                    {(CITIES_BY_COUNTRY[locCountry] ?? []).map((loc) => (
+                      <div key={loc.value} className="flex items-center space-x-2">
+                        <RadioGroupItem value={loc.value} id={`loc-${loc.value}`} />
+                        <Label htmlFor={`loc-${loc.value}`}>{loc.label}</Label>
+                      </div>
+                    ))}
+                  </RadioGroup>
+                )}
+              </div>
             </AccordionContent>
           </AccordionItem>
         </Accordion>

@@ -24,7 +24,7 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { MALAYSIA_LOCATIONS } from "@/lib/malaysia-locations";
+import { MALAYSIA_LOCATIONS, CITIES_BY_COUNTRY, LOCATION_COUNTRIES } from "@/lib/malaysia-locations";
 
 const CATEGORIES = [
   { id: "Food", label: "African Food & Catering" },
@@ -83,6 +83,7 @@ export default function BecomeSeller() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [sellerCountry, setSellerCountry] = useState("");
 
   const { user, isAuthenticated } = useAuthContext();
   const [authEmail, setAuthEmail] = useState("");
@@ -377,19 +378,34 @@ export default function BecomeSeller() {
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <FormLabel className="font-semibold flex items-center gap-2">
+                        <MapPin className="w-4 h-4 text-muted-foreground" /> Country
+                      </FormLabel>
+                      <Select value={sellerCountry} onValueChange={(v) => { setSellerCountry(v); storeForm.setValue("location", ""); }}>
+                        <SelectTrigger className="h-12 bg-muted/30">
+                          <SelectValue placeholder="Select country" />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-64">
+                          {LOCATION_COUNTRIES.map((c) => (
+                            <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                     <FormField control={storeForm.control} name="location" render={({ field }) => (
                       <FormItem>
                         <FormLabel className="font-semibold flex items-center gap-2">
-                          <MapPin className="w-4 h-4 text-muted-foreground" /> State / City
+                          <MapPin className="w-4 h-4 text-muted-foreground" /> City / State
                         </FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value} disabled={!sellerCountry}>
                           <FormControl>
                             <SelectTrigger className="h-12 bg-muted/30">
-                              <SelectValue placeholder="Select location" />
+                              <SelectValue placeholder={sellerCountry ? "Select city" : "Select country first"} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent className="max-h-64">
-                            {MALAYSIA_LOCATIONS.map((loc) => (
+                            {(CITIES_BY_COUNTRY[sellerCountry] ?? []).map((loc) => (
                               <SelectItem key={loc.value} value={loc.value}>{loc.label}</SelectItem>
                             ))}
                             <SelectItem value="Other">Other</SelectItem>
