@@ -1,0 +1,391 @@
+# TASK: Extend Existing Location Data Only
+
+IMPORTANT:
+
+This is a LOCATION DATA EXPANSION task only.
+
+Do NOT redesign, refactor, optimize, rename, move, or rebuild any part of the application.
+
+Do NOT modify:
+
+* Authentication
+* Supabase configuration
+* Payments
+* Subscription logic
+* Database schema
+* API routes
+* Components
+* UI layout
+* Styling
+* Existing business logic
+
+Do NOT create new tables.
+
+Do NOT remove or replace existing code.
+
+Your only responsibility is to extend the current location dataset already used by the application.
+
+---
+
+# BEFORE MAKING CHANGES
+
+First inspect the codebase and determine where location data currently exists.
+
+Location data may already be stored in:
+
+* constants files
+* JSON files
+* seed files
+* arrays
+* database tables
+
+If location support already exists:
+
+* Extend it.
+* Reuse it.
+* Preserve its structure.
+
+Do NOT create a second location system.
+
+Do NOT replace the existing implementation.
+
+Maintain full backward compatibility with existing users and listings.
+
+---
+
+# GOAL
+
+Expand Afrinza from Malaysia-only support into a global diaspora-ready structure.
+
+Organize locations using:
+
+CONTINENT → COUNTRY → CITY
+
+Add locations for:
+
+1. Asia
+2. Europe
+3. North America
+4. South America
+5. Oceania
+
+Do NOT add Africa yet.
+
+Africa will be added in a future phase.
+
+---
+
+# IMPLEMENTATION RULES
+
+1. Preserve the current architecture.
+2. Existing users must continue working.
+3. Existing listings must remain unchanged.
+4. Existing filters and searches must continue working.
+5. Existing dropdown components must be reused.
+6. Do not change styling.
+7. Maintain responsiveness.
+8. Do not introduce breaking changes.
+9. Do not duplicate countries or cities.
+10. Sort countries alphabetically.
+11. Sort cities alphabetically.
+12. Modify ONLY the existing location source.
+
+---
+
+# ASIA
+
+Malaysia
+
+* Cyberjaya
+* Ipoh
+* Johor Bahru
+* Kuala Lumpur
+* Penang
+* Putrajaya
+* Selangor
+* Shah Alam
+* Subang Jaya
+
+Singapore
+
+* Singapore
+
+Thailand
+
+* Bangkok
+* Chiang Mai
+* Pattaya
+
+Indonesia
+
+* Bali
+* Bandung
+* Jakarta
+* Surabaya
+
+Philippines
+
+* Cebu
+* Davao
+* Manila
+
+Vietnam
+
+* Hanoi
+* Ho Chi Minh City
+
+China
+
+* Beijing
+* Guangzhou
+* Shanghai
+* Shenzhen
+* Yiwu
+
+Hong Kong
+
+* Hong Kong
+
+Taiwan
+
+* Taipei
+* Taichung
+
+Japan
+
+* Nagoya
+* Osaka
+* Tokyo
+* Yokohama
+
+South Korea
+
+* Busan
+* Incheon
+* Seoul
+
+India
+
+* Bangalore
+* Chennai
+* Hyderabad
+* Mumbai
+* New Delhi
+
+Pakistan
+
+* Islamabad
+* Karachi
+* Lahore
+
+Bangladesh
+
+* Dhaka
+
+Sri Lanka
+
+* Colombo
+
+Nepal
+
+* Kathmandu
+
+United Arab Emirates
+
+* Abu Dhabi
+* Dubai
+* Sharjah
+
+Saudi Arabia
+
+* Dammam
+* Jeddah
+* Riyadh
+
+Qatar
+
+* Doha
+
+Kuwait
+
+* Kuwait City
+
+Oman
+
+* Muscat
+
+Bahrain
+
+* Manama
+
+Turkey
+
+* Ankara
+* Istanbul
+
+---
+
+# EUROPE
+
+United Kingdom
+
+* Birmingham
+* Leeds
+* Liverpool
+* London
+* Manchester
+
+Germany
+
+* Berlin
+* Frankfurt
+* Hamburg
+* Munich
+
+France
+
+* Lille
+* Lyon
+* Marseille
+* Paris
+
+Italy
+
+* Milan
+* Naples
+* Rome
+
+Spain
+
+* Barcelona
+* Madrid
+* Valencia
+
+Netherlands
+
+* Amsterdam
+* Rotterdam
+* The Hague
+
+Belgium
+
+* Antwerp
+* Brussels
+
+Ireland
+
+* Cork
+* Dublin
+
+Sweden
+
+* Gothenburg
+* Stockholm
+
+Norway
+
+* Oslo
+
+Denmark
+
+* Copenhagen
+
+Switzerland
+
+* Geneva
+* Zurich
+
+Portugal
+
+* Lisbon
+* Porto
+
+Austria
+
+* Vienna
+
+Poland
+
+* Krakow
+* Warsaw
+
+---
+
+# NORTH AMERICA
+
+United States
+
+* Atlanta
+* Chicago
+* Dallas
+* Houston
+* Los Angeles
+* New York
+* Philadelphia
+* Washington DC
+
+Canada
+
+* Calgary
+* Montreal
+* Ottawa
+* Toronto
+* Vancouver
+
+Mexico
+
+* Guadalajara
+* Mexico City
+* Monterrey
+
+---
+
+# SOUTH AMERICA
+
+Brazil
+
+* Brasilia
+* Rio de Janeiro
+* Sao Paulo
+
+Argentina
+
+* Buenos Aires
+
+Chile
+
+* Santiago
+
+Colombia
+
+* Bogota
+* Medellin
+
+---
+
+# OCEANIA
+
+Australia
+
+* Adelaide
+* Brisbane
+* Melbourne
+* Perth
+* Sydney
+
+New Zealand
+
+* Auckland
+* Wellington
+
+---
+
+# FINAL REQUIREMENT
+
+After completion, provide:
+
+1. Files modified.
+2. Number of countries added.
+3. Number of cities added.
+
+Do not make any unrelated changes.
