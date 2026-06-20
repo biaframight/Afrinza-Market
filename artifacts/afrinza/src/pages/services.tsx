@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { useLocation } from "wouter";
+import { useLocation, useSearch } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -114,6 +114,12 @@ export default function Services() {
     const params = new URLSearchParams(window.location.search);
     return params.get("tab") === "rooms" ? "rooms" : "services";
   });
+
+  const search = useSearch();
+  useEffect(() => {
+    const params = new URLSearchParams(search);
+    setMainTab(params.get("tab") === "rooms" ? "rooms" : "services");
+  }, [search]);
 
   const [showRegisterForm, setShowRegisterForm] = useState(() => {
     const params = new URLSearchParams(window.location.search);
