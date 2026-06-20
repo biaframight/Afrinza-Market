@@ -182,6 +182,8 @@ export default function Services() {
 
   const subFeature = useFeatureFlag("subscription_enabled");
   const subscriptionEnabled = subFeature.data === "true";
+  const spSubCurrencySymbol = spFormCountry ? getCurrencyForCountry(spFormCountry).symbol : "RM";
+  const roomSubCurrencySymbol = roomFormCountry ? getCurrencyForCountry(roomFormCountry).symbol : "RM";
 
   const filteredRooms = roomListings.data
     ? searchedLocation
@@ -422,7 +424,7 @@ export default function Services() {
           A WhatsApp notification has been sent to the Afrinza team. You'll be contacted for verification within 24 hours.
         </p>
         <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 max-w-sm w-full mb-8 text-left">
-          <p className="font-bold text-sm text-amber-800 mb-1">💳 RM 10/month subscription required</p>
+          <p className="font-bold text-sm text-amber-800 mb-1">💳 {spSubCurrencySymbol} 10/month subscription required</p>
           <p className="text-xs text-amber-700 mb-3">
             Scan the QR code below to pay your monthly subscription and keep your listing active.
           </p>
@@ -432,7 +434,7 @@ export default function Services() {
               className="w-32 h-32 object-contain rounded-lg"
               onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
             />
-            <p className="text-xs font-semibold text-amber-800">Scan to Pay · RM 10/month</p>
+            <p className="text-xs font-semibold text-amber-800">Scan to Pay · {spSubCurrencySymbol} 10/month</p>
             <a href="https://wa.me/60166088141" target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">
               Send receipt on WhatsApp →
             </a>
@@ -489,7 +491,7 @@ export default function Services() {
         </div>
         <h1 className="text-3xl font-bold font-serif mb-2">Room Listed! 🎉</h1>
         <p className="text-muted-foreground mb-8 text-sm">
-          Your listing has been submitted and is <strong>pending admin approval</strong>. To activate it, complete your RM 10/month subscription.
+          Your listing has been submitted and is <strong>pending admin approval</strong>. To activate it, complete your {roomSubCurrencySymbol} 10/month subscription.
         </p>
 
         <div className="w-full bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20 rounded-3xl p-6 mb-6">
@@ -497,14 +499,14 @@ export default function Services() {
             <CreditCard className="w-5 h-5 text-primary" />
             <span className="font-bold text-primary">Subscription Required</span>
           </div>
-          <p className="text-3xl font-bold text-foreground mb-1">RM 10<span className="text-base font-normal text-muted-foreground">/month</span></p>
+          <p className="text-3xl font-bold text-foreground mb-1">{roomSubCurrencySymbol} 10<span className="text-base font-normal text-muted-foreground">/month</span></p>
           <p className="text-xs text-muted-foreground mb-6">Keeps your room listing active and visible to tenants</p>
           <Button
             onClick={() => setRoomPayStep("qr")}
             className="w-full h-13 rounded-2xl text-base font-bold gap-2 py-4"
             size="lg"
           >
-            <ScanLine className="w-5 h-5" /> Pay RM 10 Now
+            <ScanLine className="w-5 h-5" /> Pay {roomSubCurrencySymbol} 10 Now
           </Button>
         </div>
 
@@ -549,7 +551,7 @@ export default function Services() {
             <p className="text-sm">QR image not found<br /><span className="text-xs">(add tng-qr.jpeg to /public)</span></p>
           </div>
           <div className="mt-4 pt-4 border-t border-border">
-            <p className="font-bold text-lg text-foreground">RM 10.00</p>
+            <p className="font-bold text-lg text-foreground">{roomSubCurrencySymbol} 10.00</p>
             <p className="text-xs text-muted-foreground">Monthly subscription · Room listing</p>
           </div>
         </div>
@@ -942,7 +944,7 @@ export default function Services() {
 
                       {subscriptionEnabled && (
                         <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-sm text-amber-800">
-                          <p className="font-semibold mb-0.5">💳 Subscription: RM 10/month</p>
+                          <p className="font-semibold mb-0.5">💳 Subscription: {spSubCurrencySymbol} 10/month</p>
                           <p className="text-xs">After registering, you'll receive payment instructions to keep your listing active.</p>
                         </div>
                       )}
@@ -1413,7 +1415,7 @@ export default function Services() {
               <div className="mt-10 bg-primary/5 border border-primary/20 rounded-3xl p-6 text-center">
                 <Home className="w-8 h-8 text-primary mx-auto mb-3" />
                 <p className="font-bold text-lg mb-1">Have a room to rent?</p>
-                <p className="text-sm text-muted-foreground mb-4">List it and connect with Africans across Malaysia.{subscriptionEnabled ? " RM 10/month subscription applies." : ""}</p>
+                <p className="text-sm text-muted-foreground mb-4">List it and connect with Africans across Malaysia.{subscriptionEnabled ? ` ${roomSubCurrencySymbol} 10/month subscription applies.` : ""}</p>
                 <Button onClick={() => setRoomTab("list")} className="rounded-full gap-2">
                   <Home className="w-4 h-4" /> List My Room
                 </Button>
@@ -1439,7 +1441,7 @@ export default function Services() {
                   {/* Subscription notice */}
                   {subscriptionEnabled && (
                     <div className="mb-7 p-4 rounded-xl bg-amber-50 border border-amber-200 text-sm text-amber-800">
-                      <p className="font-semibold mb-0.5">💳 Subscription required: RM 10/month</p>
+                      <p className="font-semibold mb-0.5">💳 Subscription required: {roomSubCurrencySymbol} 10/month</p>
                       <p className="text-xs">After listing, you'll receive a QR code to pay your subscription and keep your listing active.</p>
                     </div>
                   )}
@@ -1623,7 +1625,7 @@ export default function Services() {
                           )}
                         </Button>
                         <p className="text-center text-xs text-muted-foreground mt-4">
-                          Your listing is pending admin approval.{subscriptionEnabled ? " A RM 10/month subscription keeps it active." : ""}
+                          Your listing is pending admin approval.{subscriptionEnabled ? ` A ${roomSubCurrencySymbol} 10/month subscription keeps it active.` : ""}
                         </p>
                       </div>
                     </form>

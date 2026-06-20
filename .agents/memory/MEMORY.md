@@ -1,2 +1,3 @@
 - [Afrinza room listings approval flow](afrinza-rooms.md) — new rooms default to pending (is_active=false); admin approves via admin.tsx Rooms tab; users see their own rooms via getMyRoomListings(userId, whatsapp).
 - [Afrinza currency support](afrinza-currency.md) — currency derived from location field via getCurrencyForCity/getCurrencyForCountry; no DB changes needed; helpers in malaysia-locations.ts.
+- [Afrinza become-seller FormLabel crash](afrinza-formlabel.md) — country dropdown in become-seller.tsx uses local state (not react-hook-form), so must use plain <label> not <FormLabel> — FormLabel requires FormField context.

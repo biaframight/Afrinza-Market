@@ -379,9 +379,9 @@ export default function BecomeSeller() {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
-                      <FormLabel className="font-semibold flex items-center gap-2">
+                      <label className="text-sm font-medium leading-none flex items-center gap-2">
                         <MapPin className="w-4 h-4 text-muted-foreground" /> Country
-                      </FormLabel>
+                      </label>
                       <Select value={sellerCountry} onValueChange={(v) => { setSellerCountry(v); storeForm.setValue("location", ""); }}>
                         <SelectTrigger className="h-12 bg-muted/30">
                           <SelectValue placeholder="Select country" />

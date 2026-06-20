@@ -218,6 +218,7 @@ export default function Dashboard() {
 
   const subFeature = useFeatureFlag("subscription_enabled");
   const subscriptionEnabled = subFeature.data === "true";
+  const subCurrencySymbol = sellerProfile ? getCurrencyForCity(sellerProfile.location).symbol : "RM";
 
   // One subscription covers all roles — seller sub and SP sub are interchangeable
   const anySubConfirmed = currentSub.data?.status === "confirmed" || currentSpSub.data?.status === "confirmed";
@@ -888,7 +889,7 @@ export default function Dashboard() {
                       Subscription Active <CheckCircle2 className="w-4 h-4 text-green-500" />
                     </h3>
                     <p className="text-sm text-green-800">
-                      Your RM 10 subscription for <strong>{formatMonth(currentMonth)}</strong> is confirmed — covers your store, services, and room listings.
+                      Your {subCurrencySymbol} 10 subscription for <strong>{formatMonth(currentMonth)}</strong> is confirmed — covers your store, services, and room listings.
                     </p>
                   </div>
                 </div>
@@ -914,7 +915,7 @@ export default function Dashboard() {
                   <div className="flex-1">
                     <h3 className="font-bold text-lg mb-1">Monthly Subscription</h3>
                     <p className="text-sm text-muted-foreground mb-1">
-                      One <strong>RM 10/month</strong> subscription keeps your store, services, and room listings all active.
+                      One <strong>{subCurrencySymbol} 10/month</strong> subscription keeps your store, services, and room listings all active.
                     </p>
                     {anySubRejected && (
                       <p className="text-xs text-red-600 mb-2 mt-1">⚠ Your last payment was rejected. Please resubmit.</p>
@@ -924,7 +925,7 @@ export default function Dashboard() {
                       className="rounded-full gap-2 mt-3"
                       size="sm"
                     >
-                      <CreditCard className="w-4 h-4" /> Subscribe — RM 10 / month
+                      <CreditCard className="w-4 h-4" /> Subscribe — {subCurrencySymbol} 10 / month
                     </Button>
                   </div>
                 </div>
@@ -982,14 +983,14 @@ export default function Dashboard() {
               <>
                 <DialogHeader>
                   <DialogTitle className="flex items-center gap-2">
-                    <CreditCard className="w-5 h-5 text-primary" /> Subscribe — RM 10 / month
+                    <CreditCard className="w-5 h-5 text-primary" /> Subscribe — {subCurrencySymbol} 10 / month
                   </DialogTitle>
                 </DialogHeader>
                 <div className="py-2 space-y-4">
                   <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 text-center">
                     <img src="/tng-qr.jpeg" alt="Touch 'n Go QR Code" className="w-full max-w-[220px] mx-auto rounded-xl" />
                     <p className="text-xs text-muted-foreground mt-3">Scan with Touch 'n Go eWallet or any banking app</p>
-                    <p className="text-2xl font-bold text-foreground mt-2">RM 10.00</p>
+                    <p className="text-2xl font-bold text-foreground mt-2">{subCurrencySymbol} 10.00</p>
                     <p className="text-xs text-muted-foreground">Monthly subscription fee</p>
                   </div>
                   <p className="text-xs text-center text-muted-foreground">
@@ -1219,17 +1220,17 @@ export default function Dashboard() {
                           <p className="text-xs text-red-600 mb-1">⚠ Last payment rejected — please resubmit.</p>
                         )}
                         <p className="text-xs text-muted-foreground mb-3">
-                          One RM 10/month subscription covers your store, services, and room listings.
+                          One {subCurrencySymbol} 10/month subscription covers your store, services, and room listings.
                         </p>
                         {isSeller ? (
                           // Dual-role user: one payment goes through the seller sub (covers all roles)
                           <Button size="sm" className="rounded-full gap-1.5" onClick={() => { setSubscribeStep("qr"); setSubscribeOpen(true); }}>
-                            <CreditCard className="w-3.5 h-3.5" /> Pay RM 10 Subscription
+                            <CreditCard className="w-3.5 h-3.5" /> Pay {subCurrencySymbol} 10 Subscription
                           </Button>
                         ) : (
                           // SP-only user: use SP sub modal
                           <Button size="sm" className="rounded-full gap-1.5" onClick={() => { setSpSubStep("qr"); setSpSubOpen(true); }}>
-                            <CreditCard className="w-3.5 h-3.5" /> Pay RM 10 Subscription
+                            <CreditCard className="w-3.5 h-3.5" /> Pay {subCurrencySymbol} 10 Subscription
                           </Button>
                         )}
                       </div>
@@ -1244,7 +1245,7 @@ export default function Dashboard() {
                       </div>
                       <div className="flex-1">
                         <p className="font-semibold text-sm mb-0.5 text-green-900">Subscription Active · {formatMonth(currentMonth)}</p>
-                        <p className="text-xs text-green-700">RM 10 confirmed — covers your store, services &amp; room listings ✓</p>
+                        <p className="text-xs text-green-700">{subCurrencySymbol} 10 confirmed — covers your store, services &amp; room listings ✓</p>
                       </div>
                     </div>
                   </div>
@@ -1285,7 +1286,7 @@ export default function Dashboard() {
                 <Button className="rounded-full gap-2 w-full" onClick={() => setLocation("/services?register=true")}>
                   <Wrench className="w-4 h-4" /> Register as Service Provider
                 </Button>
-                <p className="text-xs text-muted-foreground mt-3">RM 10/month subscription · Profile goes live instantly</p>
+                {subscriptionEnabled && <p className="text-xs text-muted-foreground mt-3">{subCurrencySymbol} 10/month subscription · Profile goes live instantly</p>}
               </div>
             )}
           </div>
@@ -1470,9 +1471,11 @@ export default function Dashboard() {
               {!isSeller && (
                 <div className="rounded-2xl border border-border bg-muted/30 p-4">
                   <p className="text-sm font-semibold mb-1">Start listing on Afrinza</p>
-                  <p className="text-xs text-muted-foreground mb-3">
-                    One RM 10/month subscription covers all three — sell products, offer services, and list rooms.
-                  </p>
+                  {subscriptionEnabled && (
+                    <p className="text-xs text-muted-foreground mb-3">
+                      One {subCurrencySymbol} 10/month subscription covers all three — sell products, offer services, and list rooms.
+                    </p>
+                  )}
                   <div className="space-y-2">
                     <button
                       onClick={() => setLocation("/become-seller")}
@@ -1642,11 +1645,11 @@ export default function Dashboard() {
           </DialogHeader>
           {spSubStep === "qr" ? (
             <div className="space-y-4 py-2">
-              <p className="text-sm text-muted-foreground">Scan the QR code below using Touch 'n Go or DuitNow to pay RM 10 for <strong>{formatMonth(currentMonth)}</strong>.</p>
+              <p className="text-sm text-muted-foreground">Scan the QR code below using Touch 'n Go or DuitNow to pay {subCurrencySymbol} 10 for <strong>{formatMonth(currentMonth)}</strong>.</p>
               <div className="flex flex-col items-center gap-3 bg-muted/20 rounded-2xl p-4">
                 <img src="/tng-qr.jpeg" alt="TNG QR" className="w-40 h-40 object-contain rounded-xl" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
                 <div className="text-center">
-                  <p className="font-bold text-sm">RM 10 / month</p>
+                  <p className="font-bold text-sm">{subCurrencySymbol} 10 / month</p>
                   <p className="text-xs text-muted-foreground">Touch 'n Go · DuitNow</p>
                 </div>
               </div>

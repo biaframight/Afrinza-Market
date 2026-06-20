@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useAuthContext } from "@/contexts/auth-context";
 import { toast } from "sonner";
+import { getCurrencyForCity } from "@/lib/malaysia-locations";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -54,6 +55,9 @@ export function Layout({ children }: LayoutProps) {
   const subFeature = useFeatureFlag("subscription_enabled");
   const subscriptionEnabled = subFeature.data === "true";
 
+  const sellerSubSymbol = sellerProfile ? getCurrencyForCity(sellerProfile.location).symbol : "RM";
+  const spSubSymbol = myServiceProvider.data ? getCurrencyForCity(myServiceProvider.data.location).symbol : "RM";
+
   const sellerNeedsKyc = !!sellerProfile && sellerProfile.kycStatus === "none";
   // For dual-role users, show a single sub prompt (not two separate ones)
   const sellerNeedsSubscription = subscriptionEnabled && !!sellerProfile && subsLoaded && !anySubConfirmed;
@@ -64,13 +68,13 @@ export function Layout({ children }: LayoutProps) {
 
   const notifications: { msg: string; tab: string }[] = [
     ...(sellerNeedsSubscription
-      ? [{ msg: "💳 Your seller subscription for this month hasn't been paid — pay RM 10 to avoid business interruption.", tab: "store" }]
+      ? [{ msg: `💳 Your seller subscription for this month hasn't been paid — pay ${sellerSubSymbol} 10 to avoid business interruption.`, tab: "store" }]
       : []),
     ...(sellerNeedsKyc
       ? [{ msg: "🛡 Verify your store identity to build buyer trust and unlock all features.", tab: "store" }]
       : []),
     ...(spNeedsSubscription
-      ? [{ msg: "💳 Your service provider subscription hasn't been paid this month — pay RM 10 to keep your listing active.", tab: "services" }]
+      ? [{ msg: `💳 Your service provider subscription hasn't been paid this month — pay ${spSubSymbol} 10 to keep your listing active.`, tab: "services" }]
       : []),
     ...(spNeedsKyc
       ? [{ msg: "🛡 Complete identity verification to earn a verified badge on your service profile.", tab: "services" }]
@@ -200,7 +204,7 @@ export function Layout({ children }: LayoutProps) {
                               className="flex items-center gap-3 px-3 py-2.5 text-sm rounded-md bg-amber-50 border border-amber-200 text-amber-800 hover:bg-amber-100 font-medium"
                             >
                               <CreditCard className="h-4 w-4 shrink-0" />
-                              <span>Pay Seller Subscription (RM 10)</span>
+                              <span>Pay Seller Subscription ({sellerSubSymbol} 10)</span>
                             </Link>
                           )}
                           {sellerNeedsKyc && (
@@ -220,7 +224,7 @@ export function Layout({ children }: LayoutProps) {
                               className="flex items-center gap-3 px-3 py-2.5 text-sm rounded-md bg-amber-50 border border-amber-200 text-amber-800 hover:bg-amber-100 font-medium"
                             >
                               <CreditCard className="h-4 w-4 shrink-0" />
-                              <span>Pay Service Subscription (RM 10)</span>
+                              <span>Pay Service Subscription ({spSubSymbol} 10)</span>
                             </Link>
                           )}
                           {spNeedsKyc && (
@@ -369,7 +373,7 @@ export function Layout({ children }: LayoutProps) {
                         {sellerNeedsSubscription && (
                           <DropdownMenuItem asChild>
                             <Link href="/dashboard?tab=store&action=subscribe" className="flex items-center gap-2 cursor-pointer text-amber-700 bg-amber-50 hover:bg-amber-100 font-medium">
-                              <CreditCard className="w-4 h-4 shrink-0" /> Pay Seller Sub · RM 10
+                              <CreditCard className="w-4 h-4 shrink-0" /> Pay Seller Sub · {sellerSubSymbol} 10
                             </Link>
                           </DropdownMenuItem>
                         )}
@@ -383,7 +387,7 @@ export function Layout({ children }: LayoutProps) {
                         {spNeedsSubscription && (
                           <DropdownMenuItem asChild>
                             <Link href="/dashboard?tab=services&action=subscribe-sp" className="flex items-center gap-2 cursor-pointer text-amber-700 bg-amber-50 hover:bg-amber-100 font-medium">
-                              <CreditCard className="w-4 h-4 shrink-0" /> Pay Service Sub · RM 10
+                              <CreditCard className="w-4 h-4 shrink-0" /> Pay Service Sub · {spSubSymbol} 10
                             </Link>
                           </DropdownMenuItem>
                         )}
