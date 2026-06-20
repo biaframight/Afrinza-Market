@@ -11,7 +11,7 @@ import {
   CheckCircle2, Wrench, Truck, Scissors, Package, Zap, Droplets,
   Star, ArrowRight, Mail, Lock, Loader2, Bike,
   Home, Search, MapPin, Calendar, Phone, Wifi, Wind, Car, Utensils,
-  ImagePlus, X, ChevronLeft, Eye, ChevronRight,
+  ImagePlus, X, ChevronLeft, Eye, ChevronRight, ChevronDown,
   CreditCard, ScanLine, Upload, Clock,
 } from "lucide-react";
 import type { ServiceProvider, RoomListing } from "@/lib/supabase-db";
@@ -138,6 +138,8 @@ export default function Services() {
   // Location filter country selectors
   const [spFilterCountry, setSpFilterCountry] = useState("");
   const [spFormCountry, setSpFormCountry] = useState("");
+  const [categoryOpen, setCategoryOpen] = useState(true);
+  const [locationOpen, setLocationOpen] = useState(true);
   const [roomFormCountry, setRoomFormCountry] = useState("");
 
   // Room search
@@ -983,17 +985,118 @@ export default function Services() {
                 </div>
               </div>
 
-              {/* ── Search & filter card ── */}
-              <div className="bg-white rounded-2xl border border-border shadow-sm p-4 mb-6">
-                <div className="flex gap-3 flex-wrap">
-                  <div className="relative flex-1 min-w-[200px]">
+              {/* ── Two-column layout: sidebar + content ── */}
+              <div className="flex gap-6 items-start">
+
+                {/* ── Sidebar filter (desktop only) ── */}
+                <div className="hidden lg:block w-64 shrink-0">
+                  <div className="bg-white rounded-2xl border border-border shadow-sm sticky top-[76px]">
+                    <div className="px-5 py-4 border-b border-border/60 flex items-center justify-between">
+                      <h3 className="font-bold text-base">Filters</h3>
+                      {(spSearch || (spFilterCountry && spFilterCountry !== "all")) && (
+                        <button
+                          onClick={() => { setSpSearch(""); setSpFilterCountry(""); setSpLocation(""); setFilteredSpLocation(undefined); }}
+                          className="text-xs text-muted-foreground hover:text-primary transition-colors"
+                        >
+                          Clear all
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Category accordion */}
+                    <div className="border-b border-border/60">
+                      <button
+                        onClick={() => setCategoryOpen(!categoryOpen)}
+                        className="w-full flex items-center justify-between px-5 py-4 text-sm font-semibold hover:text-primary transition-colors"
+                      >
+                        Category
+                        <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${categoryOpen ? "rotate-180" : ""}`} />
+                      </button>
+                      {categoryOpen && (
+                        <div className="pb-3 px-3 space-y-0.5 max-h-72 overflow-y-auto">
+                          <button
+                            onClick={() => setSpSearch("")}
+                            className={`w-full text-left px-3 py-2 rounded-xl text-sm transition-colors ${!spSearch ? "bg-primary/10 text-primary font-semibold" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}
+                          >
+                            All Categories
+                          </button>
+                          {SERVICE_TYPES.map((type) => {
+                            const active = spSearch.toLowerCase() === type.id.toLowerCase();
+                            return (
+                              <button
+                                key={type.id}
+                                onClick={() => setSpSearch(active ? "" : type.id)}
+                                className={`w-full text-left flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm transition-colors ${active ? "bg-primary/10 text-primary font-semibold" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}
+                              >
+                                {type.icon} <span>{type.label}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Location accordion */}
+                    <div>
+                      <button
+                        onClick={() => setLocationOpen(!locationOpen)}
+                        className="w-full flex items-center justify-between px-5 py-4 text-sm font-semibold hover:text-primary transition-colors"
+                      >
+                        Location
+                        <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${locationOpen ? "rotate-180" : ""}`} />
+                      </button>
+                      {locationOpen && (
+                        <div className="pb-4 px-5 space-y-3">
+                          <Select value={spFilterCountry || "all"} onValueChange={(v) => { setSpFilterCountry(v); setSpLocation(""); setFilteredSpLocation(undefined); }}>
+                            <SelectTrigger className="h-10 bg-muted/30 border-border text-sm">
+                              <SelectValue placeholder="All Countries" />
+                            </SelectTrigger>
+                            <SelectContent className="max-h-64">
+                              <SelectItem value="all">All Countries</SelectItem>
+                              {LOCATION_COUNTRIES.map((c) => (
+                                <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          {spFilterCountry && spFilterCountry !== "all" && (
+                            <Select value={spLocation || "all"} onValueChange={(v) => { setSpLocation(v); setFilteredSpLocation(v === "all" ? undefined : v || undefined); }}>
+                              <SelectTrigger className="h-10 bg-muted/30 border-border text-sm">
+                                <SelectValue placeholder="All Cities" />
+                              </SelectTrigger>
+                              <SelectContent className="max-h-64">
+                                <SelectItem value="all">All Cities</SelectItem>
+                                {(CITIES_BY_COUNTRY[spFilterCountry] ?? []).map((loc) => (
+                                  <SelectItem key={loc.value} value={loc.value}>{loc.label}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
+                          {spFilterCountry && spFilterCountry !== "all" && (
+                            <button
+                              onClick={() => { setSpFilterCountry(""); setSpLocation(""); setFilteredSpLocation(undefined); }}
+                              className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1 transition-colors"
+                            >
+                              <X className="w-3 h-3" /> Clear location
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* ── Right column: search + grid ── */}
+                <div className="flex-1 min-w-0">
+
+                  {/* Keyword search */}
+                  <div className="relative mb-4">
                     <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
                     <input
                       type="text"
                       placeholder="Search service, name or keyword…"
                       value={spSearch}
                       onChange={(e) => setSpSearch(e.target.value)}
-                      className="w-full h-11 pl-10 pr-9 rounded-xl border border-border bg-muted/30 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all"
+                      className="w-full h-11 pl-10 pr-9 rounded-xl border border-border bg-white shadow-sm text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all"
                     />
                     {spSearch && (
                       <button onClick={() => setSpSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
@@ -1001,56 +1104,24 @@ export default function Services() {
                       </button>
                     )}
                   </div>
-                  <Select value={spFilterCountry} onValueChange={(v) => { setSpFilterCountry(v); setSpLocation(""); }}>
-                    <SelectTrigger className="h-11 bg-muted/30 border-border w-40 shrink-0">
-                      <SelectValue placeholder="Country…" />
-                    </SelectTrigger>
-                    <SelectContent className="max-h-64">
-                      <SelectItem value="all">All Countries</SelectItem>
-                      {LOCATION_COUNTRIES.map((c) => (
-                        <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {spFilterCountry && spFilterCountry !== "all" && (
-                    <Select value={spLocation} onValueChange={setSpLocation}>
-                      <SelectTrigger className="h-11 bg-muted/30 border-border w-36 shrink-0">
-                        <SelectValue placeholder="City…" />
-                      </SelectTrigger>
-                      <SelectContent className="max-h-64">
-                        <SelectItem value="all">All Cities</SelectItem>
-                        {(CITIES_BY_COUNTRY[spFilterCountry] ?? []).map((loc) => (
-                          <SelectItem key={loc.value} value={loc.value}>{loc.label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                  <Button
-                    className="h-11 px-6 rounded-xl gap-2 shrink-0"
-                    onClick={() => setFilteredSpLocation(spLocation === "all" ? undefined : spLocation || undefined)}
-                  >
-                    <Search className="w-4 h-4" /> Search
-                  </Button>
-                </div>
 
-                {/* Category quick-filter chips */}
-                <div className="flex gap-2 flex-wrap mt-3 pt-3 border-t border-border/50">
-                  {SERVICE_TYPES.slice(0, 9).map((type) => {
-                    const active = spSearch.toLowerCase() === type.id.toLowerCase();
-                    return (
-                      <button
-                        key={type.id}
-                        onClick={() => setSpSearch(active ? "" : type.id)}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${active ? "bg-primary text-white border-primary shadow-sm" : "bg-muted/40 text-muted-foreground border-transparent hover:border-border hover:text-foreground hover:bg-muted"}`}
-                      >
-                        {type.icon} {type.label.split(" ")[0]}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+                  {/* Category chips — mobile only (lg:hidden) */}
+                  <div className="flex gap-2 flex-wrap mb-4 lg:hidden">
+                    {SERVICE_TYPES.map((type) => {
+                      const active = spSearch.toLowerCase() === type.id.toLowerCase();
+                      return (
+                        <button
+                          key={type.id}
+                          onClick={() => setSpSearch(active ? "" : type.id)}
+                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${active ? "bg-primary text-white border-primary shadow-sm" : "bg-white text-muted-foreground border-border hover:text-foreground"}`}
+                        >
+                          {type.icon} {type.label.split(" ")[0]}
+                        </button>
+                      );
+                    })}
+                  </div>
 
-              {/* ── Unified grid: service providers + rooms ── */}
+              {/* ── Provider grid ── */}
               {(serviceProviders.isLoading || roomListings.isLoading) ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                   {[1, 2, 3, 4, 5, 6].map((i) => (
@@ -1199,6 +1270,9 @@ export default function Services() {
                   </>
                 );
               })()}
+
+                </div>{/* end right column */}
+              </div>{/* end two-column flex */}
             </div>
           )}
         </div>
