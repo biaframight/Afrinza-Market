@@ -1211,48 +1211,30 @@ export default function Services() {
         <div className="container mx-auto px-4 mt-6">
 
           {/* Rooms hero banner */}
-          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-600 via-blue-600 to-blue-500 text-white px-8 py-10 mb-8">
-            <div className="relative z-10 max-w-xl">
-              <p className="text-[11px] font-bold uppercase tracking-widest text-white/60 mb-2">African Community · Malaysia</p>
-              <h1 className="text-3xl font-bold font-serif leading-tight mb-3">Rooms to Rent</h1>
-              <p className="text-white/75 text-sm mb-6">Find affordable rooms listed by Africans across Malaysia, or list your own space and connect with trusted tenants.</p>
-              <div className="flex gap-3 flex-wrap">
-                <Button
-                  variant="secondary"
-                  className="rounded-full gap-2 font-semibold shadow-lg"
-                  onClick={() => { setRoomTab("find"); window.scrollTo(0, 0); }}
+          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-600 via-blue-600 to-blue-500 text-white px-8 py-8 mb-6">
+            <div className="relative z-10 flex items-center justify-between gap-6 flex-wrap">
+              <div className="max-w-xl">
+                <p className="text-[11px] font-bold uppercase tracking-widest text-white/60 mb-2">African Community · Malaysia</p>
+                <h1 className="text-2xl font-bold font-serif leading-tight mb-1">Rooms to Rent</h1>
+                <p className="text-white/75 text-sm">Find affordable rooms listed by Africans across Malaysia, or list your own space.</p>
+              </div>
+              <div className="inline-flex bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-1 gap-1 shrink-0">
+                <button
+                  onClick={() => setRoomTab("find")}
+                  className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${roomTab === "find" ? "bg-white text-blue-600 shadow-sm" : "text-white/80 hover:text-white hover:bg-white/10"}`}
                 >
                   <Search className="w-4 h-4" /> Find a Room
-                </Button>
-                <Button
-                  variant="outline"
-                  className="rounded-full gap-2 font-semibold bg-transparent border-white/40 text-white hover:bg-white/10"
-                  onClick={() => { setRoomTab("list"); window.scrollTo(0, 0); }}
+                </button>
+                <button
+                  onClick={() => setRoomTab("list")}
+                  className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${roomTab === "list" ? "bg-white text-blue-600 shadow-sm" : "text-white/80 hover:text-white hover:bg-white/10"}`}
                 >
                   <Home className="w-4 h-4" /> List My Room
-                </Button>
+                </button>
               </div>
             </div>
-            <div className="absolute right-0 top-0 bottom-0 flex items-center pr-8 opacity-[0.07] pointer-events-none select-none">
-              <Home className="w-48 h-48" />
-            </div>
-          </div>
-
-          {/* Sub-tab switcher */}
-          <div className="flex justify-center mb-8">
-            <div className="inline-flex bg-white rounded-2xl border border-border shadow-sm p-1 gap-1">
-              <button
-                onClick={() => setRoomTab("find")}
-                className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold transition-all ${roomTab === "find" ? "bg-primary text-white shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
-              >
-                <Search className="w-4 h-4" /> Find a Room
-              </button>
-              <button
-                onClick={() => setRoomTab("list")}
-                className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold transition-all ${roomTab === "list" ? "bg-primary text-white shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
-              >
-                <Home className="w-4 h-4" /> List My Room
-              </button>
+            <div className="absolute right-0 top-0 bottom-0 flex items-center pr-6 opacity-[0.06] pointer-events-none select-none">
+              <Home className="w-40 h-40" />
             </div>
           </div>
 
