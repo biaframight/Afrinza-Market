@@ -625,15 +625,15 @@ export const CURRENCY_BY_COUNTRY: Record<string, CurrencyInfo> = {
 
 const NO_DECIMAL_CURRENCIES = new Set(["JPY", "KRW", "VND", "IDR"]);
 
-/** Get currency info for a country name. Falls back to MYR if not found. */
+/** Get currency info for a country name. Falls back to USD if not found. */
 export function getCurrencyForCountry(country: string): CurrencyInfo {
-  return CURRENCY_BY_COUNTRY[country] ?? { code: "MYR", symbol: "RM" };
+  return CURRENCY_BY_COUNTRY[country] ?? { code: "USD", symbol: "$" };
 }
 
-/** Get currency info derived from a saved city/location value. Falls back to MYR. */
+/** Get currency info derived from a saved city/location value. Falls back to USD. */
 export function getCurrencyForCity(cityValue: string): CurrencyInfo {
   const country = getCountryForCity(cityValue);
-  return getCurrencyForCountry(country || "Malaysia");
+  return getCurrencyForCountry(country || "");
 }
 
 /** Format a product price with the correct currency symbol for a given city/location. */

@@ -3,7 +3,7 @@ import { Link } from "wouter";
 import { Search, ShoppingCart, MessageCircle, Star, Store, Wrench, Truck, CheckCircle, ChevronLeft } from "lucide-react";
 
 const BUYER_STEPS = [
-  { icon: <Search className="w-7 h-7 text-white" />, color: "bg-primary", step: "01", title: "Browse & Discover", desc: "Search for African food, fashion, beauty products, or services near your city in Malaysia." },
+  { icon: <Search className="w-7 h-7 text-white" />, color: "bg-primary", step: "01", title: "Browse & Discover", desc: "Search for African food, fashion, beauty products, or services near your city." },
   { icon: <ShoppingCart className="w-7 h-7 text-white" />, color: "bg-amber-500", step: "02", title: "Add to Cart", desc: "Add items from one or multiple sellers to your cart and review your order summary." },
   { icon: <MessageCircle className="w-7 h-7 text-white" />, color: "bg-[#25D366]", step: "03", title: "Order via WhatsApp", desc: "Place your order and get redirected to the seller's WhatsApp to confirm payment and delivery." },
   { icon: <Star className="w-7 h-7 text-white" />, color: "bg-purple-500", step: "04", title: "Receive & Review", desc: "Receive your order and leave a review to help the community discover great sellers." },
@@ -13,7 +13,7 @@ const SELLER_STEPS = [
   { icon: <Store className="w-7 h-7 text-white" />, color: "bg-primary", step: "01", title: "Register Your Store", desc: "Sign up as a seller — it takes under 2 minutes. Share your store name, category, location and WhatsApp." },
   { icon: <CheckCircle className="w-7 h-7 text-white" />, color: "bg-emerald-500", step: "02", title: "Get Verified", desc: "Our team reviews your store and verifies your identity to build buyer trust." },
   { icon: <MessageCircle className="w-7 h-7 text-white" />, color: "bg-[#25D366]", step: "03", title: "Receive Orders", desc: "Buyers contact you directly on WhatsApp. Confirm orders, arrange payment and delivery personally." },
-  { icon: <Star className="w-7 h-7 text-white" />, color: "bg-amber-500", step: "04", title: "Grow Your Business", desc: "Earn reviews, grow your reputation and reach thousands of Africans across Malaysia." },
+  { icon: <Star className="w-7 h-7 text-white" />, color: "bg-amber-500", step: "04", title: "Grow Your Business", desc: "Earn reviews, grow your reputation and reach thousands of Africans in the diaspora." },
 ];
 
 const SERVICE_STEPS = [

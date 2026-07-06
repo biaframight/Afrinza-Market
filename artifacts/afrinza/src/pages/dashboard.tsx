@@ -1348,7 +1348,7 @@ export default function Dashboard() {
                 </div>
                 <h3 className="font-bold text-lg mb-2">Register as a Service Provider</h3>
                 <p className="text-sm text-muted-foreground mb-6">
-                  Reach Africans across Malaysia — list your skills as an Afrinza Rider, hair braider, plumber, caterer, and more.
+                  Reach Africans in the diaspora — list your skills as an Afrinza Rider, hair braider, plumber, caterer, and more.
                 </p>
                 <Button className="rounded-full gap-2 w-full" onClick={() => setLocation("/services?register=true")}>
                   <Wrench className="w-4 h-4" /> Register as Service Provider
@@ -1378,7 +1378,7 @@ export default function Dashboard() {
                 <KeyRound className="w-12 h-12 text-muted-foreground/40 mx-auto mb-4" />
                 <h3 className="font-semibold text-lg mb-2">No rooms listed yet</h3>
                 <p className="text-muted-foreground text-sm mb-6">
-                  List your room and connect with Africans across Malaysia looking for accommodation.
+                  List your room and connect with Africans in the diaspora looking for accommodation.
                 </p>
                 <Button className="rounded-full gap-2" onClick={() => setLocation("/services?tab=rooms")}>
                   <KeyRound className="w-4 h-4" /> List a Room
@@ -1460,7 +1460,7 @@ export default function Dashboard() {
                 <Briefcase className="w-12 h-12 text-muted-foreground/40 mx-auto mb-4" />
                 <h3 className="font-semibold text-lg mb-2">No jobs posted yet</h3>
                 <p className="text-muted-foreground text-sm mb-6">
-                  Post a job opportunity and reach Africans across Malaysia looking for work.
+                  Post a job opportunity and reach Africans in the diaspora looking for work.
                 </p>
                 <Button className="rounded-full gap-2" onClick={() => setLocation("/jobs?tab=post")}>
                   <Briefcase className="w-4 h-4" /> Post a Job
@@ -1627,7 +1627,7 @@ export default function Dashboard() {
                       </div>
                       <div>
                         <p className="text-sm font-semibold">Open a Store</p>
-                        <p className="text-xs text-muted-foreground">Sell products to Africans across Malaysia</p>
+                        <p className="text-xs text-muted-foreground">Sell products to Africans in the diaspora</p>
                       </div>
                     </button>
                     <button

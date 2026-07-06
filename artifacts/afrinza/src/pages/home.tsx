@@ -101,7 +101,7 @@ export default function Home() {
               <Globe className="w-3.5 h-3.5" /> Global African Diaspora Marketplace
             </span>
             <span className="inline-flex items-center gap-1 py-1 px-3 rounded-full bg-amber-50 text-amber-700 font-semibold text-xs border border-amber-200">
-              🇲🇾 Now Live in Malaysia — Phase 1
+              🌍 Now Live for the African Diaspora
             </span>
           </motion.div>
 
@@ -495,7 +495,7 @@ export default function Home() {
                 Join the <span className="text-amber-400">Afrinza</span> Community
               </h2>
               <p className="text-white/75 text-base md:text-lg mb-8 max-w-lg">
-                Connect with thousands of Africans in Malaysia. Discover deals, share recommendations, meet sellers, and stay updated — all in one place.
+                Connect with thousands of Africans in the diaspora. Discover deals, share recommendations, meet sellers, and stay updated — all in one place.
               </p>
               <ul className="space-y-2 mb-8 text-white/70 text-sm">
                 {["Exclusive deals & first access to new sellers", "Connect with African businesses near you", "Community events, tips & marketplace updates"].map((t) => (
@@ -526,7 +526,7 @@ export default function Home() {
               {[
                 { value: "5,000+", label: "Community Members" },
                 { value: "200+", label: "African Sellers" },
-                { value: "10+", label: "Cities in Malaysia" },
+                { value: "10+", label: "Cities Worldwide" },
               ].map((stat) => (
                 <div key={stat.label} className="bg-white/8 border border-white/10 rounded-2xl px-3 py-4 md:px-6 md:py-5 text-center backdrop-blur-sm">
                   <p className="text-xl md:text-3xl font-bold text-amber-400 font-serif">{stat.value}</p>
@@ -545,7 +545,7 @@ export default function Home() {
           <div className="relative z-10 md:w-2/3">
             <h2 className="text-3xl md:text-5xl font-bold text-white font-serif mb-4">Have something to sell?</h2>
             <p className="text-primary-foreground/90 text-lg mb-8 max-w-xl">
-              Join hundreds of African businesses thriving in Malaysia. Set up your shop in minutes and reach thousands of buyers.
+              Join hundreds of African businesses thriving in the diaspora. Set up your shop in minutes and reach thousands of buyers.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
               <Button size="lg" variant="secondary" asChild className="rounded-full font-bold text-secondary-foreground">

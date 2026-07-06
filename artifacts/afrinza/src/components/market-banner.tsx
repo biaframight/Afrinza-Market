@@ -1,13 +1,5 @@
-import { Globe, ArrowRight, X } from "lucide-react";
+import { Globe, X } from "lucide-react";
 import { useState } from "react";
-
-const FUTURE_MARKETS = [
-  { flag: "🇬🇧", name: "United Kingdom" },
-  { flag: "🇨🇦", name: "Canada" },
-  { flag: "🇦🇪", name: "UAE" },
-  { flag: "🇩🇪", name: "Germany" },
-  { flag: "🇺🇸", name: "United States" },
-];
 
 export function MarketBanner() {
   const [dismissed, setDismissed] = useState(false);
@@ -18,19 +10,7 @@ export function MarketBanner() {
       <div className="container mx-auto flex items-center justify-center gap-3 flex-wrap">
         <Globe className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" />
         <span className="text-white/80 font-medium">
-          <span className="text-amber-400 font-bold">🇲🇾 Now live in Malaysia</span>
-          <span className="mx-2 text-white/40">·</span>
-          Expanding soon:
-        </span>
-        <div className="flex items-center gap-2">
-          {FUTURE_MARKETS.map((m) => (
-            <span key={m.name} title={m.name} className="text-sm leading-none opacity-80 hover:opacity-100 transition-opacity cursor-default" aria-label={m.name}>
-              {m.flag}
-            </span>
-          ))}
-        </div>
-        <span className="hidden sm:flex items-center gap-1 text-white/60">
-          <ArrowRight className="w-3 h-3" /> Expanding worldwide
+          <span className="text-amber-400 font-bold">🌍 Now live for Africans in the diaspora, everywhere</span>
         </span>
       </div>
       <button

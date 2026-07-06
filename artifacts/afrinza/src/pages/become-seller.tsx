@@ -248,7 +248,7 @@ export default function BecomeSeller() {
           </span>
           <h1 className="text-4xl md:text-5xl font-bold font-serif mb-4 leading-tight">
             {step === 1
-              ? "Start Selling to the African Community in Malaysia"
+              ? "Start Selling to the African Community in the Diaspora"
               : `Great! Now list your first product, ${createdSeller?.ownerName.split(" ")[0]}`}
           </h1>
           <p className="text-primary-foreground/90 text-lg">

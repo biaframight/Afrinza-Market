@@ -6,12 +6,12 @@ import { Heart, Globe, Users, ShieldCheck, Send, MapPin, TrendingUp, Rocket, Che
 const TELEGRAM_URL = "https://t.me/+zN9_dGgYrPg2OTVl";
 
 const LAUNCH_MARKETS = [
-  { flag: "🇲🇾", country: "Malaysia", status: "live", label: "Phase 1 — Live Now" },
-  { flag: "🇬🇧", country: "United Kingdom", status: "soon", label: "Coming Soon" },
-  { flag: "🇨🇦", country: "Canada", status: "soon", label: "Coming Soon" },
-  { flag: "🇦🇪", country: "United Arab Emirates", status: "soon", label: "Coming Soon" },
-  { flag: "🇩🇪", country: "Germany", status: "soon", label: "Coming Soon" },
-  { flag: "🇺🇸", country: "United States", status: "soon", label: "Coming Soon" },
+  { flag: "🌍", region: "Africa" },
+  { flag: "🌎", region: "The Americas" },
+  { flag: "🌏", region: "Asia & The Middle East" },
+  { flag: "🇪🇺", region: "Europe" },
+  { flag: "🇬🇧", region: "United Kingdom" },
+  { flag: "🇦🇺", region: "Oceania" },
 ];
 
 const VALUES = [
@@ -43,7 +43,7 @@ const VALUES = [
   {
     icon: <Rocket className="w-6 h-6 text-orange-600" />,
     title: "Global Vision",
-    desc: "What starts in Malaysia becomes the world's most trusted African marketplace — serving every major diaspora city on earth.",
+    desc: "We're building the world's most trusted African marketplace — serving every major diaspora city on earth.",
   },
 ];
 
@@ -78,19 +78,17 @@ export default function About() {
             Africa's <span className="text-amber-400 italic">heartbeat</span>,<br />in every corner of the world.
           </h1>
           <p className="text-lg md:text-xl text-white/75 max-w-2xl mx-auto leading-relaxed">
-            Afrinza is the global marketplace platform built for Africans living abroad — connecting buyers, sellers, and service providers across the diaspora, starting with Malaysia.
+            Afrinza is the global marketplace platform built for Africans living abroad — connecting buyers, sellers, and service providers across the diaspora, wherever you are.
           </p>
         </div>
       </section>
 
-      {/* ── Phase 1 Badge ────────────────────────────────────── */}
+      {/* ── Global Badge ─────────────────────────────────────── */}
       <section className="bg-amber-50 border-y border-amber-100 py-4 px-4">
         <div className="container mx-auto max-w-3xl flex items-center justify-center gap-3 flex-wrap text-center">
           <span className="text-amber-700 font-bold text-sm flex items-center gap-2">
-            <MapPin className="w-4 h-4" /> 🇲🇾 Phase 1 — Live in Malaysia
+            <MapPin className="w-4 h-4" /> 🌍 Live for Africans in the Diaspora, Everywhere
           </span>
-          <span className="text-amber-500 text-sm hidden sm:block">·</span>
-          <span className="text-amber-600 text-sm">Launching soon in 🇬🇧 🇨🇦 🇦🇪 🇩🇪 🇺🇸 and beyond</span>
         </div>
       </section>
 
@@ -102,7 +100,7 @@ export default function About() {
             Moving to a new country is hard. Finding the food you grew up with, the fashion you love, or a trusted tradesperson who understands your culture — that's even harder.
           </p>
           <p>
-            Afrinza was built to solve exactly that. We started in Malaysia because it has one of the fastest-growing African diaspora communities in Southeast Asia. But our vision has always been bigger.
+            Afrinza was built to solve exactly that — for African diaspora communities everywhere, wherever they've made their home.
           </p>
           <p>
             We're building the platform that every African abroad has needed for decades — one place to buy, sell, offer services, connect, and thrive. Whether you're in Kuala Lumpur, London, Toronto, Dubai, Berlin, or New York: <strong className="text-foreground">Afrinza is your home away from home.</strong>
@@ -114,17 +112,17 @@ export default function About() {
       <section className="bg-muted/30 border-y border-border/50 py-16 px-4">
         <div className="container mx-auto max-w-5xl">
           <div className="text-center mb-12">
-            <span className="inline-block bg-primary/10 text-primary text-xs font-bold tracking-widest uppercase px-3 py-1 rounded-full mb-3">Expansion Roadmap</span>
-            <h2 className="text-3xl font-bold font-serif">Where Afrinza is Going</h2>
+            <span className="inline-block bg-primary/10 text-primary text-xs font-bold tracking-widest uppercase px-3 py-1 rounded-full mb-3">Global Reach</span>
+            <h2 className="text-3xl font-bold font-serif">Where Afrinza Lives</h2>
             <p className="text-muted-foreground mt-2 max-w-xl mx-auto">One platform. Every major African diaspora market in the world.</p>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             {LAUNCH_MARKETS.map((m) => (
-              <div key={m.country} className={`rounded-2xl p-4 text-center border transition-all ${m.status === "live" ? "bg-primary text-white border-primary shadow-lg shadow-primary/20 scale-105" : "bg-white border-border hover:border-primary/30 hover:shadow-sm"}`}>
+              <div key={m.region} className="rounded-2xl p-4 text-center border bg-white border-border hover:border-primary/30 hover:shadow-sm transition-all">
                 <div className="text-4xl mb-2">{m.flag}</div>
-                <p className={`font-bold text-sm mb-1 ${m.status === "live" ? "text-white" : "text-foreground"}`}>{m.country}</p>
-                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${m.status === "live" ? "bg-white/20 text-white" : "bg-muted text-muted-foreground"}`}>
-                  {m.label}
+                <p className="font-bold text-sm mb-1 text-foreground">{m.region}</p>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                  Live Now
                 </span>
               </div>
             ))}
@@ -158,8 +156,8 @@ export default function About() {
             {[
               { value: "5,000+", label: "Community Members", emoji: "👥" },
               { value: "200+", label: "Verified Sellers", emoji: "🏪" },
-              { value: "10+", label: "Cities in Malaysia", emoji: "📍" },
-              { value: "6", label: "Target Global Markets", emoji: "🌍" },
+              { value: "10+", label: "Cities Worldwide", emoji: "📍" },
+              { value: "6", label: "Global Markets", emoji: "🌍" },
             ].map((s) => (
               <div key={s.label} className="bg-white/8 border border-white/10 rounded-2xl p-6 backdrop-blur-sm">
                 <div className="text-3xl mb-2">{s.emoji}</div>

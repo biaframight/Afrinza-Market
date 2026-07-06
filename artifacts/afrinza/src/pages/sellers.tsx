@@ -40,7 +40,7 @@ export default function Sellers() {
         <div className="relative z-10 max-w-2xl">
           <h1 className="text-3xl md:text-5xl font-bold font-serif mb-4">Discover Sellers</h1>
           <p className="text-primary-foreground/90 text-lg mb-8">
-            Connect directly with businesses bringing the best of Africa to Malaysia.
+            Connect directly with businesses bringing the best of Africa to the diaspora.
             Support the community and find authentic products.
           </p>
 

@@ -143,7 +143,7 @@ export default function Jobs() {
           <Briefcase className="w-10 h-10 mx-auto mb-4 opacity-90" />
           <h1 className="text-3xl md:text-4xl font-bold font-serif mb-3">Jobs on Afrinza</h1>
           <p className="text-primary-foreground/80 max-w-xl mx-auto">
-            Find job opportunities posted by fellow Africans and businesses across Malaysia — or post an opening
+            Find job opportunities posted by fellow Africans and businesses where you are — or post an opening
             for your own team.
           </p>
         </div>
@@ -282,7 +282,7 @@ export default function Jobs() {
             <div className="mt-10 bg-primary/5 border border-primary/20 rounded-3xl p-6 text-center">
               <Briefcase className="w-8 h-8 text-primary mx-auto mb-3" />
               <p className="font-bold text-lg mb-1">Hiring for your business?</p>
-              <p className="text-sm text-muted-foreground mb-4">Post a job opening and reach Africans across Malaysia looking for work.</p>
+              <p className="text-sm text-muted-foreground mb-4">Post a job opening and reach Africans in the diaspora looking for work.</p>
               <Button onClick={goToPostTab} className="rounded-full gap-2">
                 <Briefcase className="w-4 h-4" /> Post a Job
               </Button>

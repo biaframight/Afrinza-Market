@@ -297,7 +297,7 @@ export function Layout({ children }: LayoutProps) {
           <Link href="/" className="flex items-center gap-2">
             <AfrinzaLogo height={44} />
             <span className="hidden lg:inline-flex items-center gap-1 text-[10px] font-bold bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 rounded-full whitespace-nowrap">
-              🇲🇾 Malaysia · Phase 1
+              🌍 African Diaspora Marketplace
             </span>
           </Link>
 
@@ -534,7 +534,7 @@ export function Layout({ children }: LayoutProps) {
                 The global African diaspora marketplace. Buy, sell and connect — wherever you are in the world.
               </p>
               <p className="text-xs text-muted-foreground/70 mb-5">
-                🇲🇾 Live in Malaysia &nbsp;·&nbsp; 🇬🇧 🇨🇦 🇦🇪 🇩🇪 🇺🇸 Coming soon
+                🌍 Serving Africans in the diaspora, everywhere
               </p>
               <a
                 href="https://wa.me/60166088141"
@@ -570,7 +570,7 @@ export function Layout({ children }: LayoutProps) {
               © {new Date().getFullYear()} Afrinza — The Global African Marketplace. All rights reserved.
             </p>
             <p className="text-xs text-muted-foreground">
-              🇲🇾 Phase 1: Malaysia &nbsp;·&nbsp; Expanding worldwide
+              🌍 Built for the African diaspora, worldwide
             </p>
           </div>
         </div>

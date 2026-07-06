@@ -62,7 +62,7 @@ const AMENITIES = [
 ];
 
 const FEATURES = [
-  { icon: <Bike className="w-6 h-6 text-primary" />, title: "Afrinza Rider", desc: "Join as an Afrinza Rider and earn delivering to Africans across Malaysia." },
+  { icon: <Bike className="w-6 h-6 text-primary" />, title: "Afrinza Rider", desc: "Join as an Afrinza Rider and earn delivering to Africans in the diaspora." },
   { icon: <Droplets className="w-6 h-6 text-blue-500" />, title: "Plumbing & Repairs", desc: "Offer home repair services to households in your city." },
   { icon: <Scissors className="w-6 h-6 text-purple-500" />, title: "Hair & Beauty", desc: "Reach clients looking for African braiding, locs, twists & more." },
   { icon: <Package className="w-6 h-6 text-green-500" />, title: "Cargo & Moving", desc: "Help businesses and families move goods across states." },
@@ -688,7 +688,7 @@ export default function Services() {
               {mainTab === "services" ? "All Services" : "Rooms to Rent"}
             </p>
             <p className="text-xs text-muted-foreground">
-              {mainTab === "services" ? "Find African service providers across Malaysia" : "Search or list rooms across Malaysia"}
+              {mainTab === "services" ? "Find African service providers near you" : "Search or list rooms wherever you are"}
             </p>
           </div>
         </div>
@@ -953,9 +953,9 @@ export default function Services() {
               {/* ── Hero banner ── */}
               <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary via-primary to-primary/80 text-white px-8 py-10 mb-8">
                 <div className="relative z-10 max-w-xl">
-                  <p className="text-[11px] font-bold uppercase tracking-widest text-white/60 mb-2">African Service Network · Malaysia</p>
+                  <p className="text-[11px] font-bold uppercase tracking-widest text-white/60 mb-2">African Service Network · Global</p>
                   <h1 className="text-3xl font-bold font-serif leading-tight mb-3">Find Trusted Service Providers</h1>
-                  <p className="text-white/75 text-sm mb-6">Connect with skilled Africans offering services across Malaysia — delivery riders, hair stylists, plumbers, tutors and more.</p>
+                  <p className="text-white/75 text-sm mb-6">Connect with skilled Africans in the diaspora offering services — delivery riders, hair stylists, plumbers, tutors and more.</p>
                   <Button variant="secondary" className="rounded-full gap-2 font-semibold shadow-lg" onClick={() => { if (!isAuthenticated) { setLocation("/auth"); return; } setShowRegisterForm(true); window.scrollTo(0, 0); }}>
                     <Wrench className="w-4 h-4" /> List Your Services
                   </Button>
@@ -1160,7 +1160,7 @@ export default function Services() {
                   <>
                     <p className="text-sm text-muted-foreground mb-4 font-medium">
                       {filteredProviders.length} service provider{filteredProviders.length !== 1 ? "s" : ""}
-                      {q ? ` matching "${spSearch}"` : filteredSpLocation ? ` in ${filteredSpLocation}` : " across Malaysia"}
+                      {q ? ` matching "${spSearch}"` : filteredSpLocation ? ` in ${filteredSpLocation}` : " in the diaspora"}
                     </p>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -1273,9 +1273,9 @@ export default function Services() {
           <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-600 via-blue-600 to-blue-500 text-white px-8 py-8 mb-6">
             <div className="relative z-10 flex items-center justify-between gap-6 flex-wrap">
               <div className="max-w-xl">
-                <p className="text-[11px] font-bold uppercase tracking-widest text-white/60 mb-2">African Community · Malaysia</p>
+                <p className="text-[11px] font-bold uppercase tracking-widest text-white/60 mb-2">African Community · Global</p>
                 <h1 className="text-2xl font-bold font-serif leading-tight mb-1">Rooms to Rent</h1>
-                <p className="text-white/75 text-sm">Find affordable rooms listed by Africans across Malaysia, or list your own space.</p>
+                <p className="text-white/75 text-sm">Find affordable rooms listed by Africans in the diaspora, or list your own space.</p>
               </div>
               <div className="inline-flex bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-1 gap-1 shrink-0">
                 <button
@@ -1443,7 +1443,7 @@ export default function Services() {
               <div className="mt-10 bg-primary/5 border border-primary/20 rounded-3xl p-6 text-center">
                 <Home className="w-8 h-8 text-primary mx-auto mb-3" />
                 <p className="font-bold text-lg mb-1">Have a room to rent?</p>
-                <p className="text-sm text-muted-foreground mb-4">List it and connect with Africans across Malaysia.{subscriptionEnabled ? ` ${roomSubCurrencySymbol} 10/month subscription applies.` : ""}</p>
+                <p className="text-sm text-muted-foreground mb-4">List it and connect with Africans in the diaspora.{subscriptionEnabled ? ` ${roomSubCurrencySymbol} 10/month subscription applies.` : ""}</p>
                 <Button onClick={() => { if (!isAuthenticated) { setLocation("/auth"); return; } setRoomTab("list"); }} className="rounded-full gap-2">
                   <Home className="w-4 h-4" /> List My Room
                 </Button>

@@ -417,7 +417,7 @@ export default function AuthPage() {
           {tab === "signup" && (
             <>
               <h1 className="text-2xl font-bold font-serif mb-1">Join Afrinza</h1>
-              <p className="text-muted-foreground text-sm mb-8">The African diaspora marketplace in Malaysia. After confirming your email, you'll choose how you want to use Afrinza.</p>
+              <p className="text-muted-foreground text-sm mb-8">The African diaspora marketplace, wherever you are. After confirming your email, you'll choose how you want to use Afrinza.</p>
 
               <Form {...signUpForm}>
                 <form onSubmit={signUpForm.handleSubmit(onSignUp, (errors) => {
