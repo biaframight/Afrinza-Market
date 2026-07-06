@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
 import {
-  Loader2, Mail, Lock, User, Store, ShoppingBag,
+  Loader2, Mail, Lock, User,
   Eye, EyeOff, ArrowLeft, CheckCircle2, KeyRound,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -46,7 +46,6 @@ const signUpSchema = z.object({
     .min(1, "Email is required")
     .email("That doesn't look like a valid email address — check for typos"),
   password: z.string().min(6, "Password must be at least 6 characters"),
-  role: z.enum(["buyer", "seller"]),
 });
 
 const forgotSchema = z.object({
@@ -106,14 +105,15 @@ export default function AuthPage() {
   const [loading, setLoading] = useState(false);
   const [checkEmailReason, setCheckEmailReason] = useState<CheckEmailReason>("signup");
   const [checkEmail, setCheckEmail] = useState("");
-  const [pendingRole, setPendingRole] = useState<"buyer" | "seller">("buyer");
 
   /* ── Listen for Supabase auth events ── */
   useEffect(() => {
     const { data: { subscription } } = onAuthStateChange(async (event, session) => {
       if (event === "SIGNED_IN" && session) {
-        /* Auth state is fully updated before this fires — safe to navigate */
-        setLocation("/dashboard");
+        /* Auth state is fully updated before this fires — safe to navigate.
+           First-time users (no role chosen yet) go pick a role; returning users go to their dashboard. */
+        const hasRole = !!session.user.user_metadata?.role;
+        setLocation(hasRole ? "/dashboard" : "/choose-role");
         return;
       }
 
@@ -147,7 +147,7 @@ export default function AuthPage() {
 
   const signUpForm = useForm<SignUpValues>({
     resolver: zodResolver(signUpSchema),
-    defaultValues: { fullName: "", email: "", password: "", role: "buyer" },
+    defaultValues: { fullName: "", email: "", password: "" },
   });
 
   const forgotForm = useForm<ForgotValues>({
@@ -173,12 +173,10 @@ export default function AuthPage() {
     setLoading(true);
     const { error } = await signUpWithEmail(data.email, data.password, {
       fullName: data.fullName,
-      role: data.role,
     });
     setLoading(false);
     if (error) { toast.error(error.message); return; }
     setCheckEmail(data.email);
-    setPendingRole(data.role);
     setCheckEmailReason("signup");
     setTab("check-email");
   };
@@ -203,8 +201,6 @@ export default function AuthPage() {
     toast.success("Password updated! You're now signed in.");
     setLocation("/dashboard");
   };
-
-  const roleValue = signUpForm.watch("role");
 
   /* ── Applying (auto-applying stored password) ── */
   if (tab === "applying") {
@@ -249,7 +245,7 @@ export default function AuthPage() {
                   <li>Open your email inbox</li>
                   <li>Click the <span className="font-semibold">Confirm your email</span> link</li>
                   <li>Come back here and sign in</li>
-                  {pendingRole === "seller" && <li>Complete your seller store setup</li>}
+                  <li>Choose how you want to use Afrinza — buyer, seller, or service provider</li>
                 </ol>
               </div>
             ) : (
@@ -421,29 +417,7 @@ export default function AuthPage() {
           {tab === "signup" && (
             <>
               <h1 className="text-2xl font-bold font-serif mb-1">Join Afrinza</h1>
-              <p className="text-muted-foreground text-sm mb-6">The African diaspora marketplace in Malaysia.</p>
-
-              <div className="grid grid-cols-2 gap-3 mb-8">
-                {[
-                  { value: "buyer", label: "I'm a Buyer", sub: "Browse & order", icon: <ShoppingBag className="w-6 h-6" /> },
-                  { value: "seller", label: "I'm a Seller", sub: "Open a store", icon: <Store className="w-6 h-6" /> },
-                ].map(({ value, label, sub, icon }) => (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={() => signUpForm.setValue("role", value as "buyer" | "seller")}
-                    className={`flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all text-center ${
-                      roleValue === value
-                        ? "border-primary bg-primary/5 text-primary"
-                        : "border-border text-muted-foreground hover:border-primary/30"
-                    }`}
-                  >
-                    {icon}
-                    <span className="font-semibold text-sm">{label}</span>
-                    <span className="text-xs opacity-70">{sub}</span>
-                  </button>
-                ))}
-              </div>
+              <p className="text-muted-foreground text-sm mb-8">The African diaspora marketplace in Malaysia. After confirming your email, you'll choose how you want to use Afrinza.</p>
 
               <Form {...signUpForm}>
                 <form onSubmit={signUpForm.handleSubmit(onSignUp, (errors) => {
@@ -491,10 +465,8 @@ export default function AuthPage() {
                   <Button type="submit" size="lg" className="w-full rounded-full font-bold mt-2" disabled={loading}>
                     {loading ? (
                       <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Creating account…</>
-                    ) : roleValue === "seller" ? (
-                      "Create Account & Open Store"
                     ) : (
-                      "Create Buyer Account"
+                      "Create Account"
                     )}
                   </Button>
                 </form>

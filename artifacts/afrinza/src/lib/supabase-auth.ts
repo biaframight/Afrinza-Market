@@ -15,11 +15,11 @@
 import { supabase } from "./supabase";
 import type { Provider } from "@supabase/supabase-js";
 
-/** Sign up a new user with email and password */
+/** Sign up a new user with email and password (name + email + password only — role is chosen after login) */
 export async function signUpWithEmail(
   email: string,
   password: string,
-  options?: { fullName?: string; role?: "buyer" | "seller" }
+  options?: { fullName?: string; role?: "buyer" | "seller" | "service_provider" }
 ) {
   return supabase.auth.signUp({
     email,
@@ -27,7 +27,7 @@ export async function signUpWithEmail(
     options: {
       data: {
         full_name: options?.fullName ?? "",
-        role: options?.role ?? "buyer",
+        ...(options?.role !== undefined && { role: options.role }),
       },
     },
   });
@@ -41,6 +41,11 @@ export async function updateUserProfile(updates: { fullName?: string; phone?: st
       ...(updates.phone !== undefined && { phone: updates.phone }),
     },
   });
+}
+
+/** Set the current user's chosen role (buyer / seller / service_provider) — called after first login */
+export async function setUserRole(role: "buyer" | "seller" | "service_provider") {
+  return supabase.auth.updateUser({ data: { role } });
 }
 
 /** Sign in an existing user with email and password */

@@ -1,9 +1,8 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useCreateSeller, useCreateProduct } from "@/hooks/use-marketplace";
 import { uploadProductImage } from "@/lib/supabase-db";
 import { useAuthContext } from "@/contexts/auth-context";
-import { signUpWithEmail } from "@/lib/supabase-auth";
 import type { Seller } from "@/lib/supabase-db";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Store, User, MapPin, Phone, CheckCircle2, Package,
-  DollarSign, ImagePlus, X, ArrowRight, ChevronLeft, Loader2, Mail, Lock,
+  DollarSign, ImagePlus, X, ArrowRight, ChevronLeft, Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -85,12 +84,16 @@ export default function BecomeSeller() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [sellerCountry, setSellerCountry] = useState("");
 
-  const { user, isAuthenticated } = useAuthContext();
-  const [authEmail, setAuthEmail] = useState("");
-  const [authPassword, setAuthPassword] = useState("");
-  const [isCreatingAuth, setIsCreatingAuth] = useState(false);
+  const { user, isAuthenticated, loading: authLoading } = useAuthContext();
   const createSeller = useCreateSeller();
   const createProduct = useCreateProduct();
+
+  /* Registration now happens before role selection — require an account first */
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      setLocation("/auth");
+    }
+  }, [authLoading, isAuthenticated, setLocation]);
 
   const storeForm = useForm<StoreFormValues>({
     resolver: zodResolver(storeSchema),
@@ -122,30 +125,12 @@ export default function BecomeSeller() {
   };
 
   const onStoreSubmit = async (data: StoreFormValues) => {
-    let userId: string | null = user?.id ?? null;
-
-    // Auto-create login account if the seller is not yet signed in
-    if (!isAuthenticated) {
-      if (!authEmail.trim()) {
-        toast.error("Please enter an email address to create your account.");
-        return;
-      }
-      if (authPassword.length < 6) {
-        toast.error("Password must be at least 6 characters.");
-        return;
-      }
-      setIsCreatingAuth(true);
-      const { data: authData, error: authError } = await signUpWithEmail(authEmail, authPassword, {
-        fullName: data.ownerName,
-        role: "seller",
-      });
-      setIsCreatingAuth(false);
-      if (authError) {
-        toast.error(authError.message);
-        return;
-      }
-      userId = authData.user?.id ?? null;
+    if (!isAuthenticated || !user?.id) {
+      toast.error("Please sign in to open a store.");
+      setLocation("/auth");
+      return;
     }
+    const userId: string = user.id;
 
     const categoryQuery = data.categories[0]?.toLowerCase() || "store";
     createSeller.mutate(
@@ -305,44 +290,6 @@ export default function BecomeSeller() {
             {step === 1 && (
               <Form {...storeForm}>
                 <form onSubmit={storeForm.handleSubmit(onStoreSubmit, () => toast.error("Please fill in all required fields before continuing."))} className="space-y-8">
-
-                  {/* Login account — shown only when not signed in */}
-                  {!isAuthenticated && (
-                    <div className="p-5 rounded-2xl bg-primary/5 border border-primary/20">
-                      <p className="text-sm font-bold text-primary mb-1 flex items-center gap-2">
-                        <Lock className="w-4 h-4" /> Create Your Login Account
-                      </p>
-                      <p className="text-xs text-muted-foreground mb-4">
-                        These credentials let you sign in later to manage your store and products.
-                      </p>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                          <label className="text-sm font-semibold block mb-1.5 flex items-center gap-1.5">
-                            <Mail className="w-3.5 h-3.5 text-muted-foreground" /> Email Address
-                          </label>
-                          <Input
-                            type="email"
-                            placeholder="you@email.com"
-                            value={authEmail}
-                            onChange={(e) => setAuthEmail(e.target.value)}
-                            className="h-11 bg-white"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-sm font-semibold block mb-1.5 flex items-center gap-1.5">
-                            <Lock className="w-3.5 h-3.5 text-muted-foreground" /> Password
-                          </label>
-                          <Input
-                            type="password"
-                            placeholder="Min. 6 characters"
-                            value={authPassword}
-                            onChange={(e) => setAuthPassword(e.target.value)}
-                            className="h-11 bg-white"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  )}
 
                   {isAuthenticated && (
                     <div className="p-4 rounded-xl bg-green-50 border border-green-200 text-sm text-green-800 flex items-center gap-2">

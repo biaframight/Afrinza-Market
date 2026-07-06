@@ -9,7 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import {
   CheckCircle2, Wrench, Truck, Scissors, Package, Zap, Droplets,
-  Star, ArrowRight, Mail, Lock, Loader2, Bike,
+  Star, ArrowRight, Loader2, Bike,
   Home, Search, MapPin, Calendar, Phone, Wifi, Wind, Car, Utensils,
   ImagePlus, X, ChevronLeft, Eye, ChevronRight, ChevronDown,
   CreditCard, ScanLine, Upload, Clock,
@@ -25,7 +25,6 @@ import {
 } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MALAYSIA_LOCATIONS, CITIES_BY_COUNTRY, LOCATION_COUNTRIES, getCurrencyForCity, getCurrencyForCountry, formatPricePerMonth } from "@/lib/malaysia-locations";
-import { signUpWithEmail } from "@/lib/supabase-auth";
 import { useAuthContext } from "@/contexts/auth-context";
 import {
   useGetRoomListings, useCreateRoomListing, useSubmitRoomPaymentReceipt,
@@ -107,7 +106,7 @@ type RoomFormValues = z.infer<typeof roomSchema>;
 // ─── Main Component ───────────────────────────────────────────────
 
 export default function Services() {
-  const { user, isAuthenticated } = useAuthContext();
+  const { user, isAuthenticated, loading: authLoading } = useAuthContext();
   const [, setLocation] = useLocation();
 
   const [mainTab, setMainTab] = useState<"services" | "rooms">(() => {
@@ -125,6 +124,13 @@ export default function Services() {
     const params = new URLSearchParams(window.location.search);
     return params.get("register") === "true";
   });
+
+  useEffect(() => {
+    if (showRegisterForm && !authLoading && !isAuthenticated) {
+      setLocation("/auth");
+    }
+  }, [showRegisterForm, authLoading, isAuthenticated, setLocation]);
+
   const [roomTab, setRoomTab] = useState<"find" | "list">("find");
 
   // Service provider filter
@@ -163,11 +169,6 @@ export default function Services() {
   const [selectedRoom, setSelectedRoom] = useState<RoomListing | null>(null);
   const [activeProviderPhotoIdx, setActiveProviderPhotoIdx] = useState(0);
   const [activeRoomPhotoIdx, setActiveRoomPhotoIdx] = useState(0);
-
-  // Auth
-  const [authEmail, setAuthEmail] = useState("");
-  const [authPassword, setAuthPassword] = useState("");
-  const [isCreatingAuth, setIsCreatingAuth] = useState(false);
 
   // Service photos (up to 3)
   const [servicePhotos, setServicePhotos] = useState<File[]>([]);
@@ -283,19 +284,12 @@ export default function Services() {
   // ─── Service submit ───────────────────────────────────────────
 
   const onServiceSubmit = async (data: ServiceFormValues) => {
-    let currentUserId: string | null = user?.id ?? null;
-
-    if (!isAuthenticated) {
-      if (!authEmail.trim()) { toast.error("Email address is required."); return; }
-      if (authPassword.length < 6) { toast.error("Password must be at least 6 characters."); return; }
-      setIsCreatingAuth(true);
-      const { error: authError, data: authData } = await signUpWithEmail(authEmail, authPassword, {
-        fullName: data.providerName, role: "seller",
-      });
-      setIsCreatingAuth(false);
-      if (authError) { toast.error(authError.message); return; }
-      currentUserId = (authData as any)?.user?.id ?? null;
+    if (!isAuthenticated || !user?.id) {
+      toast.error("Please sign in to register as a service provider.");
+      setLocation("/auth");
+      return;
     }
+    const currentUserId: string = user.id;
 
     setUploading(true);
     let photoUrls: string[] = [];
@@ -328,7 +322,7 @@ export default function Services() {
         data.customServiceType ? `Other: ${data.customServiceType}` : "",
       ].filter(Boolean).join(", ");
       const msg = encodeURIComponent(
-        `*New Service Provider — Afrinza*\n\n*Name:* ${data.providerName}\n*Business:* ${data.businessName}\n*Services:* ${svcList}\n*Location:* ${data.location}\n*WhatsApp:* ${data.whatsapp}\n*Experience:* ${data.experience}\n*Description:* ${data.description}\n*Email:* ${authEmail || user?.email || "N/A"}`
+        `*New Service Provider — Afrinza*\n\n*Name:* ${data.providerName}\n*Business:* ${data.businessName}\n*Services:* ${svcList}\n*Location:* ${data.location}\n*WhatsApp:* ${data.whatsapp}\n*Experience:* ${data.experience}\n*Description:* ${data.description}\n*Email:* ${user?.email || "N/A"}`
       );
       setIsServiceSuccess(true);
       window.scrollTo(0, 0);
@@ -765,25 +759,6 @@ export default function Services() {
                     )}
                   </div>
 
-                  {!isAuthenticated && (
-                    <div className="mb-8 p-5 rounded-2xl bg-primary/5 border border-primary/20">
-                      <p className="text-sm font-bold text-primary mb-1 flex items-center gap-2">
-                        <Lock className="w-4 h-4" /> Create Your Login Account
-                      </p>
-                      <p className="text-xs text-muted-foreground mb-4">Use these credentials to sign in and manage your service profile anytime.</p>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                          <label className="text-sm font-semibold block mb-1.5"><Mail className="w-3.5 h-3.5 inline mr-1 text-muted-foreground" />Email Address</label>
-                          <Input type="email" placeholder="you@email.com" value={authEmail} onChange={(e) => setAuthEmail(e.target.value)} className="h-11 bg-white" />
-                        </div>
-                        <div>
-                          <label className="text-sm font-semibold block mb-1.5"><Lock className="w-3.5 h-3.5 inline mr-1 text-muted-foreground" />Password</label>
-                          <Input type="password" placeholder="Min. 6 characters" value={authPassword} onChange={(e) => setAuthPassword(e.target.value)} className="h-11 bg-white" />
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
                   {isAuthenticated && (
                     <div className="mb-6 p-4 rounded-xl bg-green-50 border border-green-200 text-sm text-green-800 flex items-center gap-2">
                       <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
@@ -946,11 +921,9 @@ export default function Services() {
                           type="submit"
                           size="lg"
                           className="w-full h-14 rounded-full text-base font-bold shadow-md"
-                          disabled={serviceForm.formState.isSubmitting || isCreatingAuth || uploading || createServiceProvider.isPending}
+                          disabled={serviceForm.formState.isSubmitting || uploading || createServiceProvider.isPending}
                         >
-                          {isCreatingAuth ? (
-                            <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Creating Account…</>
-                          ) : (uploading || createServiceProvider.isPending) ? (
+                          {(uploading || createServiceProvider.isPending) ? (
                             <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Uploading &amp; Registering…</>
                           ) : (
                             <>List My Services <ArrowRight className="w-5 h-5 ml-2" /></>
@@ -976,7 +949,7 @@ export default function Services() {
                   <p className="text-[11px] font-bold uppercase tracking-widest text-white/60 mb-2">African Service Network · Malaysia</p>
                   <h1 className="text-3xl font-bold font-serif leading-tight mb-3">Find Trusted Service Providers</h1>
                   <p className="text-white/75 text-sm mb-6">Connect with skilled Africans offering services across Malaysia — delivery riders, hair stylists, plumbers, tutors and more.</p>
-                  <Button variant="secondary" className="rounded-full gap-2 font-semibold shadow-lg" onClick={() => { setShowRegisterForm(true); window.scrollTo(0, 0); }}>
+                  <Button variant="secondary" className="rounded-full gap-2 font-semibold shadow-lg" onClick={() => { if (!isAuthenticated) { setLocation("/auth"); return; } setShowRegisterForm(true); window.scrollTo(0, 0); }}>
                     <Wrench className="w-4 h-4" /> List Your Services
                   </Button>
                 </div>
@@ -1170,7 +1143,7 @@ export default function Services() {
                     <Wrench className="w-14 h-14 mx-auto mb-4 opacity-20" />
                     <p className="font-bold text-lg mb-2">No services listed yet</p>
                     <p className="text-sm mb-6">Be the first to list your services!</p>
-                    <Button className="rounded-full gap-2" onClick={() => { setShowRegisterForm(true); window.scrollTo(0, 0); }}>
+                    <Button className="rounded-full gap-2" onClick={() => { if (!isAuthenticated) { setLocation("/auth"); return; } setShowRegisterForm(true); window.scrollTo(0, 0); }}>
                       <Wrench className="w-4 h-4" /> List My Services
                     </Button>
                   </div>
@@ -1266,7 +1239,7 @@ export default function Services() {
                           <Button variant="outline" className="rounded-full gap-2 border-blue-300 text-blue-700 hover:bg-blue-50" onClick={() => { setMainTab("rooms"); setRoomTab("find"); window.scrollTo(0, 0); }}>
                             <Home className="w-4 h-4" /> Browse Rooms
                           </Button>
-                          <Button className="rounded-full gap-2" onClick={() => { setShowRegisterForm(true); window.scrollTo(0, 0); }}>
+                          <Button className="rounded-full gap-2" onClick={() => { if (!isAuthenticated) { setLocation("/auth"); return; } setShowRegisterForm(true); window.scrollTo(0, 0); }}>
                             <Wrench className="w-4 h-4" /> List My Services
                           </Button>
                         </div>
