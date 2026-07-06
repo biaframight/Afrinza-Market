@@ -337,6 +337,13 @@ export default function Services() {
   // ─── Room submit ──────────────────────────────────────────────
 
   const onRoomSubmit = async (data: RoomFormValues) => {
+    if (!isAuthenticated || !user?.id) {
+      toast.error("Please sign in to list a room.");
+      setLocation("/auth");
+      return;
+    }
+    const currentUserId: string = user.id;
+
     setUploading(true);
     let imageUrls: string[] = [];
     try {
@@ -350,7 +357,7 @@ export default function Services() {
 
     try {
       const room = await createRoomListing.mutateAsync({
-        userId: user?.id ?? null,
+        userId: currentUserId,
         listerName: data.listerName,
         whatsapp: data.whatsapp,
         location: data.location,
@@ -476,7 +483,7 @@ export default function Services() {
             Browse Rooms
           </Button>
           <Button
-            onClick={() => { setRoomTab("list"); resetRoomSuccess(); }}
+            onClick={() => { if (!isAuthenticated) { setLocation("/auth"); return; } setRoomTab("list"); resetRoomSuccess(); }}
             className="rounded-full px-8 h-12 font-semibold flex-1"
           >
             List Another Room
@@ -657,7 +664,7 @@ export default function Services() {
             Browse Rooms
           </Button>
           <Button
-            onClick={() => { setRoomTab("list"); resetRoomSuccess(); }}
+            onClick={() => { if (!isAuthenticated) { setLocation("/auth"); return; } setRoomTab("list"); resetRoomSuccess(); }}
             className="rounded-full px-8 h-12 font-semibold flex-1"
           >
             List Another Room
@@ -1278,7 +1285,7 @@ export default function Services() {
                   <Search className="w-4 h-4" /> Find a Room
                 </button>
                 <button
-                  onClick={() => setRoomTab("list")}
+                  onClick={() => { if (!isAuthenticated) { setLocation("/auth"); return; } setRoomTab("list"); }}
                   className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${roomTab === "list" ? "bg-white text-blue-600 shadow-sm" : "text-white/80 hover:text-white hover:bg-white/10"}`}
                 >
                   <Home className="w-4 h-4" /> List My Room
@@ -1349,7 +1356,7 @@ export default function Services() {
                   <Home className="w-14 h-14 mx-auto mb-4 opacity-20" />
                   <p className="font-bold text-lg mb-2">No rooms found</p>
                   <p className="text-sm mb-6">No rooms listed yet. Be the first!</p>
-                  <Button onClick={() => setRoomTab("list")} className="rounded-full gap-2">
+                  <Button onClick={() => { if (!isAuthenticated) { setLocation("/auth"); return; } setRoomTab("list"); }} className="rounded-full gap-2">
                     <Home className="w-4 h-4" /> List a Room
                   </Button>
                 </div>
@@ -1437,7 +1444,7 @@ export default function Services() {
                 <Home className="w-8 h-8 text-primary mx-auto mb-3" />
                 <p className="font-bold text-lg mb-1">Have a room to rent?</p>
                 <p className="text-sm text-muted-foreground mb-4">List it and connect with Africans across Malaysia.{subscriptionEnabled ? ` ${roomSubCurrencySymbol} 10/month subscription applies.` : ""}</p>
-                <Button onClick={() => setRoomTab("list")} className="rounded-full gap-2">
+                <Button onClick={() => { if (!isAuthenticated) { setLocation("/auth"); return; } setRoomTab("list"); }} className="rounded-full gap-2">
                   <Home className="w-4 h-4" /> List My Room
                 </Button>
               </div>
@@ -1458,6 +1465,13 @@ export default function Services() {
                       <p className="text-muted-foreground text-sm">Your listing goes live instantly and tenants can find it by location.</p>
                     </div>
                   </div>
+
+                  {isAuthenticated && (
+                    <div className="mb-6 p-4 rounded-xl bg-green-50 border border-green-200 text-sm text-green-800 flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+                      Signed in as <strong>{user?.email}</strong> — your account is already linked.
+                    </div>
+                  )}
 
                   {/* Subscription notice */}
                   {subscriptionEnabled && (
