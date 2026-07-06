@@ -544,6 +544,90 @@ export function useAdminDeleteRoomListing() {
   });
 }
 
+// ─── Job Listings ────────────────────────────────────────────────────
+
+export function useGetJobListings(location?: string) {
+  return useQuery({
+    queryKey: ["jobs", location ?? "all"],
+    queryFn: () => db.getJobListings(location),
+  });
+}
+
+export function useCreateJobListing() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: db.createJobListing,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["jobs"] }),
+  });
+}
+
+export function useUpdateJobListing() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, updates }: { id: number; updates: Parameters<typeof db.updateJobListing>[1] }) =>
+      db.updateJobListing(id, updates),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["jobs"] }),
+  });
+}
+
+export function useDeleteJobListing() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id }: { id: number }) => db.deleteJobListing(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["jobs"] }),
+  });
+}
+
+export function useGetMyJobListings(userId?: string) {
+  return useQuery({
+    queryKey: ["jobs", "mine", userId ?? ""],
+    queryFn: () => db.getMyJobListings(userId!),
+    enabled: !!userId,
+  });
+}
+
+export function useAdminGetAllJobListings() {
+  return useQuery({
+    queryKey: ["admin-jobs"],
+    queryFn: () => db.adminGetAllJobListings(),
+  });
+}
+
+export function useAdminApproveJobListing() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, approve }: { id: number; approve: boolean }) =>
+      db.adminApproveJobListing(id, approve),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin-jobs"] });
+      qc.invalidateQueries({ queryKey: ["jobs"] });
+    },
+  });
+}
+
+export function useAdminUpdateJobListing() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, updates }: { id: number; updates: Parameters<typeof db.adminUpdateJobListing>[1] }) =>
+      db.adminUpdateJobListing(id, updates),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin-jobs"] });
+      qc.invalidateQueries({ queryKey: ["jobs"] });
+    },
+  });
+}
+
+export function useAdminDeleteJobListing() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id }: { id: number }) => db.adminDeleteJobListing(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin-jobs"] });
+      qc.invalidateQueries({ queryKey: ["jobs"] });
+    },
+  });
+}
+
 // ─── Service Providers ──────────────────────────────────────────────
 
 export function useGetServiceProviders(location?: string) {

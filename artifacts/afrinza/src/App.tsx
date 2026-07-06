@@ -17,6 +17,7 @@ import Cart from "@/pages/cart";
 import Checkout from "@/pages/checkout";
 import BecomeSeller from "@/pages/become-seller";
 import Services from "@/pages/services";
+import Jobs from "@/pages/jobs";
 import About from "@/pages/about";
 import HowItWorks from "@/pages/how-it-works";
 import AuthPage from "@/pages/auth";
@@ -84,6 +85,7 @@ function Router() {
         <Route path="/checkout" component={Checkout} />
         <Route path="/become-seller" component={BecomeSeller} />
         <Route path="/services" component={Services} />
+        <Route path="/jobs" component={Jobs} />
         <Route path="/about" component={About} />
         <Route path="/how-it-works" component={HowItWorks} />
         <Route path="/auth" component={AuthPage} />

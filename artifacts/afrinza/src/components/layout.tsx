@@ -7,7 +7,7 @@ import {
   ShoppingCart, Search, Menu, Store, Home, PackageSearch,
   MessageCircleQuestion, Sparkles, Info, HelpCircle,
   LayoutDashboard, LogOut, UserCircle, Shield, Wrench, KeyRound,
-  CreditCard, BadgeCheck, AlertTriangle, X, Bell, ChevronDown,
+  CreditCard, BadgeCheck, AlertTriangle, X, Bell, ChevronDown, Briefcase,
 } from "lucide-react";
 import { useGetCart, useGetCurrentSubscription, useGetServiceProviderByUser, useGetServiceProviderSub, useFeatureFlag } from "@/hooks/use-marketplace";
 import { getSessionId } from "@/lib/session";
@@ -175,6 +175,9 @@ export function Layout({ children }: LayoutProps) {
                   <Link href="/services?tab=rooms" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 px-3 py-2 pl-9 text-sm rounded-md hover:bg-muted text-muted-foreground">
                     <Home className="h-4 w-4 text-muted-foreground" /> Rooms to Rent
                   </Link>
+                  <Link href="/jobs" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 px-3 py-2 text-base rounded-md hover:bg-muted font-medium">
+                    <Briefcase className="h-5 w-5 text-muted-foreground" /> Jobs
+                  </Link>
                   <Link href="/about" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 px-3 py-2 text-base rounded-md hover:bg-muted font-medium">
                     <Info className="h-5 w-5 text-muted-foreground" /> About
                   </Link>
@@ -258,6 +261,9 @@ export function Layout({ children }: LayoutProps) {
                           </Link>
                         </>
                       )}
+                      <Link href="/jobs" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 px-3 py-2 text-base rounded-md text-primary bg-primary/5 hover:bg-primary/10 font-medium">
+                        <Briefcase className="h-5 w-5" /> Post a Job
+                      </Link>
                       <button onClick={async () => { setMobileMenuOpen(false); await signOut(); setLocation("/"); }} className="flex items-center gap-3 px-3 py-2 text-base rounded-md hover:bg-muted font-medium text-left text-muted-foreground">
                         <LogOut className="h-5 w-5" /> Sign Out
                       </button>
@@ -276,6 +282,9 @@ export function Layout({ children }: LayoutProps) {
                       </Link>
                       <Link href="/services?tab=rooms" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 px-3 py-2 text-base rounded-md text-primary bg-primary/5 hover:bg-primary/10 font-medium">
                         <KeyRound className="h-5 w-5" /> List a Room for Rent
+                      </Link>
+                      <Link href="/jobs" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 px-3 py-2 text-base rounded-md text-primary bg-primary/5 hover:bg-primary/10 font-medium">
+                        <Briefcase className="h-5 w-5" /> Post a Job
                       </Link>
                     </>
                   )}
@@ -313,6 +322,7 @@ export function Layout({ children }: LayoutProps) {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+            <Link href="/jobs" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors whitespace-nowrap">Jobs</Link>
             <Link href="/about" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors whitespace-nowrap">About</Link>
             <Link href="/how-it-works" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors whitespace-nowrap">How it Works</Link>
           </nav>

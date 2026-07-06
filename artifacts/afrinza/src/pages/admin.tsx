@@ -26,6 +26,10 @@ import {
   useAdminApproveRoomListing,
   useAdminUpdateRoomListing,
   useAdminDeleteRoomListing,
+  useAdminGetAllJobListings,
+  useAdminApproveJobListing,
+  useAdminUpdateJobListing,
+  useAdminDeleteJobListing,
   useFeatureFlag,
   useSetFeatureFlag,
 } from "@/hooks/use-marketplace";
@@ -36,7 +40,7 @@ import {
   Shield, Store, Package, Star, Trash2, Loader2, StarOff, Users, Tag,
   ShoppingBag, TrendingUp, Calendar, ChevronDown, CheckCircle, Clock, XCircle,
   BadgeCheck, Phone, UserCheck, UserX, ShieldOff, CreditCard, Power,
-  KeyRound, Eye, EyeOff, Pencil, Settings, ToggleLeft, ToggleRight,
+  KeyRound, Eye, EyeOff, Pencil, Settings, ToggleLeft, ToggleRight, Briefcase,
 } from "lucide-react";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -49,12 +53,12 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import type { AdminOrder, RoomListing } from "@/lib/supabase-db";
+import type { AdminOrder, RoomListing, JobListing } from "@/lib/supabase-db";
 import { MALAYSIA_LOCATIONS, CITIES_BY_COUNTRY, LOCATION_COUNTRIES, getCountryForCity, formatPrice, getCurrencyForCity } from "@/lib/malaysia-locations";
 
 const ADMIN_EMAIL = "alphuplift@gmail.com";
 
-type Tab = "orders" | "sellers" | "products" | "kyc" | "subscriptions" | "serviceproviders" | "rooms" | "settings";
+type Tab = "orders" | "sellers" | "products" | "kyc" | "subscriptions" | "serviceproviders" | "rooms" | "jobs" | "settings";
 type Period = "today" | "week" | "month" | "year" | "all";
 
 const PERIOD_LABELS: Record<Period, string> = {
@@ -208,6 +212,11 @@ export default function Admin() {
   const [adminRoomForm, setAdminRoomForm] = useState({ title: "", roomType: "", pricePerMonth: "", location: "", availableFrom: "" });
   const [adminRoomCountry, setAdminRoomCountry] = useState("");
   const [adminRoomFilter, setAdminRoomFilter] = useState<"all" | "pending" | "live">("all");
+  const [confirmDeleteJob, setConfirmDeleteJob] = useState<{ id: number; title: string } | null>(null);
+  const [editingAdminJob, setEditingAdminJob] = useState<JobListing | null>(null);
+  const [adminJobForm, setAdminJobForm] = useState({ jobTitle: "", companyName: "", jobType: "", category: "", location: "", salaryRange: "", description: "", requirements: "" });
+  const [adminJobCountry, setAdminJobCountry] = useState("");
+  const [adminJobFilter, setAdminJobFilter] = useState<"all" | "pending" | "live">("all");
 
   const allSellers = useAdminGetAllSellers();
   const allProducts = useAdminGetAllProducts();
@@ -233,10 +242,15 @@ export default function Admin() {
   const approveRoom = useAdminApproveRoomListing();
   const updateAdminRoom = useAdminUpdateRoomListing();
   const deleteAdminRoom = useAdminDeleteRoomListing();
+  const allJobListings = useAdminGetAllJobListings();
+  const approveJob = useAdminApproveJobListing();
+  const updateAdminJob = useAdminUpdateJobListing();
+  const deleteAdminJob = useAdminDeleteJobListing();
 
   const subPendingCount = useMemo(() => (allSubs.data ?? []).filter((s) => s.status === "pending").length, [allSubs.data]);
   const spPendingCount = useMemo(() => (allServiceProviders.data ?? []).filter((sp) => sp.kycStatus === "pending").length, [allServiceProviders.data]);
   const roomPendingCount = useMemo(() => (allRoomListings.data ?? []).filter((r) => !r.isActive).length, [allRoomListings.data]);
+  const jobPendingCount = useMemo(() => (allJobListings.data ?? []).filter((j) => !j.isActive).length, [allJobListings.data]);
   const adminCurrentMonth = new Date().toISOString().slice(0, 7);
 
   const handleConfirmSub = (id: number) => {
@@ -381,6 +395,49 @@ export default function Admin() {
     });
   };
 
+  const handleAdminJobEdit = (job: JobListing) => {
+    setEditingAdminJob(job);
+    setAdminJobForm({
+      jobTitle: job.jobTitle,
+      companyName: job.companyName,
+      jobType: job.jobType,
+      category: job.category,
+      location: job.location,
+      salaryRange: job.salaryRange ?? "",
+      description: job.description,
+      requirements: job.requirements ?? "",
+    });
+    setAdminJobCountry(getCountryForCity(job.location));
+  };
+
+  const handleSaveAdminJob = () => {
+    if (!editingAdminJob) return;
+    updateAdminJob.mutate({
+      id: editingAdminJob.id,
+      updates: {
+        jobTitle: adminJobForm.jobTitle,
+        companyName: adminJobForm.companyName,
+        jobType: adminJobForm.jobType,
+        category: adminJobForm.category,
+        location: adminJobForm.location,
+        salaryRange: adminJobForm.salaryRange || null,
+        description: adminJobForm.description,
+        requirements: adminJobForm.requirements || undefined,
+      },
+    }, {
+      onSuccess: () => { toast.success("Job listing updated!"); setEditingAdminJob(null); },
+      onError: () => toast.error("Update failed — check Supabase admin policy."),
+    });
+  };
+
+  const handleDeleteAdminJob = () => {
+    if (!confirmDeleteJob) return;
+    deleteAdminJob.mutate({ id: confirmDeleteJob.id }, {
+      onSuccess: () => { toast.success("Job listing deleted."); setConfirmDeleteJob(null); },
+      onError: () => toast.error("Delete failed — check Supabase admin policy."),
+    });
+  };
+
   if (authLoading) {
     return <div className="min-h-[60vh] flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
   }
@@ -447,6 +504,7 @@ export default function Admin() {
             { id: "subscriptions", icon: <CreditCard  className="w-4 h-4" />, label: `Subscriptions${subPendingCount > 0 ? ` (${subPendingCount} pending)` : ""}` },
             { id: "serviceproviders", icon: <Users className="w-4 h-4" />, label: `Service Providers${spPendingCount > 0 ? ` (${spPendingCount} pending)` : ` (${(allServiceProviders.data ?? []).length})`}` },
             { id: "rooms", icon: <KeyRound className="w-4 h-4" />, label: `Rooms${roomPendingCount > 0 ? ` (${roomPendingCount} pending)` : ` (${(allRoomListings.data ?? []).length})`}` },
+            { id: "jobs", icon: <Briefcase className="w-4 h-4" />, label: `Jobs${jobPendingCount > 0 ? ` (${jobPendingCount} pending)` : ` (${(allJobListings.data ?? []).length})`}` },
             { id: "settings", icon: <Settings className="w-4 h-4" />, label: "Settings" },
           ] as const).map(({ id, icon, label }) => (
             <button
@@ -1405,6 +1463,223 @@ export default function Admin() {
           </div>
         </div>
       )}
+
+      {/* ══════════════════════════════════════════════════════════
+          JOBS TAB
+      ══════════════════════════════════════════════════════════ */}
+      {tab === "jobs" && (
+        <div className="space-y-5">
+          {/* Filter pills */}
+          <div className="flex gap-2">
+            {(["all", "pending", "live"] as const).map((f) => (
+              <button
+                key={f}
+                onClick={() => setAdminJobFilter(f)}
+                className={`px-4 py-2 rounded-full text-sm font-semibold transition-all capitalize ${adminJobFilter === f ? "bg-primary text-white shadow" : "bg-white border border-border text-muted-foreground hover:border-primary/40 hover:text-primary"}`}
+              >
+                {f === "all" ? `All (${(allJobListings.data ?? []).length})` : f === "pending" ? `Pending (${jobPendingCount})` : `Live (${(allJobListings.data ?? []).filter((j) => j.isActive).length})`}
+              </button>
+            ))}
+          </div>
+
+          <div className="bg-white rounded-2xl border border-border shadow-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-border">
+              <h2 className="font-semibold text-base">Job Listings</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">Approve, edit, or remove job listings. New listings are pending until approved.</p>
+            </div>
+            {allJobListings.isLoading ? (
+              <div className="flex items-center justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
+            ) : (() => {
+              const filtered = (allJobListings.data ?? []).filter((j) =>
+                adminJobFilter === "all" ? true : adminJobFilter === "pending" ? !j.isActive : j.isActive
+              );
+              if (filtered.length === 0) return (
+                <div className="flex flex-col items-center justify-center py-16 text-muted-foreground gap-2">
+                  <Briefcase className="w-8 h-8 opacity-30" />
+                  <p className="text-sm">No job listings{adminJobFilter !== "all" ? ` (${adminJobFilter})` : ""} yet.</p>
+                </div>
+              );
+              return (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-border bg-muted/30 text-xs text-muted-foreground uppercase tracking-wide">
+                        <th className="px-5 py-3 text-left">Listing</th>
+                        <th className="px-5 py-3 text-left">Location</th>
+                        <th className="px-5 py-3 text-left">Poster / WhatsApp</th>
+                        <th className="px-5 py-3 text-center">Salary</th>
+                        <th className="px-5 py-3 text-center">Status</th>
+                        <th className="px-5 py-3 text-center">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                      {filtered.map((job) => (
+                        <tr key={job.id} className="hover:bg-muted/20 transition-colors">
+                          <td className="px-5 py-4">
+                            <p className="font-medium text-foreground line-clamp-1">{job.jobTitle}</p>
+                            <p className="text-xs text-muted-foreground mt-0.5">{job.companyName} · {job.jobType}</p>
+                          </td>
+                          <td className="px-5 py-4 text-muted-foreground">{job.location}</td>
+                          <td className="px-5 py-4">
+                            <p className="text-sm font-medium">{job.posterName}</p>
+                            <a
+                              href={`https://wa.me/${job.whatsapp.replace(/\D/g, "")}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-1 text-green-700 hover:text-green-800 text-xs font-medium mt-0.5"
+                            >
+                              <Phone className="w-3 h-3" /> {job.whatsapp}
+                            </a>
+                          </td>
+                          <td className="px-5 py-4 text-center font-semibold text-primary text-sm">
+                            {job.salaryRange || "—"}
+                          </td>
+                          <td className="px-5 py-4 text-center">
+                            {job.isActive ? (
+                              <Badge className="bg-green-100 text-green-700 border-transparent gap-1 text-[10px] h-5">
+                                <Eye className="w-3 h-3" /> Live
+                              </Badge>
+                            ) : (
+                              <Badge className="bg-amber-100 text-amber-700 border-transparent gap-1 text-[10px] h-5">
+                                <Clock className="w-3 h-3" /> Pending
+                              </Badge>
+                            )}
+                          </td>
+                          <td className="px-5 py-4">
+                            <div className="flex items-center justify-center gap-1.5 flex-wrap">
+                              <button
+                                onClick={() => approveJob.mutate({ id: job.id, approve: !job.isActive }, {
+                                  onSuccess: () => toast.success(job.isActive ? "Listing deactivated." : "Listing approved — now live!"),
+                                  onError: () => toast.error("Failed — run migration 015_jobs.sql in Supabase."),
+                                })}
+                                disabled={approveJob.isPending}
+                                title={job.isActive ? "Deactivate" : "Approve"}
+                                className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold disabled:opacity-50 transition-all ${job.isActive ? "bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200" : "bg-green-600 text-white hover:bg-green-700"}`}
+                              >
+                                {job.isActive ? <EyeOff className="w-3 h-3" /> : <CheckCircle className="w-3 h-3" />}
+                                {job.isActive ? "Deactivate" : "Approve"}
+                              </button>
+                              <button
+                                onClick={() => handleAdminJobEdit(job)}
+                                title="Edit"
+                                className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 flex items-center justify-center transition-all"
+                              >
+                                <Pencil className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                onClick={() => setConfirmDeleteJob({ id: job.id, title: job.jobTitle })}
+                                title="Delete"
+                                className="w-8 h-8 rounded-full bg-red-50 text-red-400 hover:bg-red-100 hover:text-red-600 flex items-center justify-center transition-all"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              );
+            })()}
+          </div>
+        </div>
+      )}
+
+      {/* ── Admin Job Edit Dialog ─── */}
+      <Dialog open={!!editingAdminJob} onOpenChange={(open) => { if (!open) setEditingAdminJob(null); }}>
+        <DialogContent className="max-w-md rounded-3xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><Pencil className="w-4 h-4" /> Edit Job Listing</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div>
+              <label className="text-sm font-semibold block mb-1.5">Job Title</label>
+              <Input value={adminJobForm.jobTitle} onChange={(e) => setAdminJobForm((f) => ({ ...f, jobTitle: e.target.value }))} className="h-10 bg-muted/30" />
+            </div>
+            <div>
+              <label className="text-sm font-semibold block mb-1.5">Company Name</label>
+              <Input value={adminJobForm.companyName} onChange={(e) => setAdminJobForm((f) => ({ ...f, companyName: e.target.value }))} className="h-10 bg-muted/30" />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-semibold block mb-1.5">Job Type</label>
+                <Select value={adminJobForm.jobType} onValueChange={(v) => setAdminJobForm((f) => ({ ...f, jobType: v }))}>
+                  <SelectTrigger className="h-10 bg-muted/30"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {["Full-time","Part-time","Contract","Internship"].map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-semibold block mb-1.5">Salary Range</label>
+                <Input value={adminJobForm.salaryRange} onChange={(e) => setAdminJobForm((f) => ({ ...f, salaryRange: e.target.value }))} className="h-10 bg-muted/30" placeholder="Optional" />
+              </div>
+              <div>
+                <label className="text-sm font-semibold block mb-1.5">Category</label>
+                <Input value={adminJobForm.category} onChange={(e) => setAdminJobForm((f) => ({ ...f, category: e.target.value }))} className="h-10 bg-muted/30" />
+              </div>
+              <div>
+                <label className="text-sm font-semibold block mb-1.5">Country</label>
+                <Select value={adminJobCountry} onValueChange={(v) => { setAdminJobCountry(v); setAdminJobForm((f) => ({ ...f, location: "" })); }}>
+                  <SelectTrigger className="h-10 bg-muted/30"><SelectValue placeholder="Select country" /></SelectTrigger>
+                  <SelectContent className="max-h-60">
+                    {LOCATION_COUNTRIES.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="col-span-2">
+                <label className="text-sm font-semibold block mb-1.5">City / State</label>
+                <Select value={adminJobForm.location} onValueChange={(v) => setAdminJobForm((f) => ({ ...f, location: v }))} disabled={!adminJobCountry}>
+                  <SelectTrigger className="h-10 bg-muted/30"><SelectValue placeholder={adminJobCountry ? "Select city" : "Select country first"} /></SelectTrigger>
+                  <SelectContent className="max-h-60">
+                    {(CITIES_BY_COUNTRY[adminJobCountry] ?? []).map((l) => <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div>
+              <label className="text-sm font-semibold block mb-1.5">Description</label>
+              <textarea value={adminJobForm.description} onChange={(e) => setAdminJobForm((f) => ({ ...f, description: e.target.value }))} className="w-full min-h-24 rounded-xl bg-muted/30 border border-input px-3 py-2 text-sm" />
+            </div>
+            <div>
+              <label className="text-sm font-semibold block mb-1.5">Requirements</label>
+              <textarea value={adminJobForm.requirements} onChange={(e) => setAdminJobForm((f) => ({ ...f, requirements: e.target.value }))} className="w-full min-h-20 rounded-xl bg-muted/30 border border-input px-3 py-2 text-sm" placeholder="Optional" />
+            </div>
+          </div>
+          <DialogFooter>
+            <button onClick={() => setEditingAdminJob(null)} className="px-4 py-2 rounded-full border border-border text-sm font-medium hover:bg-muted/40 transition-all">Cancel</button>
+            <button
+              onClick={handleSaveAdminJob}
+              disabled={updateAdminJob.isPending}
+              className="flex items-center gap-2 px-5 py-2 rounded-full bg-primary text-white text-sm font-semibold hover:bg-primary/90 disabled:opacity-50 transition-all"
+            >
+              {updateAdminJob.isPending ? <><Loader2 className="w-4 h-4 animate-spin" /> Saving…</> : <><CheckCircle className="w-4 h-4" /> Save Changes</>}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Admin Job Delete Confirm ─── */}
+      <AlertDialog open={!!confirmDeleteJob} onOpenChange={(open) => !open && setConfirmDeleteJob(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Job Listing?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete <strong>"{confirmDeleteJob?.title}"</strong>. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteAdminJob}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* ── Admin Room Edit Dialog ─── */}
       <Dialog open={!!editingAdminRoom} onOpenChange={(open) => { if (!open) setEditingAdminRoom(null); }}>

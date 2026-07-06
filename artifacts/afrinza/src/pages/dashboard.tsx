@@ -18,11 +18,14 @@ import {
   useUpdateServiceProvider,
   useUpdateRoomListing,
   useDeleteRoomListing,
+  useGetMyJobListings,
+  useUpdateJobListing,
+  useDeleteJobListing,
   useFeatureFlag,
 } from "@/hooks/use-marketplace";
 import { uploadProductImage, uploadReceiptImage, uploadServiceProviderReceipt, uploadServicePhoto, uploadRoomPhoto } from "@/lib/supabase-db";
 import { updateUserProfile } from "@/lib/supabase-auth";
-import type { Product, RoomListing } from "@/lib/supabase-db";
+import type { Product, RoomListing, JobListing } from "@/lib/supabase-db";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -31,7 +34,7 @@ import {
   Store, Package, Plus, Pencil, Trash2, Loader2, ImagePlus,
   X, CheckCircle2, User, DollarSign, ShoppingBag, AlertTriangle, Shield,
   BadgeCheck, Lock, Phone, Clock, XCircle, CreditCard, Upload,
-  Wrench, KeyRound, MapPin, ExternalLink,
+  Wrench, KeyRound, MapPin, ExternalLink, Briefcase,
 } from "lucide-react";
 import { VerifiedBadge } from "@/components/verified-badge";
 import { toast } from "sonner";
@@ -52,7 +55,8 @@ const CATEGORIES = ["Food", "Fashion", "Services", "Groceries", "Beauty", "Other
 const DELIVERY_OPTIONS = ["Afrinza Rider", "Grab Delivery", "Lalamove", "Self Pickup"];
 const PAYMENT_METHODS = ["Bank Transfer", "Touch n Go", "DuitNow QR", "Cash on Delivery", "Cash"];
 
-type Tab = "store" | "products" | "add-product" | "services" | "rooms" | "profile";
+type Tab = "store" | "products" | "add-product" | "services" | "rooms" | "jobs" | "profile";
+const JOB_TYPES = ["Full-time", "Part-time", "Contract", "Internship"];
 
 export default function Dashboard() {
   const [, setLocation] = useLocation();
@@ -109,6 +113,9 @@ export default function Dashboard() {
   const updateSp = useUpdateServiceProvider();
   const updateRoom = useUpdateRoomListing();
   const deleteRoom = useDeleteRoomListing();
+  const myJobs = useGetMyJobListings(user?.id);
+  const updateJob = useUpdateJobListing();
+  const deleteJob = useDeleteJobListing();
 
   // KYC modal
   const [kycModalOpen, setKycModalOpen] = useState(false);
@@ -151,6 +158,14 @@ export default function Dashboard() {
   const [roomPhotoUploading, setRoomPhotoUploading] = useState(false);
   const roomEditPhotoRef = useRef<HTMLInputElement>(null);
   const [deletingRoomId, setDeletingRoomId] = useState<number | null>(null);
+
+  // Job edit / delete
+  const [editingJob, setEditingJob] = useState<JobListing | null>(null);
+  const [jobEditForm, setJobEditForm] = useState({
+    jobTitle: "", companyName: "", jobType: "", category: "", location: "", salaryRange: "", description: "", requirements: "",
+  });
+  const [jobEditCountry, setJobEditCountry] = useState("");
+  const [deletingJobId, setDeletingJobId] = useState<number | null>(null);
 
   // Country selectors for location dependent dropdowns
   const [storeCountry, setStoreCountry] = useState("");
@@ -533,6 +548,56 @@ export default function Dashboard() {
     );
   };
 
+  const handleOpenJobEdit = (job: JobListing) => {
+    setEditingJob(job);
+    setJobEditForm({
+      jobTitle: job.jobTitle,
+      companyName: job.companyName,
+      jobType: job.jobType,
+      category: job.category,
+      location: job.location,
+      salaryRange: job.salaryRange ?? "",
+      description: job.description,
+      requirements: job.requirements ?? "",
+    });
+    setJobEditCountry(getCountryForCity(job.location));
+  };
+
+  const handleSaveJobEdit = () => {
+    if (!editingJob) return;
+    if (!jobEditForm.jobTitle.trim()) { toast.error("Job title is required."); return; }
+    updateJob.mutate(
+      {
+        id: editingJob.id,
+        updates: {
+          jobTitle: jobEditForm.jobTitle,
+          companyName: jobEditForm.companyName,
+          jobType: jobEditForm.jobType,
+          category: jobEditForm.category,
+          location: jobEditForm.location,
+          salaryRange: jobEditForm.salaryRange || null,
+          description: jobEditForm.description,
+          requirements: jobEditForm.requirements || undefined,
+        },
+      },
+      {
+        onSuccess: () => { toast.success("Job listing updated!"); setEditingJob(null); },
+        onError: () => toast.error("Update failed. Please try again."),
+      }
+    );
+  };
+
+  const handleDeleteJob = () => {
+    if (!deletingJobId) return;
+    deleteJob.mutate(
+      { id: deletingJobId },
+      {
+        onSuccess: () => { toast.success("Job listing removed."); setDeletingJobId(null); },
+        onError: () => toast.error("Delete failed. Please try again."),
+      }
+    );
+  };
+
   const handleAddImagesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const incoming = Array.from(e.target.files ?? []);
     e.target.value = "";
@@ -614,12 +679,14 @@ export default function Dashboard() {
     { id: "add-product", label: "Add", icon: <Plus className="w-4 h-4" /> },
     { id: "services", label: "Services", icon: <Wrench className="w-4 h-4" /> },
     { id: "rooms", label: "Rooms", icon: <KeyRound className="w-4 h-4" /> },
+    { id: "jobs", label: "Jobs", icon: <Briefcase className="w-4 h-4" /> },
     { id: "profile", label: "Profile", icon: <User className="w-4 h-4" /> },
   ];
 
   const buyerTabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
     { id: "services", label: "Services", icon: <Wrench className="w-4 h-4" /> },
     { id: "rooms", label: "Rooms", icon: <KeyRound className="w-4 h-4" /> },
+    { id: "jobs", label: "Jobs", icon: <Briefcase className="w-4 h-4" /> },
     { id: "profile", label: "My Profile", icon: <User className="w-4 h-4" /> },
   ];
 
@@ -1375,6 +1442,80 @@ export default function Dashboard() {
           </div>
         )}
 
+        {currentTab === "jobs" && (
+          <div>
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-xl font-bold flex items-center gap-2">
+                <Briefcase className="w-5 h-5 text-primary" /> My Job Listings
+              </h2>
+              <Button className="rounded-full gap-2" size="sm" onClick={() => setLocation("/jobs?tab=post")}>
+                <Plus className="w-4 h-4" /> Post a New Job
+              </Button>
+            </div>
+
+            {myJobs.isLoading ? (
+              <div className="flex justify-center py-16"><Loader2 className="w-7 h-7 animate-spin text-primary" /></div>
+            ) : !myJobs.data || myJobs.data.length === 0 ? (
+              <div className="bg-white rounded-3xl border border-border shadow p-12 text-center">
+                <Briefcase className="w-12 h-12 text-muted-foreground/40 mx-auto mb-4" />
+                <h3 className="font-semibold text-lg mb-2">No jobs posted yet</h3>
+                <p className="text-muted-foreground text-sm mb-6">
+                  Post a job opportunity and reach Africans across Malaysia looking for work.
+                </p>
+                <Button className="rounded-full gap-2" onClick={() => setLocation("/jobs?tab=post")}>
+                  <Briefcase className="w-4 h-4" /> Post a Job
+                </Button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {myJobs.data.map((job) => (
+                  <div key={job.id} className="bg-white rounded-2xl border border-border shadow-sm p-5">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center shrink-0">
+                        <Briefcase className="w-5 h-5 text-primary" />
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        {job.isActive ? (
+                          <span className="text-[10px] font-semibold bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Live</span>
+                        ) : (
+                          <span className="text-[10px] font-semibold bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">Pending Approval</span>
+                        )}
+                        <span className="text-xs font-semibold bg-muted px-2 py-1 rounded-full">{job.jobType}</span>
+                      </div>
+                    </div>
+                    <h3 className="font-semibold text-sm leading-tight mb-1 line-clamp-2">{job.jobTitle}</h3>
+                    <p className="text-xs text-muted-foreground mb-1">{job.companyName}</p>
+                    <p className="text-xs text-muted-foreground flex items-center gap-1 mb-2">
+                      <MapPin className="w-3 h-3" /> {job.location}
+                    </p>
+                    {job.salaryRange && (
+                      <p className="text-sm font-bold text-primary">{job.salaryRange}</p>
+                    )}
+                    <div className="flex gap-2 mt-4">
+                      <Button variant="outline" size="sm" className="flex-1 rounded-full gap-1.5" onClick={() => handleOpenJobEdit(job)}>
+                        <Pencil className="w-3.5 h-3.5" /> Edit
+                      </Button>
+                      <Button variant="outline" size="sm" className="rounded-full text-destructive border-destructive/30 hover:bg-destructive/5" onClick={() => setDeletingJobId(job.id)}>
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {sellerProfile?.whatsapp && (
+              <div className="mt-6 bg-amber-50 border border-amber-200 rounded-2xl p-4 text-sm text-amber-800">
+                <p className="font-semibold mb-1">How job listings are matched</p>
+                <p className="text-xs">
+                  Jobs are matched by your registered WhatsApp number (<strong>{sellerProfile.whatsapp}</strong>).
+                  Use this same number when posting jobs to see them here.
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* ── ADD PRODUCT TAB ──────────────────────────────────────── */}
         {currentTab === "add-product" && sellerProfile && (
           <div className="bg-white rounded-3xl border border-border shadow p-6 md:p-8 max-w-2xl">
@@ -1974,6 +2115,92 @@ export default function Dashboard() {
             <AlertDialogCancel className="rounded-full">Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteRoom} className="rounded-full bg-destructive hover:bg-destructive/90" disabled={deleteRoom.isPending}>
               {deleteRoom.isPending ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Removing…</> : "Remove Listing"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* ── JOB EDIT DIALOG ────────────────────────────────────── */}
+      <Dialog open={!!editingJob} onOpenChange={(open) => { if (!open) setEditingJob(null); }}>
+        <DialogContent className="max-w-lg rounded-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><Pencil className="w-4 h-4" /> Edit Job Listing</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div>
+              <label className="text-sm font-semibold block mb-1.5">Job Title</label>
+              <Input value={jobEditForm.jobTitle} onChange={(e) => setJobEditForm((f) => ({ ...f, jobTitle: e.target.value }))} className="h-11 bg-muted/30" />
+            </div>
+            <div>
+              <label className="text-sm font-semibold block mb-1.5">Company Name</label>
+              <Input value={jobEditForm.companyName} onChange={(e) => setJobEditForm((f) => ({ ...f, companyName: e.target.value }))} className="h-11 bg-muted/30" />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-semibold block mb-1.5">Job Type</label>
+                <Select value={jobEditForm.jobType} onValueChange={(v) => setJobEditForm((f) => ({ ...f, jobType: v }))}>
+                  <SelectTrigger className="h-11 bg-muted/30"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {JOB_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-semibold block mb-1.5">Salary Range <span className="font-normal text-muted-foreground">(optional)</span></label>
+                <Input value={jobEditForm.salaryRange} onChange={(e) => setJobEditForm((f) => ({ ...f, salaryRange: e.target.value }))} className="h-11 bg-muted/30" placeholder="e.g. RM 3,000 - 4,500" />
+              </div>
+              <div>
+                <label className="text-sm font-semibold block mb-1.5">Category</label>
+                <Input value={jobEditForm.category} onChange={(e) => setJobEditForm((f) => ({ ...f, category: e.target.value }))} className="h-11 bg-muted/30" />
+              </div>
+              <div>
+                <label className="text-sm font-semibold block mb-1.5">Country</label>
+                <Select value={jobEditCountry} onValueChange={(v) => { setJobEditCountry(v); setJobEditForm((f) => ({ ...f, location: "" })); }}>
+                  <SelectTrigger className="h-11 bg-muted/30"><SelectValue placeholder="Select country" /></SelectTrigger>
+                  <SelectContent className="max-h-60">
+                    {LOCATION_COUNTRIES.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="col-span-2">
+                <label className="text-sm font-semibold block mb-1.5">City / State</label>
+                <Select value={jobEditForm.location} onValueChange={(v) => setJobEditForm((f) => ({ ...f, location: v }))} disabled={!jobEditCountry}>
+                  <SelectTrigger className="h-11 bg-muted/30"><SelectValue placeholder={jobEditCountry ? "Select city" : "Select country first"} /></SelectTrigger>
+                  <SelectContent className="max-h-60">
+                    {(CITIES_BY_COUNTRY[jobEditCountry] ?? []).map((l) => <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="col-span-2">
+                <label className="text-sm font-semibold block mb-1.5">Description</label>
+                <Textarea value={jobEditForm.description} onChange={(e) => setJobEditForm((f) => ({ ...f, description: e.target.value }))} className="min-h-[80px] bg-muted/30 resize-none" />
+              </div>
+              <div className="col-span-2">
+                <label className="text-sm font-semibold block mb-1.5">Requirements <span className="font-normal text-muted-foreground">(optional)</span></label>
+                <Textarea value={jobEditForm.requirements} onChange={(e) => setJobEditForm((f) => ({ ...f, requirements: e.target.value }))} className="min-h-[60px] bg-muted/30 resize-none" />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" className="rounded-full" onClick={() => setEditingJob(null)}>Cancel</Button>
+            <Button className="rounded-full" onClick={handleSaveJobEdit} disabled={updateJob.isPending}>
+              {updateJob.isPending ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Saving…</> : <><CheckCircle2 className="w-4 h-4 mr-2" />Save Changes</>}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── DELETE JOB CONFIRM ──────────────────────────────────── */}
+      <AlertDialog open={!!deletingJobId} onOpenChange={(open) => { if (!open) setDeletingJobId(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2"><AlertTriangle className="w-5 h-5 text-destructive" /> Remove Job Listing?</AlertDialogTitle>
+            <AlertDialogDescription>This will permanently remove the job listing. It will no longer appear to job seekers.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-full">Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteJob} className="rounded-full bg-destructive hover:bg-destructive/90" disabled={deleteJob.isPending}>
+              {deleteJob.isPending ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Removing…</> : "Remove Listing"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -1239,6 +1239,199 @@ export async function adminDeleteRoomListing(id: number): Promise<void> {
   if (error) throw new Error(`[Supabase / adminDeleteRoomListing] ${error.message}`);
 }
 
+// ─── Job Listings ────────────────────────────────────────────────
+
+export interface JobListing {
+  id: number;
+  userId: string | null;
+  posterName: string;
+  companyName: string;
+  whatsapp: string;
+  email: string | null;
+  location: string;
+  jobTitle: string;
+  jobType: string;
+  category: string;
+  salaryRange: string | null;
+  description: string;
+  requirements: string | null;
+  isActive: boolean;
+  createdAt: string;
+}
+
+function mapJobListing(r: Record<string, any>): JobListing {
+  return {
+    id: r.id,
+    userId: r.user_id ?? null,
+    posterName: r.poster_name,
+    companyName: r.company_name,
+    whatsapp: r.whatsapp,
+    email: r.email ?? null,
+    location: r.location,
+    jobTitle: r.job_title,
+    jobType: r.job_type,
+    category: r.category,
+    salaryRange: r.salary_range ?? null,
+    description: r.description,
+    requirements: r.requirements ?? null,
+    isActive: r.is_active ?? false,
+    createdAt: r.created_at,
+  };
+}
+
+export async function getJobListings(location?: string): Promise<JobListing[]> {
+  let query = supabase
+    .from("job_listings")
+    .select("*")
+    .eq("is_active", true)
+    .order("created_at", { ascending: false });
+
+  if (location && location !== "all") {
+    query = query.eq("location", location);
+  }
+
+  const { data, error } = await query;
+  if (error) throw new Error(`[Supabase / getJobListings] ${error.message}`);
+  return (data ?? []).map(mapJobListing);
+}
+
+export async function createJobListing(payload: {
+  userId: string;
+  posterName: string;
+  companyName: string;
+  whatsapp: string;
+  email?: string;
+  location: string;
+  jobTitle: string;
+  jobType: string;
+  category: string;
+  salaryRange?: string;
+  description: string;
+  requirements?: string;
+}): Promise<JobListing> {
+  const insertData: Record<string, unknown> = {
+    user_id: payload.userId,
+    poster_name: payload.posterName,
+    company_name: payload.companyName,
+    whatsapp: payload.whatsapp,
+    email: payload.email || null,
+    location: payload.location,
+    job_title: payload.jobTitle,
+    job_type: payload.jobType,
+    category: payload.category,
+    salary_range: payload.salaryRange || null,
+    description: payload.description,
+    requirements: payload.requirements || null,
+    is_active: false,
+  };
+
+  const { data, error } = await supabase
+    .from("job_listings")
+    .insert(insertData)
+    .select()
+    .single();
+  if (error) throw new Error(`[Supabase / createJobListing] ${error.message}`);
+  return mapJobListing(data);
+}
+
+export async function updateJobListing(id: number, updates: {
+  jobTitle?: string;
+  companyName?: string;
+  description?: string;
+  requirements?: string;
+  jobType?: string;
+  category?: string;
+  location?: string;
+  salaryRange?: string | null;
+}): Promise<JobListing> {
+  const patch: Record<string, unknown> = {
+    job_title: updates.jobTitle,
+    company_name: updates.companyName,
+    description: updates.description,
+    requirements: updates.requirements,
+    job_type: updates.jobType,
+    category: updates.category,
+    location: updates.location,
+    salary_range: updates.salaryRange ?? null,
+  };
+  const { data, error } = await supabase
+    .from("job_listings")
+    .update(patch)
+    .eq("id", id)
+    .select()
+    .single();
+  if (error) throw new Error(`[Supabase / updateJobListing] ${error.message}`);
+  return mapJobListing(data);
+}
+
+export async function deleteJobListing(id: number): Promise<void> {
+  const { error } = await supabase.from("job_listings").delete().eq("id", id);
+  if (error) throw new Error(`[Supabase / deleteJobListing] ${error.message}`);
+}
+
+export async function getMyJobListings(userId: string): Promise<JobListing[]> {
+  const { data, error } = await supabase
+    .from("job_listings")
+    .select("*")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false });
+  if (error) throw new Error(`[Supabase / getMyJobListings] ${error.message}`);
+  return (data ?? []).map(mapJobListing);
+}
+
+// ─── Admin job listing functions ──────────────────────────────────
+
+export async function adminGetAllJobListings(): Promise<JobListing[]> {
+  const { data, error } = await supabase
+    .from("job_listings")
+    .select("*")
+    .order("created_at", { ascending: false });
+  if (error) throw new Error(`[Supabase / adminGetAllJobListings] ${error.message}`);
+  return (data ?? []).map(mapJobListing);
+}
+
+export async function adminApproveJobListing(id: number, approve: boolean): Promise<void> {
+  const { error } = await supabase
+    .from("job_listings")
+    .update({ is_active: approve })
+    .eq("id", id);
+  if (error) throw new Error(`[Supabase / adminApproveJobListing] ${error.message}`);
+}
+
+export async function adminUpdateJobListing(id: number, updates: {
+  jobTitle?: string;
+  companyName?: string;
+  description?: string;
+  requirements?: string;
+  jobType?: string;
+  category?: string;
+  location?: string;
+  salaryRange?: string | null;
+}): Promise<JobListing> {
+  const { data, error } = await supabase
+    .from("job_listings")
+    .update({
+      job_title: updates.jobTitle,
+      company_name: updates.companyName,
+      description: updates.description,
+      requirements: updates.requirements,
+      job_type: updates.jobType,
+      category: updates.category,
+      location: updates.location,
+      salary_range: updates.salaryRange ?? null,
+    })
+    .eq("id", id)
+    .select()
+    .single();
+  if (error) throw new Error(`[Supabase / adminUpdateJobListing] ${error.message}`);
+  return mapJobListing(data);
+}
+
+export async function adminDeleteJobListing(id: number): Promise<void> {
+  const { error } = await supabase.from("job_listings").delete().eq("id", id);
+  if (error) throw new Error(`[Supabase / adminDeleteJobListing] ${error.message}`);
+}
+
 // ─── Service Providers ─────────────────────────────────────────────
 
 export interface ServiceProvider {
