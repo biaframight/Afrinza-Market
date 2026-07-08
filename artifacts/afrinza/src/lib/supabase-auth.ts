@@ -29,6 +29,7 @@ export async function signUpWithEmail(
         full_name: options?.fullName ?? "",
         ...(options?.role !== undefined && { role: options.role }),
       },
+      emailRedirectTo: `${window.location.origin}/auth`,
     },
   });
 }
