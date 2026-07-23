@@ -116,6 +116,7 @@ export default function Dashboard() {
   const myJobs = useGetMyJobListings(user?.id);
   const updateJob = useUpdateJobListing();
   const deleteJob = useDeleteJobListing();
+  const subFeature = useFeatureFlag("subscription_enabled");
 
   // KYC modal
   const [kycModalOpen, setKycModalOpen] = useState(false);
@@ -231,7 +232,6 @@ export default function Dashboard() {
   const isSeller = !!sellerProfile;
   const serviceProducts = (products ?? []).filter((p) => p.category === "Services");
 
-  const subFeature = useFeatureFlag("subscription_enabled");
   const subscriptionEnabled = subFeature.data === "true";
   const subCurrencySymbol = sellerProfile ? getCurrencyForCity(sellerProfile.location).symbol : "RM";
 
